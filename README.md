@@ -3,12 +3,12 @@
 ## Install Assumptions
 
     1. Java 8 or higher installed with JAVA_HOME set.
-    2. Gradle 5 installed.
+    2. Gradle 5 installed. If you have sdkman installed, execute ```sdk install gradle 5.6.3```
     3. npm javascript package manager installed.
 
 ## Getting Started
 
-1. ```npm install dodex-vertx``` or download from <https://github.com/DaveO-Home/dodex-vertx>.
+1. ```npm install dodex-vertx``` or download from <https://github.com/DaveO-Home/dodex-vertx>. If you use npm install, move node_modules/dodex-vertx to an appropriate directory.
 2. ```cd <install directory>/dodex-vertx/src/main/resources/static``` and execute ```npm install --save``` to install the dodex modules.
 3. ```cd <install directory>/dodex-vertx``` and execute ```gradlew run```. This should install java dependencies and startup the server in development mode against the default sqlite3 database. In this mode, any modifications to java source will be recompiled.
 4. Execute url ```http://localhost:8087/test``` in a browser.

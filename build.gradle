@@ -14,12 +14,6 @@ plugins {
     id 'application'
 
     id 'com.github.johnrengelman.shadow' version '5.1.0'
-
-    id 'nu.studer.jooq' version '3.0.3'
-    
-    // id 'de.schablinski.activejdbc-gradle-plugin' version '1.5'
-
-    // id 'io.spring.dependency-management' version '1.0.1.RELEASE'
 }
 
 repositories {
@@ -28,7 +22,6 @@ repositories {
     jcenter()
     mavenCentral()
     maven {
-    //   url "https://repo.spring.io/milestone"
          url "https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc"
          url 'https://plugins.gradle.org/m2/'
     }
@@ -38,54 +31,25 @@ version = "3.8.3"
 ext {
     vertxVersion = "3.8.3"
     junitJupiterEngineVersion = "5.4.0"
-    jooqVersion = "3.12.3"
 }
 sourceCompatibility = "1.8"
-
-// dependencyManagement {
-//   imports {
-//     mavenBom 'org.apache.logging.log4j:log4j-bom:2.12.1'
-//   }
-// }
-
-jooq {
-  version = "3.12.3"
-  edition = "OSS"
-}
 
 dependencies {
     compile "io.vertx:vertx-core:$version"
     compile "io.vertx:vertx-web:$version"
     compile "io.vertx:vertx-web-api-contract:$version"
     compile "io.vertx:vertx-rx-java:$version"
- //   compile "io.requery:requery:1.6.1"
     compile "com.github.davidmoten:rxjava2-jdbc:0.2.5"
     compile "org.slf4j:slf4j-jcl:1.7.28"
-    // compile 'org.apache.logging.log4j:log4j-api'
-    // compile 'org.apache.logging.log4j:log4j-core'
     compile "org.postgresql:postgresql:42.2.8"
     compile group:"org.xerial", name:"sqlite-jdbc", version:"3.28.0"
 
-    // compile "org.apache.derby:derby:10.11.1.1"
-    // compile "io.r2dbc:r2dbc-client:0.8.0.M8"
-    // compile "io.r2dbc:r2dbc-postgresql:0.8.0.M8"
-    
-    // Requery
-//    annotationProcessor "io.requery:requery-processor:1.6.1"
     // This dependency is used by the application.
     implementation "com.google.guava:guava:28.0-jre"
-    compile 'org.jooq:jooq'
 
-    // Use JUnit Jupiter API for testing.
-    // testImplementation 'org.junit.jupiter:junit-jupiter-api:5.4.2'
-    
     testImplementation "io.vertx:vertx-junit5:$vertxVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterEngineVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
-
-    // Use JUnit Jupiter Engine for testing.
-    // testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.4.2'
-
     testCompile "junit:junit:4.12"
 }
 
@@ -99,15 +63,10 @@ def mainVerticleName = "dmo.fs.vertx.Server"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = 'src/**/*.java'
 
-apply plugin: 'nu.studer.jooq'
-
-// startScripts.classpath.add(files('lib/*'))
-
 run {
     environment "VERTXWEB_ENVIRONMENT", "dev"
     args = ['run', mainVerticleName, "--java-optsX=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005", "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/java/application-conf.json"]
     systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
-    // systemProperties["vertx.logger-delegate-factory-class-name" = "io.vertx.core.logging.Log4j2LogDelegateFactory" ]
 }
 
 shadowJar {
@@ -121,11 +80,6 @@ shadowJar {
     include "META-INF/services/io.vertx.core.spi.VerticleFactory"
   }
 }
-
-// task wrapper(type: Wrapper) {
-//  gradleVersion = '5.6.3'
-// }
-
 
 test {
     // Use junit platform for unit tests

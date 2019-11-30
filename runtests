@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+gradlew --no-build-cache cleanTest test
+

@@ -1,0 +1,48 @@
+{
+    "application": "Dodex",
+    "defaultdb": "sqlite3",
+    "sqlite3": {
+        "dev": { 
+            "credentials": {
+            },
+            "config": {
+                "filename": "build/dodex_tests.db",
+                "url": "jdbc:sqlite:"
+            }
+        },
+        "prod": { 
+            "credentials": {
+            },
+            "config": {
+                "filename": "dodex.db",
+                "url": "jdbc:sqlite:"
+            }
+        }
+    },
+    "postgres": {
+        "dev": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost",
+                "url": "jdbc:postgresql:",
+                "dbname": "/test"
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost",
+                "url": "jdbc:postgresql:",
+                "dbname": "/dodex"
+            }
+        }
+    }
+}

@@ -83,12 +83,12 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 	}
 
 	private void databaseSetup() throws InterruptedException {
-		dbProperties.setProperty("user", "daveo");
-		dbProperties.setProperty("password", "albatross");
-		dbProperties.setProperty("ssl", "false");
+		// dbProperties.setProperty("user", "myUser");
+		// dbProperties.setProperty("password", "myPassword");
+		// dbProperties.setProperty("ssl", "false");
 
 		if(webEnv.equals("dev")) {
-			dbMap.put("dbname", "/daveo"); // this wiil be merged into the default map
+			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
 			DbConfiguration.configurePostgresTestDefaults(dbMap, dbProperties);
 		} else {
 			DbConfiguration.configurePostgresDefaults(dbMap, dbProperties); // Prod

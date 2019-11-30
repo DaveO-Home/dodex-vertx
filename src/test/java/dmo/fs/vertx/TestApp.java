@@ -106,16 +106,16 @@ class DbTest extends DbDefinitionBase {
             whichDb = System.getenv("DEFAULT_DB");
         }
         Properties props = new Properties();
-        props.setProperty("user", "daveo");
-        props.setProperty("password", "albatross");
-        props.setProperty("ssl", "false");    
+        // props.setProperty("user", "myUser");
+        // props.setProperty("password", "myPassword");
+        // props.setProperty("ssl", "false");    
 
         if (whichDb.equals("sqlite3")) {
             dodexDatabase = new DodexDatabaseSqlite3();
             cp = DbConfiguration.getSqlite3ConnectionProvider();
         } else {
             Map<String,String>overrideMap = new HashMap<>();
-            overrideMap.put("dbname", "/daveo"); // this wiil be merged into the default map
+            // overrideMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
             dodexDatabase = new DodexDatabasePostgres(overrideMap, props);
             cp = DbConfiguration.getPostgresConnectionProvider();
         }

@@ -2,9 +2,9 @@
 
 ## Install Assumptions
 
-    1. Java 8 or higher installed with JAVA_HOME set.
-    2. Gradle 5 installed. If you have sdkman installed, execute ```sdk install gradle 5.6.3```
-    3. npm javascript package manager installed.
+1. Java 8 or higher installed with JAVA_HOME set.
+2. Gradle 5 installed. If you have sdkman installed, execute ```sdk install gradle 5.6.4```
+3. npm javascript package manager installed.
 
 ## Getting Started
 

@@ -35,14 +35,14 @@ ext {
 sourceCompatibility = "1.8"
 
 dependencies {
-    compile "io.vertx:vertx-core:$version"
-    compile "io.vertx:vertx-web:$version"
-    compile "io.vertx:vertx-web-api-contract:$version"
-    compile "io.vertx:vertx-rx-java:$version"
-    compile "com.github.davidmoten:rxjava2-jdbc:0.2.5"
-    compile "org.slf4j:slf4j-jcl:1.7.28"
-    compile "org.postgresql:postgresql:42.2.8"
-    compile group:"org.xerial", name:"sqlite-jdbc", version:"3.28.0"
+    implementation "io.vertx:vertx-core:$version"
+    implementation "io.vertx:vertx-web:$version"
+    implementation "io.vertx:vertx-web-api-contract:$version"
+    implementation "io.vertx:vertx-rx-java:$version"
+    implementation "com.github.davidmoten:rxjava2-jdbc:0.2.5"
+    implementation "org.slf4j:slf4j-jcl:1.7.28"
+    implementation "org.postgresql:postgresql:42.2.8"
+    implementation group:"org.xerial", name:"sqlite-jdbc", version:"3.28.0"
 
     // This dependency is used by the application.
     implementation "com.google.guava:guava:28.0-jre"
@@ -56,6 +56,8 @@ dependencies {
 application {
     // Define the main class for the application
     mainClassName = "io.vertx.core.Launcher"
+
+    
 }
 
 

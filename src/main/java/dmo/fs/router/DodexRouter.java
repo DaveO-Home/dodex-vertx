@@ -163,11 +163,11 @@ public class DodexRouter {
                             if (disconnectedUsers.size() > 0) {
                                 long key = 0;
                                 try {
-                                    key = dodexDatabase.addMessage(ws, messageUser, computedMessage);
+                                    key = dodexDatabase.addMessage(ws, messageUser, computedMessage, db);
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                 }
-                                dodexDatabase.addUndelivered(ws, disconnectedUsers, key);
+                                dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
                             }
                         }
                     }
@@ -189,7 +189,7 @@ public class DodexRouter {
                 messageUser.setPassword(id);
                 messageUser.setIp(ws.remoteAddress().toString());
 
-                resultUser = dodexDatabase.selectUser(messageUser, ws);
+                resultUser = dodexDatabase.selectUser(messageUser, ws, db);
                 try {
                     userJson = dodexDatabase.buildUsersJson(messageUser);
                 } catch (InterruptedException e) {

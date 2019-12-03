@@ -126,9 +126,14 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 
 	@Override
 	public Long addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException {
-		Disposable disposable = db.update(getInsertUser()).parameter("name", messageUser.getName())
-				.parameter("password", messageUser.getPassword()).parameter("ip", messageUser.getIp())
-				.returnGeneratedKeys().getAs(Long.class).doOnNext(k -> messageUser.setId(k)).subscribe(result -> {
+		Disposable disposable = db.update(getInsertUser())
+				.parameter("name", messageUser.getName())
+				.parameter("password", messageUser.getPassword())
+				.parameter("ip", messageUser.getIp())
+				.returnGeneratedKeys()
+				.getAs(Long.class)
+				.doOnNext(k -> messageUser.setId(k))
+				.subscribe(result -> {
 					//
 				}, throwable -> {
 					logger.error("{0}Error adding user{1}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
@@ -141,46 +146,12 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	}
 
 	@Override
-	public long deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException {
-		Disposable disposable = db.update(getDeleteUser()).parameter("name", messageUser.getName())
-				.parameter("password", messageUser.getPassword()).counts().subscribe(result -> {
-					messageUser.setId(Long.parseLong(result.toString()));
-				}, throwable -> {
-					logger.error("{0}Error deleting user{1} {2}",
-							new Object[] { ConsoleColors.RED, ConsoleColors.RESET, messageUser.getName() });
-					throwable.printStackTrace();
-					ws.writeTextMessage(throwable.getMessage());
-				});
-		await(disposable);
-
-		return messageUser.getId();
-	}
-
-	@Override
-	public long addMessage(ServerWebSocket ws, MessageUser messageUser, String message) throws InterruptedException {
-		List<Long> messageId = new ArrayList<>();
-		Database db = getDatabase();
-		Disposable disposable = db.update(getInsertMessage()).parameter("message", message)
-				.parameter("fromHandle", messageUser.getName()).returnGeneratedKeys().getAs(Long.class)
-				.doOnNext(k -> messageId.add(k)).subscribe(result -> {
-					//
-				}, throwable -> {
-					logger.error("{0}Error adding message:{1} {2}",
-							new Object[] { ConsoleColors.RED, ConsoleColors.RESET, message });
-					throwable.printStackTrace();
-					ws.writeTextMessage(throwable.getMessage());
-				});
-		await(disposable);
-		return messageId.get(0);
-	}
-
-	@Override
-	public int addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId) {
+	public int addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId, Database db) {
 		int count = 0;
 		try {
 			for (String name : undelivered) {
-				Long userId = getUserIdByName(name);
-				addUndelivered(userId, messageId);
+				Long userId = getUserIdByName(name, db);
+				addUndelivered(userId, messageId, db);
 				count++;
 			}
 		} catch (Exception e) {
@@ -190,9 +161,11 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	}
 
 	@Override
-	public Long getUserIdByName(String name) throws InterruptedException {
+	public Long getUserIdByName(String name, Database db) throws InterruptedException {
 		List<Long> userKey = new ArrayList<>();
-		Disposable disposable = getDatabase().select(getUserByName()).parameter("name", name).autoMap(Users.class)
+		Disposable disposable = db.select(getUserByName())
+				.parameter("name", name)
+				.autoMap(Users.class)
 				.doOnNext(result -> {
 					userKey.add(result.id());
 				}).subscribe(result -> {
@@ -207,20 +180,9 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	}
 
 	@Override
-	public void addUndelivered(Long userId, Long messageId) throws InterruptedException {
-		Database db = getDatabase();
-		Disposable disposable = db.update(getInsertUndelivered()).parameter("userid", userId)
-				.parameter("messageid", messageId).complete()
-				.doOnError(error -> logger.error("{0}Remove Undelivered Error: {1}{2}",
-						new Object[] { ConsoleColors.RED, error.getMessage(), ConsoleColors.RESET }))
-				.subscribe();
-		await(disposable);
-	}
-
-	@Override
-	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws) {
+	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) {
 		MessageUser resultUser = createMessageUser();
-		db = getDatabase();
+		// db = getDatabase();
 		db.select(Users.class).parameter(messageUser.getPassword()).get().isEmpty().doOnSuccess(empty -> {
 			if (empty) {
 				addUser(ws, db, messageUser);

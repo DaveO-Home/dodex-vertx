@@ -86,9 +86,13 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 		// dbProperties.setProperty("user", "myUser");
 		// dbProperties.setProperty("password", "myPassword");
 		// dbProperties.setProperty("ssl", "false")
+		dbProperties.setProperty("user", "daveo");
+		dbProperties.setProperty("password", "albatross");
+		dbProperties.setProperty("ssl", "false");
 
 		if(webEnv.equals("dev")) {
 			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
+			dbMap.put("dbname", "/daveo"); // this wiil be merged into the default map
 			DbConfiguration.configurePostgresTestDefaults(dbMap, dbProperties);
 		} else {
 			DbConfiguration.configurePostgresDefaults(dbMap, dbProperties); // Prod
@@ -155,6 +159,29 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 	}
 
 	@Override
+	public long addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws InterruptedException {
+		List<Long> messageId = new ArrayList<>();
+
+		Disposable disposable = db.update(getInsertMessage())
+				.parameter("message", message)
+				.parameter("fromHandle", messageUser.getName())
+				.parameter("postdate", ZonedDateTime.now())
+				.returnGeneratedKeys()
+				.getAs(Long.class)
+				.doOnNext(k -> messageId.add(k)).subscribe(result -> {
+					//
+				}, throwable -> {
+					logger.error("{0}Error adding message:{1} {2}",
+							new Object[] { ConsoleColors.RED, ConsoleColors.RESET, message });
+					throwable.printStackTrace();
+					ws.writeTextMessage(throwable.getMessage());
+				});
+		await(disposable);
+
+		return messageId.get(0);
+	}
+
+	@Override
 	public int addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId, Database db) {
 		int count = 0;
 		try {
@@ -172,8 +199,10 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 	@Override
 	public Long getUserIdByName(String name, Database db) throws InterruptedException {
 		List<Long> userKey = new ArrayList<>();
-		Disposable disposable = db.select(getUserByName()).parameter("name", name)
-				.autoMap(Users.class).doOnNext(result -> {
+		Disposable disposable = db.select(getUserByName()) //db.connection().blockingGet()))
+				.parameter("name", name)
+				.autoMap(Users.class)
+				.doOnNext(result -> {
 					userKey.add(result.id());
 				}).subscribe(result -> {
 					//
@@ -184,6 +213,7 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 		await(disposable);
 		return userKey.get(0);
 	}
+
 
 	@Override
 	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) {

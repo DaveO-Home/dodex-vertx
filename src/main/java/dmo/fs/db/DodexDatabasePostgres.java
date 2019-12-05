@@ -83,16 +83,13 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 	}
 
 	private void databaseSetup() throws InterruptedException {
+		// Override default credentials
 		// dbProperties.setProperty("user", "myUser");
 		// dbProperties.setProperty("password", "myPassword");
-		// dbProperties.setProperty("ssl", "false")
-		dbProperties.setProperty("user", "daveo");
-		dbProperties.setProperty("password", "albatross");
-		dbProperties.setProperty("ssl", "false");
-
+		// dbProperties.setProperty("ssl", "false");
+		
 		if(webEnv.equals("dev")) {
 			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
-			dbMap.put("dbname", "/daveo"); // this wiil be merged into the default map
 			DbConfiguration.configurePostgresTestDefaults(dbMap, dbProperties);
 		} else {
 			DbConfiguration.configurePostgresDefaults(dbMap, dbProperties); // Prod
@@ -115,14 +112,18 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 			// stat.executeUpdate("drop sequence users_id_seq;");
 			
 			String sql = getCreateTable("USERS");
+			// Set defined user
+			sql = sql.replaceAll("dummy", dbProperties.get("user").toString());
 			if (!tableExist(c.value(), "users")) {
 				stat.executeUpdate(sql);
 			}
 			sql = getCreateTable("MESSAGES");
+			sql = sql.replaceAll("dummy", dbProperties.get("user").toString());
 			if (!tableExist(c.value(), "messages")) {
 				stat.executeUpdate(sql);
 			}
 			sql = getCreateTable("UNDELIVERED");
+			sql = sql.replaceAll("dummy", dbProperties.get("user").toString());
 			if (!tableExist(c.value(), "undelivered")) {
 				stat.executeUpdate(sql);
 			}
@@ -199,7 +200,7 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 	@Override
 	public Long getUserIdByName(String name, Database db) throws InterruptedException {
 		List<Long> userKey = new ArrayList<>();
-		Disposable disposable = db.select(getUserByName()) //db.connection().blockingGet()))
+		Disposable disposable = db.select(getUserByName())
 				.parameter("name", name)
 				.autoMap(Users.class)
 				.doOnNext(result -> {

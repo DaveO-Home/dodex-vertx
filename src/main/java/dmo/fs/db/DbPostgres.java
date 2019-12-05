@@ -15,7 +15,7 @@ public abstract class DbPostgres extends DbDefinitionBase implements PostgresCon
 	private enum CreateTable {
 		CREATEUSERS(
 			"CREATE SEQUENCE public.users_id_seq INCREMENT 1 START 19 MINVALUE 1 MAXVALUE 2147483647 CACHE 1; " +	
-			"ALTER SEQUENCE public.users_id_seq OWNER TO daveo;" +
+			"ALTER SEQUENCE public.users_id_seq OWNER TO dummy;" +
 			"CREATE TABLE public.users" +
 				"(id integer NOT NULL DEFAULT nextval('users_id_seq'::regclass)," +
 				"name character varying(255) COLLATE pg_catalog.\"default\"," +
@@ -26,10 +26,10 @@ public abstract class DbPostgres extends DbDefinitionBase implements PostgresCon
 				"CONSTRAINT users_name_unique UNIQUE (name)," +
 				"CONSTRAINT users_password_unique UNIQUE (password))" +
 				"WITH (OIDS = FALSE) TABLESPACE pg_default;" +		
-			"ALTER TABLE public.users OWNER to daveo;"),
+			"ALTER TABLE public.users OWNER to dummy;"),
 		CREATEMESSAGES(
 			"CREATE SEQUENCE public.messages_id_seq INCREMENT 1 START 4 MINVALUE 1 MAXVALUE 2147483647 CACHE 1;" +
-			"ALTER SEQUENCE public.messages_id_seq OWNER TO daveo;" +
+			"ALTER SEQUENCE public.messages_id_seq OWNER TO dummy;" +
 			"CREATE TABLE public.messages" + 
 				"(id integer NOT NULL DEFAULT nextval('messages_id_seq'::regclass)," +
 				"message text COLLATE pg_catalog.\"default\"," +
@@ -37,7 +37,7 @@ public abstract class DbPostgres extends DbDefinitionBase implements PostgresCon
 				"post_date timestamp with time zone," +
 				"CONSTRAINT messages_pkey PRIMARY KEY (id))" +
 				"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
-			"ALTER TABLE public.messages OWNER to daveo;"),
+			"ALTER TABLE public.messages OWNER to dummy;"),
 		CREATEUNDELIVERED(
 			"CREATE TABLE public.undelivered" +
 				"(user_id integer, message_id integer," +
@@ -48,7 +48,7 @@ public abstract class DbPostgres extends DbDefinitionBase implements PostgresCon
 				"REFERENCES public.users (id) MATCH SIMPLE " +
 				"ON UPDATE NO ACTION ON DELETE NO ACTION NOT VALID)" +
 				"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
-			"ALTER TABLE public.undelivered OWNER to daveo;");
+			"ALTER TABLE public.undelivered OWNER to dummy;");
 
         private String sql;
 
@@ -59,7 +59,7 @@ public abstract class DbPostgres extends DbDefinitionBase implements PostgresCon
 
 	private enum UpdateTable {
 		INSERTUSER("insert into users(name, password, ip, last_login) values (:name, :password, :ip, :lastlogin )"),
-		INSERTMESSAGE("insert into messages(message, from_handle, post_date) values ( :message, :fromHandle, :postdate)");
+		INSERTMESSAGE("insert into messages(message, from_handle, post_date) values ( :message, :fromHandle, :postdate )");
 		private String sql;
 
 		private UpdateTable(String sql) {

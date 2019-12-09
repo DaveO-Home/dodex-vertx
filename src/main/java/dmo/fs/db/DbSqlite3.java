@@ -7,7 +7,7 @@ import java.util.Date;
 import org.davidmoten.rx.jdbc.annotations.Column;
 import org.davidmoten.rx.jdbc.annotations.Query;
 
-public class DbSqlite3 extends DbDefinitionBase  implements Sqlite3Constants {
+public abstract class DbSqlite3 extends DbDefinitionBase {
 	private final static String QUERYUSERS = "select * from users where password=?";
 	private final static String QUERYMESSAGES = "select * from messages where id=?";
 	private final static String QUERYUNDELIVERED = "Select message_id, name, message, from_handle, post_date from users, undelivered, messages where users.id = user_id and messages.id = message_id and users.id = :id";
@@ -23,44 +23,12 @@ public class DbSqlite3 extends DbDefinitionBase  implements Sqlite3Constants {
         }
     };
 
-	private enum UpdateTable {
-		INSERTUSER("insert into users values (null, :name, :password, :ip, " + new java.util.Date().getTime() + ")"),
-		INSERTMESSAGE("insert into messages values (null, :message, :fromHandle, " + new java.util.Date().getTime() + ")");
-		private String sql;
-
-		private UpdateTable(String sql) {
-			this.sql = sql;
-		}
-	}
-
 	public DbSqlite3() {
 		super();
 	}
 
 	public String getCreateTable(String table) {
 		return CreateTable.valueOf("CREATE"+table.toUpperCase()).sql;
-	}
-
-	@Override
-	public String getInsertUser() {
-		return UpdateTable.valueOf("INSERTUSER").sql;
-	}
-
-	@Override
-	public String getInsertMessage() {
-		return UpdateTable.valueOf("INSERTMESSAGE").sql;
-	}
-
-	public Class<Users> getUsersClass() {
-		return Users.class;
-	}
-
-	public <T> Class<Undelivered> getUndeliveredClass() {
-		return Undelivered.class;
-	}
-	@Override
-	public Class<Messages> getMessagesClass() {
-		return Messages.class;
 	}
 
 	@Query(QUERYUSERS)

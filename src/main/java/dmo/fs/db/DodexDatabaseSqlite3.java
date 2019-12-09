@@ -44,7 +44,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	protected DodexUtil dodexUtil = new DodexUtil();
 
 	public DodexDatabaseSqlite3(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
-			throws InterruptedException, IOException {
+			throws InterruptedException, IOException, SQLException {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
@@ -53,7 +53,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
-
+		
 		if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
 			this.dbProperties = dbOverrideProps;
 		}
@@ -61,11 +61,13 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 			this.dbOverrideMap = dbOverrideMap;
 		}
 
+		dbProperties.setProperty("foreign_keys", "true");
+
 		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
 		databaseSetup();
 	}
 
-	public DodexDatabaseSqlite3() throws InterruptedException, IOException {
+	public DodexDatabaseSqlite3() throws InterruptedException, IOException, SQLException {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
@@ -73,6 +75,8 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
+		
+		dbProperties.setProperty("foreign_keys", "true");
 
 		databaseSetup();
 	}
@@ -82,7 +86,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		return super.getAllUsers();
 	}
 
-	private void databaseSetup() throws InterruptedException {
+	private void databaseSetup() throws InterruptedException, SQLException {
 		if (webEnv.equals("dev")) {
 			DbConfiguration.configureSqlite3TestDefaults(dbMap, dbProperties);
 		} else {
@@ -122,27 +126,8 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 			throwable.printStackTrace();
 		});
 		await(disposable);
-	}
-
-	@Override
-	public Long addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException {
-		Disposable disposable = db.update(getInsertUser())
-				.parameter("name", messageUser.getName())
-				.parameter("password", messageUser.getPassword())
-				.parameter("ip", messageUser.getIp())
-				.returnGeneratedKeys()
-				.getAs(Long.class)
-				.doOnNext(k -> messageUser.setId(k))
-				.subscribe(result -> {
-					//
-				}, throwable -> {
-					logger.error("{0}Error adding user{1}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
-					throwable.printStackTrace();
-					ws.writeTextMessage(throwable.getMessage());
-				});
-		await(disposable);
-
-		return messageUser.getId();
+		// generate all jooq sql only once.
+		setupSql(db);
 	}
 
 	@Override
@@ -163,8 +148,9 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	@Override
 	public Long getUserIdByName(String name, Database db) throws InterruptedException {
 		List<Long> userKey = new ArrayList<>();
+
 		Disposable disposable = db.select(getUserByName())
-				.parameter("name", name)
+				.parameter("NAME", name)
 				.autoMap(Users.class)
 				.doOnNext(result -> {
 					userKey.add(result.id());
@@ -182,7 +168,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	@Override
 	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) {
 		MessageUser resultUser = createMessageUser();
-		// db = getDatabase();
+
 		db.select(Users.class).parameter(messageUser.getPassword()).get().isEmpty().doOnSuccess(empty -> {
 			if (empty) {
 				addUser(ws, db, messageUser);
@@ -212,7 +198,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	}
 
 	@Override
-	public StringBuilder buildUsersJson(MessageUser messageUser) throws InterruptedException {
+	public StringBuilder buildUsersJson(MessageUser messageUser) throws InterruptedException, SQLException {
 		StringBuilder userJson = new StringBuilder();
 		ObjectMapper mapper = new ObjectMapper();
 
@@ -240,7 +226,9 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		userJson.append("[");
 		delimiter.add("");
 
-		Disposable disposable = db.select(getAllUsers()).parameter("name", messageUser.getName()).autoMap(Users.class)
+		Disposable disposable = db.select(getAllUsers())
+				.parameter("NAME", messageUser.getName())
+				.autoMap(Users.class)
 				.doOnNext(result -> {
 					// build json = ["name": "user1", "name": "user2", etc...]
 					user.setName(result.name());
@@ -267,14 +255,18 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		@Override
 		public void run() throws Exception {
 			for (Long messageId : messageIds) {
-				Disposable disposable = db.update(getRemoveUndelivered()).parameter("userid", userId)
-						.parameter("messageid", messageId).counts().doOnNext(c -> count += c).subscribe(result -> {
-							//
-						}, throwable -> {
-							logger.error("{0}Error removing undelivered record{1}",
-									new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
-							throwable.printStackTrace();
-						});
+				Disposable disposable = db.update(getRemoveUndelivered())
+					.parameter("USERID", userId)
+					.parameter("MESSAGEID", messageId)
+					.counts()
+					.doOnNext(c -> count += c)
+					.subscribe(result -> {
+						//
+					}, throwable -> {
+						logger.error("{0}Error removing undelivered record{1}",
+								new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
+						throwable.printStackTrace();
+					});
 				await(disposable);
 			}
 		}
@@ -296,11 +288,18 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		@Override
 		public void run() throws Exception {
 			for (Long messageId : messageIds) {
-				Disposable disposable = db.select(getUndeliveredMessage()).parameter("userid", userId)
-						.parameter("messageid", messageId).getAs(Undelivered.class).isEmpty().doOnSuccess(empty -> {
+				Disposable disposable = db.select(getUndeliveredMessage())
+						.parameter("USERID", userId)
+						.parameter("MESSAGEID", messageId)
+						.getAs(Undelivered.class)
+						.isEmpty()
+						.doOnSuccess(empty -> {
 							if (empty) {
-								Disposable disposable2 = db.update(getRemoveMessage()).parameter("messageid", messageId)
-										.counts().doOnNext(c -> count += c).subscribe(result -> {
+								Disposable disposable2 = db.update(getRemoveMessage())
+										.parameter("MESSAGEID", messageId)
+										.counts()
+										.doOnNext(c -> count += c)
+										.subscribe(result -> {
 											//
 										}, throwable -> {
 											logger.error("{0}Error removing undelivered message{1}",

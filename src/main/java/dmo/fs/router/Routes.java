@@ -1,6 +1,7 @@
 package dmo.fs.router;
 
 import java.io.IOException;
+import java.sql.SQLException;
 
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Vertx;
@@ -19,7 +20,7 @@ public class Routes {
 	protected Router router;
 	protected HttpServer server;
 
-	public Routes(Vertx vertx, HttpServer server) throws InterruptedException, IOException {
+	public Routes(Vertx vertx, HttpServer server) throws InterruptedException, IOException, SQLException {
 		this.vertx = vertx;
 		router = Router.router(vertx);
 		this.server = server;
@@ -73,7 +74,7 @@ public class Routes {
 		router.route().handler(faviconHandler);
 	}
 
-	public void setDodexRoute() throws InterruptedException, IOException {
+	public void setDodexRoute() throws InterruptedException, IOException, SQLException {
 		DodexRouter dodexRouter = new DodexRouter(vertx);
 		dodexRouter.setWebSocket(server);
 	}

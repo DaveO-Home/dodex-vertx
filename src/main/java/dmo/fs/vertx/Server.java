@@ -12,6 +12,7 @@ import io.vertx.ext.web.Route;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.sql.SQLException;
 import java.util.List;
 
 import dmo.fs.router.Routes;
@@ -34,7 +35,8 @@ public class Server extends AbstractVerticle {
   private static String OS = System.getProperty("os.name").toLowerCase();
   private HttpServer server;
 
-  public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException, IOException {
+  public void start(Promise<Void> promise) 
+      throws InterruptedException, URISyntaxException, IOException, SQLException {
 
     if (isUnix()) {
       server = configureLinuxOptions(vertx, true, true, true, true);

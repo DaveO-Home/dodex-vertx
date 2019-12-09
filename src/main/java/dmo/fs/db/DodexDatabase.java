@@ -1,5 +1,6 @@
 package dmo.fs.db;
 
+import java.sql.SQLException;
 import java.util.List;
 
 import org.davidmoten.rx.jdbc.Database;
@@ -11,17 +12,29 @@ public interface DodexDatabase {
 
 	public String getAllUsers();
 
-	public Long addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException;
+	public String getUserByName();
 
-	public long deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException;
+    public String getInsertUser();
+    
+	public String getRemoveUndelivered();
 
-	public long addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws InterruptedException;
+	public String getRemoveMessage();
 
-	public int addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId, Database db);
+    public String getUndeliveredMessage();
+	
+	public String getDeleteUser();
 
-	public Long getUserIdByName(String name, Database db) throws InterruptedException;
+	public Long addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
 
-	public void addUndelivered(Long userId, Long messageId, Database db) throws InterruptedException;
+	public long deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
+
+	public long addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws SQLException, InterruptedException;
+
+	public int addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId, Database db) throws SQLException;
+
+	public Long getUserIdByName(String name, Database db) throws InterruptedException, SQLException;
+
+	public void addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException;
 
 	public int processUserMessages(ServerWebSocket ws, MessageUser messageUser);
 
@@ -33,6 +46,6 @@ public interface DodexDatabase {
 
 	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db);
 
-	public StringBuilder buildUsersJson(MessageUser messageUser) throws InterruptedException;
+	public StringBuilder buildUsersJson(MessageUser messageUser) throws InterruptedException, SQLException;
 
 }

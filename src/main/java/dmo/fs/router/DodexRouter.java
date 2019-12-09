@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
@@ -39,16 +40,15 @@ public class DodexRouter {
         this.vertx = vertx;
     }
 
-    public void setWebSocket(HttpServer server) throws InterruptedException, IOException {
+    public void setWebSocket(HttpServer server) throws InterruptedException, IOException, SQLException {
         dodexDatabase = DbConfiguration.getDefaultDb();
-        
+
         /*
-            You can customize the db config here by: Map = db config, Properties = credentials
-            Map overrideMap = new Map();
-            Properties overrideProperties = new Properties();
-            // set override or additional values...
-            dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
-        */
+         * You can customize the db config here by: Map = db config, Properties =
+         * credentials Map overrideMap = new Map(); Properties overrideProperties = new
+         * Properties(); // set override or additional values... dodexDatabase =
+         *      DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
+         */
 
         SharedData sd = vertx.sharedData();
         String startupMessage = "In Production";
@@ -111,7 +111,7 @@ public class DodexRouter {
                         if (command != null && command.equals(";removeuser")) {
                             try {
                                 dodexDatabase.deleteUser(ws, db, messageUser);
-                            } catch (InterruptedException e) {
+                            } catch (InterruptedException | SQLException e) {
                                 e.printStackTrace();
                                 ws.writeTextMessage("Your Previous handle did not delete: " + e.getMessage());
                             }
@@ -164,10 +164,14 @@ public class DodexRouter {
                                 long key = 0;
                                 try {
                                     key = dodexDatabase.addMessage(ws, messageUser, computedMessage, db);
-                                } catch (InterruptedException e) {
+                                } catch (InterruptedException | SQLException e) {
                                     e.printStackTrace();
                                 }
-                                dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
+                                try {
+                                    dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
+                                } catch (SQLException e) {
+                                    e.printStackTrace();
+                                }
                             }
                         }
                     }
@@ -192,7 +196,7 @@ public class DodexRouter {
                 resultUser = dodexDatabase.selectUser(messageUser, ws, db);
                 try {
                     userJson = dodexDatabase.buildUsersJson(messageUser);
-                } catch (InterruptedException e) {
+                } catch (InterruptedException | SQLException e) {
                     e.printStackTrace();
                 }
                 

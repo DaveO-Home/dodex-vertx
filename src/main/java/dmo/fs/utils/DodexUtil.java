@@ -12,6 +12,8 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import org.jooq.SQLDialect;
+
 import dmo.fs.db.MessageUser;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.http.ServerWebSocket;
@@ -188,5 +190,23 @@ public class DodexUtil {
         }
 
 		return properties;
-	  }
+      }
+
+      public static SQLDialect getSqlDialect() {
+        DodexUtil dodexUtil = new DodexUtil();
+        String database = null;
+        try {
+            database = dodexUtil.getDefaultDb();
+            database = database.equals("sqlite3")? "SQLITE": database.toUpperCase();
+            for (SQLDialect sqlDialect : SQLDialect.values()) {
+                if(database.equals(sqlDialect.name())) {
+                    return sqlDialect;
+                }
+            };
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return SQLDialect.DEFAULT;
+      }
 }

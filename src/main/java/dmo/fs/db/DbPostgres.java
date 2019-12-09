@@ -7,7 +7,7 @@ import java.sql.Timestamp;
 import org.davidmoten.rx.jdbc.annotations.Column;
 import org.davidmoten.rx.jdbc.annotations.Query;
 
-public abstract class DbPostgres extends DbDefinitionBase implements PostgresConstants {
+public abstract class DbPostgres extends DbDefinitionBase {
 	private final static String QUERYUSERS = "select * from users where password=?";
 	private final static String QUERYMESSAGES = "select * from messages where id=?";
 	private final static String QUERYUNDELIVERED = "Select message_id, name, message, from_handle, post_date from users, undelivered, messages where users.id = user_id and messages.id = message_id and users.id = :id";
@@ -57,43 +57,12 @@ public abstract class DbPostgres extends DbDefinitionBase implements PostgresCon
         }
     };
 
-	private enum UpdateTable {
-		INSERTUSER("insert into users(name, password, ip, last_login) values (:name, :password, :ip, :lastlogin )"),
-		INSERTMESSAGE("insert into messages(message, from_handle, post_date) values ( :message, :fromHandle, :postdate )");
-		private String sql;
-
-		private UpdateTable(String sql) {
-			this.sql = sql;
-		}
-	}
-
 	public DbPostgres() {
 		super();
 	}
 
 	public String getCreateTable(String table) {
 		return CreateTable.valueOf("CREATE"+table.toUpperCase()).sql;
-	}
-	@Override
-	public String getInsertUser() {
-		return UpdateTable.valueOf("INSERTUSER").sql;
-	}
-
-	@Override
-	public String getInsertMessage() {
-		return UpdateTable.valueOf("INSERTMESSAGE").sql;
-	}
-
-	public <T> Class<Users> getUsersClass() {
-		return Users.class;
-	}
-
-	public <T> Class<Undelivered> getUndeliveredClass() {
-		return Undelivered.class;
-	}
-
-	public <T> Class<Messages> getMessagesClass() {
-		return Messages.class;
 	}
 
 	@Query(QUERYUSERS)

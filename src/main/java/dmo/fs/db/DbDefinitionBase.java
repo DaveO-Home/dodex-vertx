@@ -1,86 +1,184 @@
 
 package dmo.fs.db;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.davidmoten.rx.jdbc.Database;
+import org.jooq.DSLContext;
 
 import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import static org.jooq.impl.DSL.*;
+import org.jooq.impl.DSL;
 
 public abstract class DbDefinitionBase {
 	private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
-	
-	private enum SelectTable {
-		GETALLUSERS("select id, name, password, ip, last_login from users where name <> :name"),
-		GETUSER("select  id, name, password, ip, last_login from users where name=:name"),
-		GETUSERMESSAGES("Select name, message, from_handle, post_date from users, undelivered, messages where users.id = user_id and messages.id = message_id and user.id = :id"),
-		GETUNDELIVEREDMESSAGE("Select user_id, message_id from messages, undelivered where user_id = :userid and message_id = id and id = :messageid");
-		private String sql;
 
-		private SelectTable(String sql) {
-			this.sql = sql;
-		}
+	private DSLContext create = null;
+
+	private String GETALLUSERS = null;
+	private String GETUSERBYNAME = null;
+	private String GETINSERTUSER = null;
+	private String GETREMOVEUNDELIVERED = null;
+	private String GETREMOVEMESSAGE = null;
+	private String GETUNDELIVEREDMESSAGE = null;
+	private String GETDELETEUSER = null;
+	private String GETADDMESSAGE = null;
+	private String GETADDUNDELIVERED = null;
+
+	public void setupSql(Database db) throws SQLException {
+		Connection conn = db.connection().blockingGet();
+		create = DSL.using(conn, DodexUtil.getSqlDialect());
+
+		GETALLUSERS = setupAllUsers();
+		GETUSERBYNAME = setupUserByName();
+		GETINSERTUSER = setupInsertUser();
+		GETREMOVEUNDELIVERED = setupRemoveUndelivered();
+		GETREMOVEMESSAGE = setupRemoveMessage();
+		GETUNDELIVEREDMESSAGE = setupUndeliveredMessage();
+		GETDELETEUSER = setupDeleteUser();
+		GETADDMESSAGE = setupAddMessage();
+		GETADDUNDELIVERED = setupAddUndelivered();
+
+		conn.close();
 	}
-	
-	private enum UpdateTable {
-		INSERTUSER("insert into users values (null, :name, :password, :ip, " + new java.util.Date().getTime() + ")"),
-		DELETEUSER("delete from users where name = :name and password = :password"),
-		INSERTMESSAGE("insert into messages values (null, :message, :fromHandle, " + new java.util.Date().getTime() + ")"),
-		INSERTUNDELIVERED("insert into undelivered values (:userid, :messageid)"),
-		DELETEUNDELIVERED("delete from undelivered where user_id = :userid and message_id = :messageid"),
-		DELETEMESSAGE("delete from messages where id = :messageid and (select count(id) from messages, undelivered where id = message_id and id = :messageid) = 0");
-		private String sql;
 
-		private UpdateTable(String sql) {
-			this.sql = sql;
-		}
+	private String setupAllUsers() {
+		String sql = create.renderNamedParams(
+				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
+                   .from(table("USERS"))
+                   .where(field("NAME").ne(param("NAME",":name"))));
+
+		return sql;
 	}
 
 	public String getAllUsers() {
-		return SelectTable.valueOf("GETALLUSERS").sql;
+		return GETALLUSERS;
+	}
+
+	private String setupUserByName() {
+		String sql = create.renderNamedParams(
+				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
+                   .from(table("USERS"))
+                   .where(field("NAME").eq(param("NAME",":name"))));
+
+	   return sql;
 	}
 
 	public String getUserByName() {
-		return SelectTable.valueOf("GETUSER").sql;
+		return GETUSERBYNAME;	
+	}
+
+	private String setupInsertUser() {
+		String sql = create.renderNamedParams(insertInto(table("USERS"))
+			.columns(field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
+			.values(
+				param("NAME", ":name"), 
+				param("PASSWORD", ":password"), 
+				param("IP", ":ip"), 
+				param("LASTLOGIN", ":lastlogin")));
+
+		return sql;
 	}
 
 	public String getInsertUser() {
-		return UpdateTable.valueOf("INSERTUSER").sql;
+		return GETINSERTUSER;	
 	}
 
-	public String getDeleteUser() {
-		return UpdateTable.valueOf("DELETEUSER").sql;
-	}
-
-	public String getInsertMessage() {
-		return UpdateTable.valueOf("INSERTMESSAGE").sql;
-	}
-
-	public String getInsertUndelivered() {
-		return UpdateTable.valueOf("INSERTUNDELIVERED").sql;
+	private String setupRemoveUndelivered() {
+		String sql = create.renderNamedParams(deleteFrom(table("UNDELIVERED"))
+			.where(field("USER_ID")
+				.eq(param("USERID",":userid")), field("MESSAGE_ID")
+				.eq(param("MESSAGEID",":messageid"))));
+		
+		return sql;
 	}
 
 	public String getRemoveUndelivered() {
-		return UpdateTable.valueOf("DELETEUNDELIVERED").sql;
+		return GETREMOVEUNDELIVERED;	
+	}
+
+	private String setupRemoveMessage() {
+		String sql = create.render(deleteFrom(table("MESSAGES"))
+			.where(
+				create.renderNamedParams(field("ID").eq(param("MESSAGEID", ":messageid"))
+					.and(create.renderNamedParams(notExists(select().from(table("MESSAGES"))
+						.join(table("UNDELIVERED"))
+						.on(field("ID").eq(field("MESSAGE_ID")))
+						.and(field("ID").eq(param("MESSAGEID", ":messageid")))
+					))))
+			));
+
+		return sql;
 	}
 
 	public String getRemoveMessage() {
-		return UpdateTable.valueOf("DELETEMESSAGE").sql;
+		return GETREMOVEMESSAGE;	
 	}
 
-	public String getUndeliveredMessage() {
-		return SelectTable.valueOf("GETUNDELIVEREDMESSAGE").sql;
+	private String setupUndeliveredMessage() {
+		String sql = create.renderNamedParams(select(field("USER_ID"), field("MESSAGE_ID"))
+					.from(table("MESSAGES"))
+					.join(table("UNDELIVERED"))
+					.on(field("ID").eq(field("MESSAGE_ID")))
+					.and(field("ID").eq(param("MESSAGEID", ":messageid")))
+					.and(field("USER_ID").eq(param("USERID", ":userid")))
+				);
+
+		return sql;
     }
 
-	public long deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException {
+	public String getUndeliveredMessage() {
+		return GETUNDELIVEREDMESSAGE;	
+	}
+
+	public Long addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException, SQLException {
+		Disposable disposable = db.update(getInsertUser())
+				.parameter("NAME", messageUser.getName())
+				.parameter("PASSWORD", messageUser.getPassword())
+				.parameter("IP", messageUser.getIp())
+				.parameter("LASTLOGIN", new Timestamp(new Date().getTime())) // ZonedDateTime.now())
+				.returnGeneratedKeys()
+				.getAs(Long.class)
+				.doOnNext(k -> messageUser.setId(k))
+				.subscribe(result -> {
+					//
+				}, throwable -> {
+					logger.error("{0}Error adding user{1}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
+					throwable.printStackTrace();
+					ws.writeTextMessage(throwable.getMessage());
+				});
+		await(disposable);
+
+		return messageUser.getId();
+	}
+
+	private String setupDeleteUser() {
+		String sql = create.renderNamedParams(deleteFrom(table("USERS"))
+			.where(field("NAME")
+				.eq(param("NAME",":name")), field("PASSWORD")
+				.eq(param("PASSWORD",":password"))));
+
+		return sql;
+	}
+
+	public String getDeleteUser() {
+		return GETDELETEUSER;
+	}
+
+	public long deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException, SQLException {
 		Disposable disposable = db.update(getDeleteUser())
-				.parameter("name", messageUser.getName())
-				.parameter("password", messageUser.getPassword())
+				.parameter("NAME", messageUser.getName())
+				.parameter("PASSWORD", messageUser.getPassword())
 				.counts()
 				.subscribe(result -> {
 					messageUser.setId(Long.parseLong(result.toString()));
@@ -94,11 +192,27 @@ public abstract class DbDefinitionBase {
 		return messageUser.getId();
 	}
 
-	public long addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws InterruptedException {
-		List<Long> messageId = new ArrayList<>();
+	private String setupAddMessage() {
+		String sql = create.renderNamedParams(insertInto(table("MESSAGES"))
+			.columns(field("MESSAGE"), field("FROM_HANDLE"), field("POST_DATE"))
+			.values(param("MESSAGE", ":message"), param("FROMHANDLE", ":fromHandle"), param("POSTDATE", ":postdate")));
 
-		Disposable disposable = db.update(getInsertMessage()).parameter("message", message)
-				.parameter("fromHandle", messageUser.getName()).returnGeneratedKeys().getAs(Long.class)
+		return sql;
+	}
+
+	public String getAddMessage() {
+		return GETADDMESSAGE;
+	}
+
+	public long addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws InterruptedException, SQLException {
+		List<Long> messageId = new ArrayList<>();
+		
+		Disposable disposable = db.update(getAddMessage())
+				.parameter("MESSAGE", message)
+				.parameter("FROMHANDLE", messageUser.getName())
+				.parameter("POSTDATE", new Timestamp(new Date().getTime()))
+				.returnGeneratedKeys()
+				.getAs(Long.class)
 				.doOnNext(k -> messageId.add(k)).subscribe(result -> {
 					//
 				}, throwable -> {
@@ -112,11 +226,22 @@ public abstract class DbDefinitionBase {
 		return messageId.get(0);
 	}
 
-	public void addUndelivered(Long userId, Long messageId, Database db) throws InterruptedException {
-		// Database db = getDatabase();
-		Disposable disposable = db.update(getInsertUndelivered())
-				.parameter("userid", userId)
-				.parameter("messageid", messageId)
+	private String setupAddUndelivered() {
+		String sql = create.renderNamedParams(insertInto(table("UNDELIVERED"))
+			.columns(field("USER_ID"), field("MESSAGE_ID"))
+			.values(param("USERID", ":userid"), param("MESSAGEID", ":messageid")));
+		
+		return sql;
+	}
+
+	public String getAddUndelivered() {
+		return GETADDUNDELIVERED;
+	}
+
+	public void addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException {
+		Disposable disposable = db.update(getAddUndelivered())
+				.parameter("USERID", userId)
+				.parameter("MESSAGEID", messageId)
 				.complete()
 				.doOnError(error -> logger.error("{0}Remove Undelivered Error: {1}{2}", new Object[] { ConsoleColors.RED, error.getMessage(), ConsoleColors.RESET }))
 				.subscribe();

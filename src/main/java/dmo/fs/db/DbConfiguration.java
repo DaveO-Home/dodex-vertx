@@ -1,6 +1,7 @@
 package dmo.fs.db;
 
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -44,7 +45,7 @@ public class DbConfiguration {
         return isUsingPostgres;
     }
 
-    public static DodexDatabase getDefaultDb() throws InterruptedException, IOException {
+    public static DodexDatabase getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb();
 
         if(defaultDb.equals("postgres")) {
@@ -55,7 +56,7 @@ public class DbConfiguration {
         throw new InterruptedException("No Database set");
     }
 
-    public static DodexDatabase getDefaultDb(Map<String, String>overrideMap, Properties overrideProps) throws InterruptedException, IOException {
+    public static DodexDatabase getDefaultDb(Map<String, String>overrideMap, Properties overrideProps) throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb();
         
         if(defaultDb.equals("postgres")) {

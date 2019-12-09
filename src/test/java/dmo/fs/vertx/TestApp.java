@@ -99,24 +99,28 @@ class DbTest extends DbDefinitionBase {
     DodexDatabase dodexDatabase = null;
 
     @BeforeAll
-    @Test
-    void testDatabaseSetup() throws InterruptedException, IOException {
+    // @Test
+    void testDatabaseSetup() throws InterruptedException, IOException, SQLException {
         String whichDb = "sqlite3"; // postgres || sqlite3
         if (System.getenv("DEFAULT_DB") != null) {
             whichDb = System.getenv("DEFAULT_DB");
         }
         Properties props = new Properties();
-        // props.setProperty("user", "myUser");
-        // props.setProperty("password", "myPassword");
-        // props.setProperty("ssl", "false");    
+        props.setProperty("user", "user");
+        props.setProperty("password", "password");
+        props.setProperty("ssl", "false");
 
         if (whichDb.equals("sqlite3")) {
             dodexDatabase = new DodexDatabaseSqlite3();
             cp = DbConfiguration.getSqlite3ConnectionProvider();
         } else {
-            Map<String,String>overrideMap = new HashMap<>();
-            // overrideMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
-            dodexDatabase = new DodexDatabasePostgres(overrideMap, props);
+            Map<String, String> overrideMap = new HashMap<>();
+            overrideMap.put("dbname", "/dodex"); // this wiil be merged into the default map
+            try {
+                dodexDatabase = new DodexDatabasePostgres(overrideMap, props);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             cp = DbConfiguration.getPostgresConnectionProvider();
         }
 
@@ -204,9 +208,10 @@ class DbTest extends DbDefinitionBase {
     @Test
     void deleteUserFromDatabase() {
         messageUser.setId(-1l);
-        Disposable disposable = db.update(getDeleteUser())
-                .parameter("name", messageUser.getName())
-                .parameter("password", messageUser.getPassword())
+        
+        Disposable disposable = db.update(dodexDatabase.getDeleteUser())
+                .parameter("NAME", messageUser.getName())
+                .parameter("PASSWORD", messageUser.getPassword())
                 .counts()
                 .subscribe(result -> {
                     messageUser.setId(Long.parseLong(result.toString()));

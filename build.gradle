@@ -14,6 +14,8 @@ plugins {
     id 'application'
 
     id 'com.github.johnrengelman.shadow' version '5.1.0'
+
+    id 'nu.studer.jooq' version '3.0.3'
 }
 
 repositories {
@@ -31,8 +33,14 @@ version = "3.8.3"
 ext {
     vertxVersion = "3.8.3"
     junitJupiterEngineVersion = "5.4.0"
+    jooqVersion = "3.12.3"
 }
 sourceCompatibility = "1.8"
+
+jooq {
+  version = "3.12.3"
+  edition = "OSS"
+}
 
 dependencies {
     implementation "io.vertx:vertx-core:$version"
@@ -43,6 +51,7 @@ dependencies {
     implementation "org.slf4j:slf4j-jcl:1.7.28"
     implementation "org.postgresql:postgresql:42.2.8"
     implementation group:"org.xerial", name:"sqlite-jdbc", version:"3.28.0"
+    implementation "org.jooq:jooq"
 
     // This dependency is used by the application.
     implementation "com.google.guava:guava:28.0-jre"
@@ -64,6 +73,8 @@ application {
 def mainVerticleName = "dmo.fs.vertx.Server"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = 'src/**/*.java'
+
+apply plugin: 'nu.studer.jooq'
 
 run {
     environment "VERTXWEB_ENVIRONMENT", "dev"

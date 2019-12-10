@@ -29,7 +29,7 @@
             "config": {
                 "host": "//localhost",
                 "url": "jdbc:postgresql:",
-                "dbname": "/test"
+                "dbname": "/daveo"
             }
         },
         "prod": { 
@@ -42,6 +42,32 @@
                 "host": "//localhost",
                 "url": "jdbc:postgresql:",
                 "dbname": "/dodex"
+            }
+        }
+    },
+    "cubrid": {
+        "dev": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "localhost:33000:",
+                "url": "jdbc:cubrid:",
+                "dbname": "test:public::"
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "localhost:33000",
+                "url": "jdbc:CUBRID:",
+                "dbname": "dodex:public::"
             }
         }
     }

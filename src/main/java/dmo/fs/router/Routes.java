@@ -14,8 +14,7 @@ import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.TimeoutHandler;
 
 public class Routes {
-	// private final static Logger logger =
-	// LoggerFactory.getLogger(Routes.class.getName());
+	// private final static Logger logger = LoggerFactory.getLogger(Routes.class.getName());
 	protected Vertx vertx;
 	protected Router router;
 	protected HttpServer server;

@@ -16,7 +16,7 @@ import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.DodexDatabasePostgres;
 import dmo.fs.db.DodexDatabaseSqlite3;
 import dmo.fs.db.MessageUser;
-import dmo.fs.db.DbPostgres.Users;
+import dmo.fs.db.JavaRxDateDb.Users;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
@@ -106,7 +106,7 @@ class DbTest extends DbDefinitionBase {
             whichDb = System.getenv("DEFAULT_DB");
         }
         Properties props = new Properties();
-        props.setProperty("user", "user");
+        props.setProperty("user", "daveo");
         props.setProperty("password", "password");
         props.setProperty("ssl", "false");
 
@@ -115,7 +115,7 @@ class DbTest extends DbDefinitionBase {
             cp = DbConfiguration.getSqlite3ConnectionProvider();
         } else {
             Map<String, String> overrideMap = new HashMap<>();
-            overrideMap.put("dbname", "/dodex"); // this wiil be merged into the default map
+            overrideMap.put("dbname", "/test"); // this wiil be merged into the default map
             try {
                 dodexDatabase = new DodexDatabasePostgres(overrideMap, props);
             } catch (Exception e) {

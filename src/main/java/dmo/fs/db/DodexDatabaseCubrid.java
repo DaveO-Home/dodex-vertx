@@ -23,8 +23,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseSqlite3.class.getName());
+public class DodexDatabaseCubrid extends DbCubrid implements DodexDatabase {
+	private final static Logger logger = LoggerFactory.getLogger(DodexDatabasePostgres.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;
 	protected NonBlockingConnectionPool pool;
@@ -36,7 +36,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
 
-	public DodexDatabaseSqlite3(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+	public DodexDatabaseCubrid(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
 			throws InterruptedException, IOException, SQLException {
 		super();
 
@@ -47,20 +47,18 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
 		
-		if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
+		if (dbOverrideProps != null) {
 			this.dbProperties = dbOverrideProps;
 		}
 		if (dbOverrideMap != null) {
 			this.dbOverrideMap = dbOverrideMap;
 		}
 
-		dbProperties.setProperty("foreign_keys", "true");
-
 		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
 		databaseSetup();
 	}
 
-	public DodexDatabaseSqlite3() throws InterruptedException, IOException, SQLException {
+	public DodexDatabaseCubrid() throws InterruptedException, IOException, SQLException {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
@@ -68,8 +66,6 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
-		
-		dbProperties.setProperty("foreign_keys", "true");
 
 		databaseSetup();
 		setDatabase(db);
@@ -81,28 +77,40 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	}
 
 	private void databaseSetup() throws InterruptedException, SQLException {
-		if (webEnv.equals("dev")) {
-			DbConfiguration.configureSqlite3TestDefaults(dbMap, dbProperties);
+		// Override default credentials
+		// dbProperties.setProperty("user", "myUser");
+		// dbProperties.setProperty("password", "myPassword");
+		// dbProperties.setProperty("ssl", "false");
+		
+		if(webEnv.equals("dev")) {
+			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
+			DbConfiguration.configureCubridTestDefaults(dbMap, dbProperties);
 		} else {
-			DbConfiguration.configureSqlite3Defaults(dbMap, dbProperties); // Using prod (./dodex.db)
+			DbConfiguration.configureCubridDefaults(dbMap, dbProperties); // Prod
 		}
-		cp = DbConfiguration.getSqlite3ConnectionProvider();
+		cp = DbConfiguration.getCubridConnectionProvider();
 
-		pool = Pools.nonBlocking().maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
+		pool = Pools.nonBlocking()
+				.maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
 				.build();
-
+		
 		db = Database.from(pool);
-
+		
 		Disposable disposable = db.member().doOnSuccess(c -> {
 			Statement stat = c.value().createStatement();
-
-			// stat.executeUpdate("drop table users");
-			// stat.executeUpdate("drop table messages");
-			// stat.executeUpdate("drop table undelivered");
+			// try {
+			// 	stat.executeUpdate("drop table undelivered");
+			// 	stat.executeUpdate("drop table users");
+			// 	stat.executeUpdate("drop table messages");
+			// } catch(Exception e) {
+			// 	e.printStackTrace();
+			// }
 
 			String sql = getCreateTable("USERS");
+			// Set defined user
 			if (!tableExist(c.value(), "users")) {
 				stat.executeUpdate(sql);
+				stat.executeUpdate("CREATE UNIQUE INDEX u_users_name ON users ([name], [password]);");
 			}
 			sql = getCreateTable("MESSAGES");
 			if (!tableExist(c.value(), "messages")) {
@@ -123,12 +131,12 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		// generate all jooq sql only once.
 		setupSql(db);
 	}
-	
+
 	@Override
 	public Database getDatabase() {
 		return Database.from(pool);
 	}
-
+	
 	@Override
 	public NonBlockingConnectionPool getPool() {
 		return pool;

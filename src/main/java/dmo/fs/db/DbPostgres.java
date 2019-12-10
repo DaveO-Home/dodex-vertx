@@ -1,17 +1,8 @@
 
 package dmo.fs.db;
 
-import java.sql.Clob;
-import java.sql.Timestamp;
-
-import org.davidmoten.rx.jdbc.annotations.Column;
-import org.davidmoten.rx.jdbc.annotations.Query;
-
-public abstract class DbPostgres extends DbDefinitionBase {
-	private final static String QUERYUSERS = "select * from users where password=?";
-	private final static String QUERYMESSAGES = "select * from messages where id=?";
-	private final static String QUERYUNDELIVERED = "Select message_id, name, message, from_handle, post_date from users, undelivered, messages where users.id = user_id and messages.id = message_id and users.id = :id";
-
+public abstract class DbPostgres extends JavaRxTimestampDb {
+	
 	private enum CreateTable {
 		CREATEUSERS(
 			"CREATE SEQUENCE public.users_id_seq INCREMENT 1 START 19 MINVALUE 1 MAXVALUE 2147483647 CACHE 1; " +	
@@ -64,59 +55,4 @@ public abstract class DbPostgres extends DbDefinitionBase {
 	public String getCreateTable(String table) {
 		return CreateTable.valueOf("CREATE"+table.toUpperCase()).sql;
 	}
-
-	@Query(QUERYUSERS)
-	public interface Users {
-
-		@Column("id")
-		Long id();
-
-		@Column("name")
-		String name();
-
-		@Column("password")
-		String password();
-
-		@Column("ip")
-		String ip();
-
-		@Column("last_login")
-		Timestamp lastLogin();
-	}
-
-	@Query(QUERYMESSAGES)
-	public interface Messages {
-
-		@Column("id")
-		Long id();
-
-		@Column("message")
-		Clob message();
-
-		@Column("from_handle")
-		String fromHandle();
-
-		@Column("post_date")
-		Timestamp postDate();
-	}
-
-	@Query(QUERYUNDELIVERED)
-	public interface Undelivered {
-
-		@Column("message_id")
-		Long messageId();
-
-		@Column("name")
-		String name();
-
-		@Column("message")
-		String message();
-
-		@Column("from_handle")
-		String fromHandle();
-
-		@Column("post_date")
-		Timestamp postDate();
-	}
-
 }

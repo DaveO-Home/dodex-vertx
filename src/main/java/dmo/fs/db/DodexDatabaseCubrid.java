@@ -56,6 +56,7 @@ public class DodexDatabaseCubrid extends DbCubrid implements DodexDatabase {
 
 		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
 		databaseSetup();
+		setDatabase(db);
 	}
 
 	public DodexDatabaseCubrid() throws InterruptedException, IOException, SQLException {

@@ -27,7 +27,7 @@ public class DbConfiguration {
     }
 
     public static ConnectionProvider getSqlite3ConnectionProvider() {
-        isUsingPostgres = false;
+        isUsingSqlite3 = true;
         return ConnectionProvider.from(map.get("url") + map.get("filename"), properties);
     }
 

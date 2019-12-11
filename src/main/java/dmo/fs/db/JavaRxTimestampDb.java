@@ -49,7 +49,7 @@ public abstract class JavaRxTimestampDb extends DbDefinitionBase implements Dode
 	@Override
 	public Long getUserIdByName(String name, Database db) throws InterruptedException {
 		List<Long> userKey = new ArrayList<>();
-		db.connection().blockingGet();
+
 		Disposable disposable = db.select(getUserByName())
 				.parameter("NAME", name)
 				.autoMap(Users.class)

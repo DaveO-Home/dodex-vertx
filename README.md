@@ -22,7 +22,7 @@
 4. Execute url ```http://localhost:8080/dodex``` in a browser. __Note;__ This is a different port and url than development. Also __Note;__ The default database on the backend is "Sqlite3", no further configuation is necessay. Dodex-vertx also has a Postgres implementation. See ```<install directory>/dodex-vertx/src/main/resources/static/database_config.json``` for configuration.
 5. Swapping between Sqlite3 and Postgres; Use environment variable ```DEFAULT_DB``` by setting it to either ```sqlite3``` or ```postgres```, or set the default database in ```database_config.json```.
 6. The environment variable ```VERTXWEB_ENVIRONMENT``` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.
-7. Dodex-vertx is also configured for the Cubrid database. To use the databases must be created using UTF-8. For example ```cubrid createdb dodex en.utf8```.
+7. Dodex-vertx is also configured for the Cubrid database. To use the databases they must be created using UTF-8. For example ```cubrid createdb dodex en.utf8```.
 
 ## Test
 

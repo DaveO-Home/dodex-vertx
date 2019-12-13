@@ -84,9 +84,9 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 		
 		if(webEnv.equals("dev")) {
 			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
-			DbConfiguration.configurePostgresTestDefaults(dbMap, dbProperties);
+			DbConfiguration.configureTestDefaults(dbMap, dbProperties);
 		} else {
-			DbConfiguration.configurePostgresDefaults(dbMap, dbProperties); // Prod
+			DbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
 		}
 		cp = DbConfiguration.getPostgresConnectionProvider();
 

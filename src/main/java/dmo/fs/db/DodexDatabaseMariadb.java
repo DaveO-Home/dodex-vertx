@@ -23,8 +23,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseSqlite3.class.getName());
+public class DodexDatabaseMariadb extends DbMariadb implements DodexDatabase {
+	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseMariadb.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;
 	protected NonBlockingConnectionPool pool;
@@ -36,7 +36,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
 
-	public DodexDatabaseSqlite3(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+	public DodexDatabaseMariadb(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
 			throws InterruptedException, IOException, SQLException {
 		super();
 
@@ -60,7 +60,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		databaseSetup();
 	}
 
-	public DodexDatabaseSqlite3() throws InterruptedException, IOException, SQLException {
+	public DodexDatabaseMariadb() throws InterruptedException, IOException, SQLException {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
@@ -86,7 +86,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		} else {
 			DbConfiguration.configureDefaults(dbMap, dbProperties); // Using prod (./dodex.db)
 		}
-		cp = DbConfiguration.getSqlite3ConnectionProvider();
+		cp = DbConfiguration.getMariadbConnectionProvider();
 
 		pool = Pools.nonBlocking().maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
 				.build();
@@ -96,20 +96,21 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		Disposable disposable = db.member().doOnSuccess(c -> {
 			Statement stat = c.value().createStatement();
 
-			// stat.executeUpdate("drop table undelivered");
-			// stat.executeUpdate("drop table users");
-			// stat.executeUpdate("drop table messages");
+			// stat.executeUpdate("drop table UNDELIVERED");
+			// stat.executeUpdate("drop table USERS");
+			// stat.executeUpdate("drop table MESSAGES");
+			
 
 			String sql = getCreateTable("USERS");
-			if (!tableExist(c.value(), "users")) {
+			if (!tableExist(c.value(), "USERS")) {
 				stat.executeUpdate(sql);
 			}
 			sql = getCreateTable("MESSAGES");
-			if (!tableExist(c.value(), "messages")) {
+			if (!tableExist(c.value(), "MESSAGES")) {
 				stat.executeUpdate(sql);
 			}
 			sql = getCreateTable("UNDELIVERED");
-			if (!tableExist(c.value(), "undelivered")) {
+			if (!tableExist(c.value(), "UNDELIVERED")) {
 				stat.executeUpdate(sql);
 			}
 		}).subscribe(result -> {

@@ -85,9 +85,9 @@ public class DodexDatabaseCubrid extends DbCubrid implements DodexDatabase {
 		
 		if(webEnv.equals("dev")) {
 			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
-			DbConfiguration.configureCubridTestDefaults(dbMap, dbProperties);
+			DbConfiguration.configureTestDefaults(dbMap, dbProperties);
 		} else {
-			DbConfiguration.configureCubridDefaults(dbMap, dbProperties); // Prod
+			DbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
 		}
 		cp = DbConfiguration.getCubridConnectionProvider();
 

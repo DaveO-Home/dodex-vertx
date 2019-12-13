@@ -22,9 +22,9 @@ import org.jooq.impl.DSL;
 
 public abstract class DbDefinitionBase {
 	private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
-	protected final static String QUERYUSERS = "select * from users where password=?";
-	protected final static String QUERYMESSAGES = "select * from messages where id=?";
-	protected final static String QUERYUNDELIVERED = "Select message_id, name, message, from_handle, post_date from users, undelivered, messages where users.id = user_id and messages.id = message_id and users.id = :id";
+	protected final static String QUERYUSERS = "select * from USERS where password=?";
+	protected final static String QUERYMESSAGES = "select * from MESSAGES where id=?";
+	protected final static String QUERYUNDELIVERED = "Select message_id, name, message, from_handle, post_date from USERS, UNDELIVERED, MESSAGES where USERS.id = user_id and MESSAGES.id = message_id and USERS.id = :id";
 	
 	private DSLContext create = null;
 
@@ -149,7 +149,7 @@ public abstract class DbDefinitionBase {
 				.parameter("NAME", messageUser.getName())
 				.parameter("PASSWORD", messageUser.getPassword())
 				.parameter("IP", messageUser.getIp())
-				.parameter("LASTLOGIN", new Timestamp(new Date().getTime())) // ZonedDateTime.now())
+				.parameter("LASTLOGIN", new Timestamp(new Date().getTime()))
 				.returnGeneratedKeys()
 				.getAs(Long.class)
 				.doOnNext(k -> messageUser.setId(k))

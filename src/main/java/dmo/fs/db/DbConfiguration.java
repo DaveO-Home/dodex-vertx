@@ -20,6 +20,7 @@ public class DbConfiguration {
     private static Boolean isUsingSqlite3 = false;
     private static Boolean isUsingPostgres = false;
     private static Boolean isUsingCubrid = false;
+    private static Boolean isUsingMariadb = false;
     private static String defaultDb = "sqlite3";
     private static DodexUtil dodexUtil = new DodexUtil();
 
@@ -46,6 +47,13 @@ public class DbConfiguration {
                 properties.get("user").toString(), properties.get("password").toString());
     }
 
+    public static ConnectionProvider getMariadbConnectionProvider() throws SQLException {
+        isUsingMariadb = true;
+
+        return ConnectionProvider.from(map.get("url") + map.get("host") + map.get("dbname") + "?charSet=utf8",
+                properties.get("user").toString(), properties.get("password").toString());
+    }
+
     public static boolean isUsingSqlite3() {
         return isUsingSqlite3;
     }
@@ -58,6 +66,10 @@ public class DbConfiguration {
         return isUsingCubrid;
     }
 
+    public static boolean isUsingMariadb() {
+        return isUsingMariadb;
+    }
+
     public static DodexDatabase getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
 
@@ -67,6 +79,8 @@ public class DbConfiguration {
             return new DodexDatabaseSqlite3();
         } else if(defaultDb.equals("cubrid")) {
             return new DodexDatabaseCubrid();
+        } else if(defaultDb.equals("mariadb")) {
+            return new DodexDatabaseMariadb();
         }
         throw new InterruptedException("No Database set");
     }
@@ -80,47 +94,20 @@ public class DbConfiguration {
             return new DodexDatabaseSqlite3(overrideMap, overrideProps);
         } else if(defaultDb.equals("cubrid")) {
             return new DodexDatabaseCubrid(overrideMap, overrideProps);
+        } else if(defaultDb.equals("mariadb")) {
+            return new DodexDatabaseMariadb(overrideMap, overrideProps);
         }
         throw new InterruptedException("No Database set");
     }
 
-    public static void configureSqlite3Defaults(Map<String, String>overrideMap, Properties overrideProps) {
+    public static void configureDefaults(Map<String, String>overrideMap, Properties overrideProps) {
         if(overrideProps != null && overrideProps.size() > 0) {
             properties = overrideProps;
         }
         mapMerge(map, overrideMap);
     }
 
-    public static void configureSqlite3TestDefaults(Map<String, String>overrideMap,  Properties overrideProps) {
-        if(overrideProps != null && overrideProps.size() > 0) {
-            properties = overrideProps;
-        }
-        mapMerge(map, overrideMap);
-    }
-
-    public static void configurePostgresDefaults(Map<String, String>overrideMap, Properties overrideProps) {
-        if(overrideProps != null && overrideProps.size() > 0) {
-            properties = overrideProps;
-        }
-        mapMerge(map, overrideMap);
-    }
-
-    public static void configurePostgresTestDefaults(Map<String, String>overrideMap, Properties overrideProps) {
-        if(overrideProps != null && overrideProps.size() > 0) {
-            properties = overrideProps;
-        }
-        mapMerge(map, overrideMap);
-
-    }
-
-    public static void configureCubridDefaults(Map<String, String>overrideMap, Properties overrideProps) {
-        if(overrideProps != null && overrideProps.size() > 0) {
-            properties = overrideProps;
-        }
-        mapMerge(map, overrideMap);
-    }
-
-    public static void configureCubridTestDefaults(Map<String, String>overrideMap, Properties overrideProps) {
+    public static void configureTestDefaults(Map<String, String>overrideMap, Properties overrideProps) {
         if(overrideProps != null && overrideProps.size() > 0) {
             properties = overrideProps;
         }

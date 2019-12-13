@@ -29,7 +29,7 @@
             "config": {
                 "host": "//localhost",
                 "url": "jdbc:postgresql:",
-                "dbname": "/daveo"
+                "dbname": "/test"
             }
         },
         "prod": { 
@@ -68,6 +68,32 @@
                 "host": "localhost:33000",
                 "url": "jdbc:CUBRID:",
                 "dbname": "dodex:public::"
+            }
+        }
+    },
+    "mariadb": {
+        "dev": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:3306",
+                "url": "jdbc:mariadb:",
+                "dbname": "/test"
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:3306",
+                "url": "jdbc:mariadb:",
+                "dbname": "/dodex"
             }
         }
     }

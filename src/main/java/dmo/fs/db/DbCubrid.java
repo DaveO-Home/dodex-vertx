@@ -4,7 +4,7 @@ package dmo.fs.db;
 public abstract class DbCubrid extends JavaRxTimestampDb {
 
 	private enum CreateTable {
-		
+
 		CREATEUSERS(
 			"CREATE TABLE users" +
 				"(id INTEGER AUTO_INCREMENT(1, 1) NOT NULL," +

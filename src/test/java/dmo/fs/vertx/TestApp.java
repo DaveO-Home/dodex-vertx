@@ -13,6 +13,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DbDefinitionBase;
 import dmo.fs.db.DodexDatabase;
+import dmo.fs.db.DodexDatabaseCubrid;
+import dmo.fs.db.DodexDatabaseMariadb;
 import dmo.fs.db.DodexDatabasePostgres;
 import dmo.fs.db.DodexDatabaseSqlite3;
 import dmo.fs.db.MessageUser;
@@ -89,7 +91,7 @@ class UtilTest {
 }
 
 @TestInstance(Lifecycle.PER_CLASS)
-class DbTest extends DbDefinitionBase {
+class DbTest /*extends DbDefinitionBase*/ {
     Logger logger = LoggerFactory.getLogger(DbTest.class.getName());
 
     MessageUser messageUser = null;
@@ -99,30 +101,49 @@ class DbTest extends DbDefinitionBase {
     DodexDatabase dodexDatabase = null;
 
     @BeforeAll
-    // @Test
     void testDatabaseSetup() throws InterruptedException, IOException, SQLException {
         String whichDb = "sqlite3"; // postgres || sqlite3
+        
         if (System.getenv("DEFAULT_DB") != null) {
             whichDb = System.getenv("DEFAULT_DB");
         }
         Properties props = new Properties();
-        props.setProperty("user", "daveo");
-        props.setProperty("password", "password");
+        props.setProperty("user", "user");         // <------- change to use
+        props.setProperty("password", "password"); // <------- change to use
         props.setProperty("ssl", "false");
 
         if (whichDb.equals("sqlite3")) {
             dodexDatabase = new DodexDatabaseSqlite3();
             cp = DbConfiguration.getSqlite3ConnectionProvider();
-        } else {
+        } else if (whichDb.equals("postgres")) {
             Map<String, String> overrideMap = new HashMap<>();
-            overrideMap.put("dbname", "/test"); // this wiil be merged into the default map
+            overrideMap.put("dbname", "/test"); // <------- should match test/dev db
             try {
                 dodexDatabase = new DodexDatabasePostgres(overrideMap, props);
             } catch (Exception e) {
                 e.printStackTrace();
             }
             cp = DbConfiguration.getPostgresConnectionProvider();
+        } else if (whichDb.equals("mariadb")) {
+            Map<String, String> overrideMap = new HashMap<>();
+            overrideMap.put("dbname", "/test"); // <------- should match test/dev db
+            try {
+                dodexDatabase = new DodexDatabaseMariadb(overrideMap, props);
+                cp = DbConfiguration.getMariadbConnectionProvider();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else if (whichDb.equals("cubrid")) {
+            Map<String, String> overrideMap = new HashMap<>();
+            overrideMap.put("dbname", "test:public::"); // <------- should match test/dev db
+            try {
+                dodexDatabase = new DodexDatabaseCubrid(overrideMap, props);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            cp = DbConfiguration.getCubridConnectionProvider();
         }
+
 
         NonBlockingConnectionPool pool = Pools.nonBlocking()
                 .maxPoolSize(Runtime.getRuntime().availableProcessors() * 5)
@@ -197,7 +218,7 @@ class DbTest extends DbDefinitionBase {
     void doesUsersTableExist() {
         boolean tableExists[] = {false};
         Disposable disposable = db.member().doOnSuccess(c -> {
-            tableExists[0] = tableExist(c.value(), "users");
+            tableExists[0] = tableExist(c.value(), "USERS");
         }).subscribe();
         
         assertEquals(tableExists[0], false, "verify that javaRx is asynchronous");
@@ -216,7 +237,7 @@ class DbTest extends DbDefinitionBase {
                 .subscribe(result -> {
                     messageUser.setId(Long.parseLong(result.toString()));
 				}, throwable -> {
-					logger.error("{0}Error deleting user{1} {2}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET, messageUser.getName() });
+					// logger.error("{0}Error deleting user{1} {2}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET, messageUser.getName() });
 					throwable.printStackTrace();
                 });
         assertEquals(messageUser.getId() ==  -1l, true, "user deletion should not start yet");

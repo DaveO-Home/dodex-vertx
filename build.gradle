@@ -98,6 +98,7 @@ shadowJar {
 
 test {
     // Use junit platform for unit tests
+    environment "VERTXWEB_ENVIRONMENT", "dev"
     useJUnitPlatform()
     testLogging {
         events "PASSED", "FAILED", "SKIPPED"

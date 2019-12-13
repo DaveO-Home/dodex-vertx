@@ -47,7 +47,7 @@ public class TestMainVerticle {
     boolean hasPathDodex = false;
     for(Route route : routesList) {
        if(!hasPathDodex) {
-        hasPathDodex = route.getPath() == "/dodex";
+        hasPathDodex = route.getPath() == "/test";
        }
     }
     assertNotEquals(deploymentId, null, "deployment id should be generated");

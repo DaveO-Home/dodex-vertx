@@ -14,7 +14,11 @@ public class MessageUserImpl implements MessageUser {
 
     @Override
     public void setId(Long id) {
-        this.id = id;
+        if(id instanceof Long) {
+            this.id = id;
+        }
+        else
+            this.id = Long.parseLong(id.toString());
     }
 
     @Override

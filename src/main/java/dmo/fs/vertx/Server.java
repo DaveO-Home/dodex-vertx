@@ -20,6 +20,14 @@ import dmo.fs.utils.ConsoleColors;
 
 public class Server extends AbstractVerticle {
   private static Logger logger;
+  private int port = 0;
+
+  public Server() {
+  }
+
+  public Server(int port) {
+    this.port = port;
+  }
 
   static {
     File logDir = new File("./logs/");
@@ -29,6 +37,7 @@ public class Server extends AbstractVerticle {
 
     System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tF %1$tT] [%4$s] %5$s %3$s %n");
     System.setProperty("dmo.fs.level", "INFO");
+    System.setProperty("org.jooq.no-logo", "true");
     logger = LoggerFactory.getLogger(Server.class.getName());
   }
 
@@ -55,9 +64,9 @@ public class Server extends AbstractVerticle {
     server.requestHandler(routes.getRoutes());
 
     try {
-      server.listen(config().getInteger("http.port", 8080), result -> {      
+      server.listen(config().getInteger("http.port", this.port == 0 ? 8080 : port), result -> {      
         if (result.succeeded()) {
-          Integer port = config().getInteger("http.port", 8080);
+          Integer port = this.port != 0? this.port : config().getInteger("http.port", 8080);
           logger.info("{0}Started on port: " + port + "{1}",
               new Object[] { ConsoleColors.GREEN_BOLD_BRIGHT, ConsoleColors.RESET });
           promise.complete();

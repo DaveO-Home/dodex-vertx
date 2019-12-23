@@ -65,13 +65,24 @@ public abstract class JavaRxDateDb extends DbDefinitionBase implements DodexData
 	}
 
 	@Override
-	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) {
+	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db)
+			throws InterruptedException, SQLException {
 		MessageUser resultUser = createMessageUser();
 
-		db.select(Users.class).parameter(messageUser.getPassword()).get().isEmpty().doOnSuccess(empty -> {
-			if (empty) {
-				addUser(ws, db, messageUser);
-			}
+		Disposable disposable = db.select(Users.class).parameter(messageUser.getPassword())
+			.get()
+			.doOnNext(result -> {
+				resultUser.setId(result.id());
+				resultUser.setName(result.name());
+				resultUser.setPassword(result.password());
+				resultUser.setIp(result.ip());
+				resultUser.setLastLogin(new Timestamp(result.lastLogin().getTime()));
+			})
+			.isEmpty()
+			.doOnSuccess(empty -> {
+				if (empty) {
+					addUser(ws, db, messageUser);
+				}
 		}).doAfterSuccess(record -> {
 			db.select(Users.class).parameter(messageUser.getPassword()).get().doOnNext(result -> {
 				resultUser.setId(result.id());
@@ -93,6 +104,15 @@ public abstract class JavaRxDateDb extends DbDefinitionBase implements DodexData
 					new Object[] { ConsoleColors.RED, messageUser.getName(), ConsoleColors.RESET });
 			throwable.printStackTrace();
 		});
+
+		await(disposable);
+		//Changing last login datetime
+		if(DbConfiguration.isUsingSqlite3()) {
+			updateSqliteUser(ws, db, resultUser);
+		}
+		else {
+			updateUser(ws, db, resultUser);
+		}
 		return resultUser;
 	}
 

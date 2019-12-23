@@ -121,6 +121,8 @@ public class DodexDatabaseCubrid extends DbCubrid implements DodexDatabase {
 			if (!tableExist(c.value(), "undelivered")) {
 				stat.executeUpdate(sql);
 			}
+			stat.close();
+			c.value().close();
 		}).subscribe(result -> {
 			//
 		}, throwable -> {

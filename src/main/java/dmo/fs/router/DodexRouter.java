@@ -15,6 +15,7 @@ import java.util.stream.Collectors;
 
 import org.davidmoten.rx.jdbc.Database;
 
+import dmo.fs.admin.CleanOrphanedUsers;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.MessageUser;
@@ -22,6 +23,7 @@ import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.utils.ParseQuery;
 import io.vertx.core.http.*;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.shareddata.LocalMap;
@@ -41,14 +43,29 @@ public class DodexRouter {
     }
 
     public void setWebSocket(HttpServer server) throws InterruptedException, IOException, SQLException {
-        dodexDatabase = DbConfiguration.getDefaultDb();
-
-        /*
+        /**
          * You can customize the db config here by: Map = db config, Properties =
          * credentials Map overrideMap = new Map(); Properties overrideProperties = new
          * Properties(); // set override or additional values... dodexDatabase =
-         *      DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
+         * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
          */
+        dodexDatabase = DbConfiguration.getDefaultDb();
+        /**
+         * Optional auto user cleanup - config in "application-conf.json".
+         * When client changes handle when server is down, old users and 
+         * undelivered messages will be orphaned.
+         * 
+         * Defaults: off - when turned on
+         * 1. execute on start up and every 7 days thereafter.
+         * 2. remove users who have not logged in for 90 days.
+         */
+        if(Vertx.currentContext() != null) {
+            JsonObject config = Vertx.currentContext().config();
+            if(!config.isEmpty() && config.getBoolean("clean.run")) {
+                CleanOrphanedUsers clean = new CleanOrphanedUsers();
+                clean.startClean(config);
+            }
+        }
 
         SharedData sd = vertx.sharedData();
         String startupMessage = "In Production";
@@ -157,8 +174,8 @@ public class DodexRouter {
                         // calculate difference between selected and online users
                         if (selectedUsers != null) {
                             List<String> selected = Arrays.asList(selectedUsers.split(","));
-                            List<String> disconnectedUsers = selected.stream().filter(user -> 
-                                    !onlineUsers.contains(user)).collect(Collectors.toList());
+                            List<String> disconnectedUsers = selected.stream()
+                                    .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
                             // Save private message to send when to-user logs in
                             if (disconnectedUsers.size() > 0) {
                                 long key = 0;
@@ -193,8 +210,8 @@ public class DodexRouter {
                 messageUser.setPassword(id);
                 messageUser.setIp(ws.remoteAddress().toString());
 
-                resultUser = dodexDatabase.selectUser(messageUser, ws, db);
                 try {
+                    resultUser = dodexDatabase.selectUser(messageUser, ws, db);
                     userJson = dodexDatabase.buildUsersJson(messageUser);
                 } catch (InterruptedException | SQLException e) {
                     e.printStackTrace();

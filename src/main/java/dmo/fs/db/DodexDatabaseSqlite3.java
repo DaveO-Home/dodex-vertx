@@ -112,6 +112,8 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 			if (!tableExist(c.value(), "undelivered")) {
 				stat.executeUpdate(sql);
 			}
+			stat.close();
+			c.value().close();
 		}).subscribe(result -> {
 			//
 		}, throwable -> {

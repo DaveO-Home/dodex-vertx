@@ -44,7 +44,7 @@ public interface DodexDatabase {
 
 	public MessageUser createMessageUser();
 
-	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db);
+	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) throws InterruptedException, SQLException;
 
 	public StringBuilder buildUsersJson(MessageUser messageUser) throws InterruptedException, SQLException;
 

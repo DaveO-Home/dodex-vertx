@@ -26,36 +26,52 @@ public abstract class DbDefinitionBase {
 	protected final static String QUERYMESSAGES = "select * from MESSAGES where id=?";
 	protected final static String QUERYUNDELIVERED = "Select message_id, name, message, from_handle, post_date from USERS, UNDELIVERED, MESSAGES where USERS.id = user_id and MESSAGES.id = message_id and USERS.id = :id";
 	
-	private DSLContext create = null;
+	private static DSLContext create = null;
 
-	private String GETALLUSERS = null;
-	private String GETUSERBYNAME = null;
-	private String GETINSERTUSER = null;
-	private String GETREMOVEUNDELIVERED = null;
-	private String GETREMOVEMESSAGE = null;
-	private String GETUNDELIVEREDMESSAGE = null;
-	private String GETDELETEUSER = null;
-	private String GETADDMESSAGE = null;
-	private String GETADDUNDELIVERED = null;
+	private static String GETALLUSERS = null;
+	private static String GETUSERBYNAME = null;
+	private static String GETINSERTUSER = null;
+	private static String GETUPDATEUSER = null;
+	private static String GETREMOVEUNDELIVERED = null;
+	private static String GETREMOVEMESSAGE = null;
+	private static String GETUNDELIVEREDMESSAGE = null;
+	private static String GETDELETEUSER = null;
+	private static String GETADDMESSAGE = null;
+	private static String GETADDUNDELIVERED = null;
+	private static String GETUSERNAMES = null;
+	private static String GETUSERBYID = null;
+	private static String GETREMOVEUSERUNDELIVERED = null;
+	private static String GETUSERUNDELIVERED = null;
+	private static String GETDELETEUSERBYID = null;
+	private static String GETSQLITEUPDATEUSER = null;
+	private static String GETREMOVEUSERS = null;
 
-	public void setupSql(Database db) throws SQLException {
+	public static void setupSql(Database db) throws SQLException {
 		Connection conn = db.connection().blockingGet();
 		create = DSL.using(conn, DodexUtil.getSqlDialect());
 
 		GETALLUSERS = setupAllUsers();
 		GETUSERBYNAME = setupUserByName();
 		GETINSERTUSER = setupInsertUser();
+		GETUPDATEUSER = setupUpdateUser();
 		GETREMOVEUNDELIVERED = setupRemoveUndelivered();
 		GETREMOVEMESSAGE = setupRemoveMessage();
 		GETUNDELIVEREDMESSAGE = setupUndeliveredMessage();
 		GETDELETEUSER = setupDeleteUser();
 		GETADDMESSAGE = setupAddMessage();
 		GETADDUNDELIVERED = setupAddUndelivered();
+		GETUSERNAMES = setupUserNames();
+		GETUSERBYID = setupUserById();
+		GETREMOVEUSERUNDELIVERED = setupRemoveUserUndelivered();
+		GETUSERUNDELIVERED = setupUserUndelivered();
+		GETDELETEUSERBYID = setupDeleteUserById();
+		GETSQLITEUPDATEUSER = setupSqliteUpdateUser();
+		GETREMOVEUSERS = setupRemoveUsers();
 
 		conn.close();
 	}
 
-	private String setupAllUsers() {
+	private static String setupAllUsers() {
 		String sql = create.renderNamedParams(
 				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
                    .from(table("USERS"))
@@ -68,7 +84,7 @@ public abstract class DbDefinitionBase {
 		return GETALLUSERS;
 	}
 
-	private String setupUserByName() {
+	private static String setupUserByName() {
 		String sql = create.renderNamedParams(
 				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
                    .from(table("USERS"))
@@ -81,7 +97,20 @@ public abstract class DbDefinitionBase {
 		return GETUSERBYNAME;	
 	}
 
-	private String setupInsertUser() {
+	private static String setupUserById() {
+		String sql = create.renderNamedParams(
+				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
+                   .from(table("USERS"))
+                   .where(field("NAME").eq(param("NAME",":name"))));
+
+	   return sql;
+	}
+
+	public String getUserById() {
+		return GETUSERBYID;	
+	}
+
+	private static String setupInsertUser() {
 		String sql = create.renderNamedParams(insertInto(table("USERS"))
 			.columns(field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
 			.values(
@@ -97,7 +126,34 @@ public abstract class DbDefinitionBase {
 		return GETINSERTUSER;	
 	}
 
-	private String setupRemoveUndelivered() {
+	private static String setupUpdateUser() {
+		String sql = create.renderNamedParams(mergeInto(table("USERS"))
+		.columns(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
+		.key(field("ID"))
+		.values(
+			param("ID", ":id"), 
+			param("NAME", ":name"), 
+			param("PASSWORD", ":password"), 
+			param("IP", ":ip"), 
+			param("LASTLOGIN", ":lastlogin"))
+		);
+		return sql;
+	}
+
+	public String getUpdateUser() {
+		return GETUPDATEUSER;	
+	}
+
+	public static String setupSqliteUpdateUser() {
+		String sql = "update USERS set last_login = :LASTLOGIN where id = :USERID";
+
+		return sql;
+	}
+	public String getSqliteUpdateUser() {
+		return GETSQLITEUPDATEUSER;	
+	}
+
+	private static String setupRemoveUndelivered() {
 		String sql = create.renderNamedParams(deleteFrom(table("UNDELIVERED"))
 			.where(field("USER_ID")
 				.eq(param("USERID",":userid")), field("MESSAGE_ID")
@@ -110,7 +166,19 @@ public abstract class DbDefinitionBase {
 		return GETREMOVEUNDELIVERED;	
 	}
 
-	private String setupRemoveMessage() {
+	private static String setupRemoveUserUndelivered() {
+		String sql = create.renderNamedParams(deleteFrom(table("UNDELIVERED"))
+			.where(field("USER_ID")
+				.eq(param("USERID",":userid"))));
+		
+		return sql;
+	}
+
+	public String getRemoveUserUndelivered() {
+		return GETREMOVEUSERUNDELIVERED;	
+	}
+
+	private static String setupRemoveMessage() {
 		String sql = create.render(deleteFrom(table("MESSAGES"))
 			.where(
 				create.renderNamedParams(field("ID").eq(param("MESSAGEID", ":messageid"))
@@ -128,7 +196,26 @@ public abstract class DbDefinitionBase {
 		return GETREMOVEMESSAGE;	
 	}
 
-	private String setupUndeliveredMessage() {
+
+	private static String setupRemoveUsers() {
+		String sql = create.render(deleteFrom(table("USERS"))
+			.where(
+				create.renderNamedParams(field("ID").eq(param("USERID", ":userid"))
+					.and(create.renderNamedParams(notExists(select().from(table("USERS"))
+						.join(table("UNDELIVERED"))
+						.on(field("ID").eq(field("USER_ID")))
+						.and(field("ID").eq(param("USERID", ":userid")))
+					))))
+			));
+
+		return sql;
+	}
+
+	public String getRemoveUsers() {
+		return GETREMOVEUSERS;	
+	}
+
+	private static String setupUndeliveredMessage() {
 		String sql = create.renderNamedParams(select(field("USER_ID"), field("MESSAGE_ID"))
 					.from(table("MESSAGES"))
 					.join(table("UNDELIVERED"))
@@ -142,6 +229,21 @@ public abstract class DbDefinitionBase {
 
 	public String getUndeliveredMessage() {
 		return GETUNDELIVEREDMESSAGE;	
+	}
+
+	private static String setupUserUndelivered() {
+		String sql = create.renderNamedParams(select(field("USER_ID"), field("MESSAGE_ID"))
+					.from(table("USERS"))
+					.join(table("UNDELIVERED"))
+					.on(field("ID").eq(field("USER_ID")))
+					.and(field("ID").eq(param("USERID", ":userid")))
+				);
+
+		return sql;
+    }
+
+	public String getUserUndelivered() {
+		return GETUSERUNDELIVERED;	
 	}
 
 	public Long addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException, SQLException {
@@ -165,7 +267,50 @@ public abstract class DbDefinitionBase {
 		return messageUser.getId();
 	}
 
-	private String setupDeleteUser() {
+	public int updateUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException, SQLException {
+		int count[] = {0};
+
+		Disposable disposable = db.update(getUpdateUser())
+				.parameter("ID", messageUser.getId())
+				.parameter("NAME", messageUser.getName())
+				.parameter("PASSWORD", messageUser.getPassword())
+				.parameter("IP", messageUser.getIp())
+				.parameter("LASTLOGIN", new Timestamp(new Date().getTime()))
+				.counts()
+				.doOnNext(c -> count[0] += c)
+				.subscribe(result -> {
+					//
+				}, throwable -> {
+					logger.error("{0}Error Updating user{1}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
+					throwable.printStackTrace();
+					ws.writeTextMessage(throwable.getMessage());
+				});
+		await(disposable);
+
+		return count[0];
+	}
+
+	public int updateSqliteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException, SQLException {
+		int count[] = {0};
+
+		Disposable disposable = db.update(getSqliteUpdateUser())
+				.parameter("USERID", messageUser.getId())
+				.parameter("LASTLOGIN", new Date().getTime())
+				.counts()
+				.doOnNext(c -> count[0] += c)
+				.subscribe(result -> {
+					//
+				}, throwable -> {
+					logger.error("{0}Error Updating user{1}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
+					throwable.printStackTrace();
+					ws.writeTextMessage(throwable.getMessage());
+				});
+		await(disposable);
+
+		return count[0];
+	}
+
+	private static String setupDeleteUser() {
 		String sql = create.renderNamedParams(deleteFrom(table("USERS"))
 			.where(field("NAME")
 				.eq(param("NAME",":name")), field("PASSWORD")
@@ -176,6 +321,18 @@ public abstract class DbDefinitionBase {
 
 	public String getDeleteUser() {
 		return GETDELETEUSER;
+	}
+
+	private static String setupDeleteUserById() {
+		String sql = create.renderNamedParams(deleteFrom(table("USERS"))
+			.where(field("ID")
+				.eq(param("USERID",":userid"))));
+
+		return sql;
+	}
+
+	public String getDeleteUserById() {
+		return GETDELETEUSERBYID;
 	}
 
 	public long deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws InterruptedException, SQLException {
@@ -195,7 +352,7 @@ public abstract class DbDefinitionBase {
 		return messageUser.getId();
 	}
 
-	private String setupAddMessage() {
+	private static String setupAddMessage() {
 		String sql = create.renderNamedParams(insertInto(table("MESSAGES"))
 			.columns(field("MESSAGE"), field("FROM_HANDLE"), field("POST_DATE"))
 			.values(param("MESSAGE", ":message"), param("FROMHANDLE", ":fromHandle"), param("POSTDATE", ":postdate")));
@@ -229,7 +386,7 @@ public abstract class DbDefinitionBase {
 		return messageId.get(0);
 	}
 
-	private String setupAddUndelivered() {
+	private static String setupAddUndelivered() {
 		String sql = create.renderNamedParams(insertInto(table("UNDELIVERED"))
 			.columns(field("USER_ID"), field("MESSAGE_ID"))
 			.values(param("USERID", ":userid"), param("MESSAGEID", ":messageid")));
@@ -249,6 +406,19 @@ public abstract class DbDefinitionBase {
 				.doOnError(error -> logger.error("{0}Remove Undelivered Error: {1}{2}", new Object[] { ConsoleColors.RED, error.getMessage(), ConsoleColors.RESET }))
 				.subscribe();
 		await(disposable);
+	}
+
+	private static String setupUserNames() {
+		String sql = create.renderNamedParams(
+				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
+                   .from(table("USERS"))
+                   .where(field("NAME").ne(param("NAME",":name"))));
+
+		return sql;
+	}
+
+	public String getUserNames() {
+		return GETUSERNAMES;
 	}
 
 	private void await(Disposable disposable) {

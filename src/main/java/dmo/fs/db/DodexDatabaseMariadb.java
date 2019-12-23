@@ -58,6 +58,7 @@ public class DodexDatabaseMariadb extends DbMariadb implements DodexDatabase {
 
 		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
 		databaseSetup();
+		setDatabase(db);
 	}
 
 	public DodexDatabaseMariadb() throws InterruptedException, IOException, SQLException {
@@ -113,6 +114,8 @@ public class DodexDatabaseMariadb extends DbMariadb implements DodexDatabase {
 			if (!tableExist(c.value(), "UNDELIVERED")) {
 				stat.executeUpdate(sql);
 			}
+			stat.close();
+			c.value().close();
 		}).subscribe(result -> {
 			//
 		}, throwable -> {

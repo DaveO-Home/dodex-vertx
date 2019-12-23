@@ -23,7 +23,7 @@ public class TestMainVerticle {
   @Rule
   public Timeout globalTimeout = Timeout.seconds(3);
 
-  Server server = new Server();
+  Server server = new Server(8087);
 
   @BeforeEach
   void deploy_verticle(Vertx vertx, VertxTestContext testContext) {

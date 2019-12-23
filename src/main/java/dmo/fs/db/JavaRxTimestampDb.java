@@ -69,10 +69,21 @@ public abstract class JavaRxTimestampDb extends DbDefinitionBase implements Dode
 	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) {
 		MessageUser resultUser = createMessageUser();
 
-		db.select(Users.class).parameter(messageUser.getPassword()).get().isEmpty().doOnSuccess(empty -> {
-			if (empty) {
-				addUser(ws, db, messageUser);
-			}
+		db.select(Users.class).parameter(messageUser.getPassword())
+			.get()
+			.doOnNext(result -> {
+				resultUser.setId(result.id());
+				resultUser.setName(result.name());
+				resultUser.setPassword(result.password());
+				resultUser.setIp(result.ip());
+				resultUser.setLastLogin(new Timestamp(result.lastLogin().getTime()));
+				updateUser(ws, db, resultUser);
+			})
+			.isEmpty()
+			.doOnSuccess(empty -> {
+				if (empty) {
+					addUser(ws, db, messageUser);
+				}
 		}).doAfterSuccess(record -> {
 			db.select(Users.class).parameter(messageUser.getPassword()).get().doOnNext(result -> {
 				resultUser.setId(result.id());

@@ -1,3 +1,7 @@
 {
-  "http.port" : 8087
+  "http.port" : 8087,
+  "clean.run": false,
+  "clean.delay": 0,
+  "clean.period": 7,
+  "clean.age": 90
 }

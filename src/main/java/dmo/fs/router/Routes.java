@@ -5,6 +5,7 @@ import java.sql.SQLException;
 
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Route;
@@ -42,22 +43,30 @@ public class Routes {
 	}
 
 	public void setTestRoute() {
-		Route route = router.route().path("/test");
-
+		Route route = router.routeWithRegex(HttpMethod.GET, "/test[/]?|/test/.*\\.html");
 		route.handler(routingContext -> {
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/html");
-			response.sendFile("test/index.html").end();
+			if( routingContext.request().path().length() < 7 ||
+				routingContext.request().path().endsWith("index.html")) {
+				response.sendFile("test/index.html").end();
+			} else if(routingContext.request().path().endsWith("bootstrap.html")) {
+				response.sendFile("test/bootstrap.html").end();
+			}
 		});
 	}
 
 	public void setProdRoute() {
-		Route route = router.route().path("/dodex");
-
+		Route route = router.routeWithRegex(HttpMethod.GET, "/dodex[/]?|/dodex/.*\\.html");
 		route.handler(routingContext -> {
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/html");
-			response.sendFile("dodex/index.html").end();
+			if( routingContext.request().path().length() < 8 ||
+				routingContext.request().path().endsWith("index.html")) {
+				response.sendFile("dodex/index.html").end();
+			} else if(routingContext.request().path().endsWith("bootstrap.html")) {
+				response.sendFile("dodex/bootstrap.html").end();
+			}
 		});
 	}
 

@@ -23,6 +23,7 @@ public class DbConfiguration {
     private static Boolean isUsingMariadb = false;
     private static String defaultDb = "sqlite3";
     private static DodexUtil dodexUtil = new DodexUtil();
+    private static DodexDatabase dodexDatabase = null;
 
     DbConfiguration() {
     }
@@ -72,32 +73,39 @@ public class DbConfiguration {
 
     public static DodexDatabase getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
-
-        if(defaultDb.equals("postgres")) {
-            return new DodexDatabasePostgres();
-        } else if(defaultDb.equals("sqlite3")) {
-            return new DodexDatabaseSqlite3();
-        } else if(defaultDb.equals("cubrid")) {
-            return new DodexDatabaseCubrid();
-        } else if(defaultDb.equals("mariadb")) {
-            return new DodexDatabaseMariadb();
+        try {
+            if(defaultDb.equals("postgres") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabasePostgres();
+            } else if(defaultDb.equals("sqlite3") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseSqlite3();
+            } else if(defaultDb.equals("cubrid") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseCubrid();
+            } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseMariadb();
+            }
+        } catch (Exception exception) { 
+            throw exception;
         }
-        throw new InterruptedException("No Database set");
+        return dodexDatabase;
     }
 
     public static DodexDatabase getDefaultDb(Map<String, String>overrideMap, Properties overrideProps) throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb();
         
-        if(defaultDb.equals("postgres")) {
-            return new DodexDatabasePostgres(overrideMap, overrideProps);
-        } else if(defaultDb.equals("sqlite3")) {
-            return new DodexDatabaseSqlite3(overrideMap, overrideProps);
-        } else if(defaultDb.equals("cubrid")) {
-            return new DodexDatabaseCubrid(overrideMap, overrideProps);
-        } else if(defaultDb.equals("mariadb")) {
-            return new DodexDatabaseMariadb(overrideMap, overrideProps);
+        try {
+            if(defaultDb.equals("postgres") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabasePostgres();
+            } else if(defaultDb.equals("sqlite3") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseSqlite3();
+            } else if(defaultDb.equals("cubrid") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseCubrid();
+            } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseMariadb();
+            }
+        } catch (Exception exception) { 
+            throw exception;
         }
-        throw new InterruptedException("No Database set");
+        return dodexDatabase;
     }
 
     public static void configureDefaults(Map<String, String>overrideMap, Properties overrideProps) {

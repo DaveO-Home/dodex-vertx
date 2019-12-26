@@ -47,12 +47,12 @@ public class Routes {
 		route.handler(routingContext -> {
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/html");
-			if( routingContext.request().path().length() < 7 ||
-				routingContext.request().path().endsWith("index.html")) {
-				response.sendFile("test/index.html").end();
-			} else if(routingContext.request().path().endsWith("bootstrap.html")) {
-				response.sendFile("test/bootstrap.html").end();
-			}
+			
+			int length = routingContext.request().path().length();
+			String path = routingContext.request().path();
+			String file = length < 7 ? "test/index.html" : path.substring(1);
+			
+			response.sendFile(file).end();
 		});
 	}
 
@@ -61,12 +61,12 @@ public class Routes {
 		route.handler(routingContext -> {
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/html");
-			if( routingContext.request().path().length() < 8 ||
-				routingContext.request().path().endsWith("index.html")) {
-				response.sendFile("dodex/index.html").end();
-			} else if(routingContext.request().path().endsWith("bootstrap.html")) {
-				response.sendFile("dodex/bootstrap.html").end();
-			}
+			
+			int length = routingContext.request().path().length();
+			String path = routingContext.request().path();
+			String file = length < 8 ? "test/index.html" : path.substring(1);
+
+			response.sendFile(file).end();
 		});
 	}
 

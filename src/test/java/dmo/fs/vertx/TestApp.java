@@ -256,8 +256,8 @@ class DbTest /*extends DbDefinitionBase*/ {
     }
 
     public static boolean tableExist(Connection conn, String tableName) throws SQLException {
-		boolean exists = false;
-		try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName, null)) {
+        boolean exists = false;
+		try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName.toLowerCase(), null)) {
 			while (rs.next()) {
                 String name = rs.getString("TABLE_NAME");
 				if (name != null && name.toLowerCase().equals(tableName.toLowerCase())) {

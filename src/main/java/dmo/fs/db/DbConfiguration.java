@@ -94,13 +94,13 @@ public class DbConfiguration {
         
         try {
             if(defaultDb.equals("postgres") && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabasePostgres();
+                dodexDatabase = new DodexDatabasePostgres(overrideMap, overrideProps);
             } else if(defaultDb.equals("sqlite3") && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseSqlite3();
+                dodexDatabase = new DodexDatabaseSqlite3(overrideMap, overrideProps);
             } else if(defaultDb.equals("cubrid") && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseCubrid();
+                dodexDatabase = new DodexDatabaseCubrid(overrideMap, overrideProps);
             } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseMariadb();
+                dodexDatabase = new DodexDatabaseMariadb(overrideMap, overrideProps);
             }
         } catch (Exception exception) { 
             throw exception;

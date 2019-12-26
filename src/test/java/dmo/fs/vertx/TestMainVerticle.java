@@ -45,11 +45,13 @@ public class TestMainVerticle {
     List<Route> routesList = routes.getRoutes().getRoutes();
 
     boolean hasPathDodex = false;
+
     for(Route route : routesList) {
-       if(!hasPathDodex) {
-        hasPathDodex = route.getPath() == "/test";
-       }
+      if(!hasPathDodex && route.getPath() != null) {
+        hasPathDodex = route.getPath().equals("/");  // made routes more generic
+      }
     }
+
     assertNotEquals(deploymentId, null, "deployment id should be generated");
     assertTrue(hasPathDodex, "verticle configured for dodex route"); 
     testContext.completeNow();

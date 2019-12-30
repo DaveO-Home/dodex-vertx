@@ -19,7 +19,7 @@
 
 1. Execute ```gradlew tasks``` to view all tasks.
 2. Execute ```gradlew shadowJar``` to build the production fat jar.
-3. Execute ```java -jar build/libs/dodex-vertx-3.8.3.jar``` to startup the production server.
+3. Execute ```java -jar build/libs/dodex-vertx-3.8.4.jar``` to startup the production server.
 4. Execute url ```http://localhost:8080/dodex``` or ```.../dodex/bootstrap.html``` in a browser. __Note;__ This is a different port and url than development. Also __Note;__ The default database on the backend is "Sqlite3", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb implementations. See ```<install directory>/dodex-vertx/src/main/resources/static/database_config.json``` for configuration.
 5. Swapping among databases; Use environment variable ```DEFAULT_DB``` by setting it to either ```sqlite3``` ,```postgres```, ```cubrid```, ```mariadb``` or set the default database in ```database_config.json```.
 6. The environment variable ```VERTXWEB_ENVIRONMENT``` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.
@@ -33,6 +33,14 @@
 3. Ctrl+Double-Click a dial or bottom card to popup the messaging client.
 4. To test the messaging, open up the URL in a different browser and make a connection by Ctrl+Double-Clicking the bottom card. Make sure you create a handle.
 5. Enter a message and click send to test.
+
+### Docker
+
+* Run under Docker, assumes Docker is installed and daemon is running.
+
+1. From dodex-vertx directory; ```centos/buildcontainer``` or ```centos\buildcontainer```
+2. Execute ```gradlew run``` to start development. Execute ```ctl-c``` && ```exit``` to shutdown.
+3. Execute ```centos/execontainer``` or ```centos\execontainer``` on subsequent startups.
 
 ## Authors
 

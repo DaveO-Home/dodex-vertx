@@ -31,9 +31,9 @@ repositories {
     mavenLocal()
 }
 
-version = "3.8.3"
+version = "3.8.4"
 ext {
-    vertxVersion = "3.8.3"
+    vertxVersion = "3.8.4"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.12.3"
 }
@@ -56,6 +56,7 @@ dependencies {
     implementation "org.jooq:jooq"
     implementation group: 'cubrid', name: 'cubrid-jdbc', version: '10.1.3.7765'
     implementation 'org.mariadb.jdbc:mariadb-java-client:2.5.2'
+    implementation 'io.vertx:vertx-mongo-client:3.8.3'
 
     // This dependency is used by the application.
     implementation "com.google.guava:guava:28.0-jre"

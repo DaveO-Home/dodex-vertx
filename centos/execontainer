@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+docker start test_vertx
+docker exec -it --privileged --user vertx -e DISPLAY=$DISPLAY -w /home/vertx/dodex-vertx test_vertx bash

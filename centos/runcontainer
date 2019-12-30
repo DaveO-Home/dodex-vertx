@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+docker run -ti --privileged -p 8087:8087 -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --name test_vertx vertx bash
+

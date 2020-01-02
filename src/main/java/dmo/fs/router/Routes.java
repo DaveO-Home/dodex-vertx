@@ -64,7 +64,7 @@ public class Routes {
 			
 			int length = routingContext.request().path().length();
 			String path = routingContext.request().path();
-			String file = length < 8 ? "test/index.html" : path.substring(1);
+			String file = length < 8 ? "dodex/index.html" : path.substring(1);
 
 			response.sendFile(file).end();
 		});

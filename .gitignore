@@ -1,6 +1,6 @@
 # Ignore Gradle project-specific cache directory
 .gradle
-
+io.vertx.core.Launcher
 # Ignore Gradle build output directory
 build
 lib
@@ -9,3 +9,6 @@ node_modules
 *.log
 *.db
 bin/main
+logs/*
+cp*.sh
+scripts/*.java

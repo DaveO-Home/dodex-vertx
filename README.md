@@ -34,6 +34,19 @@
 4. To test the messaging, open up the URL in a different browser and make a connection by Ctrl+Double-Clicking the bottom card. Make sure you create a handle.
 5. Enter a message and click send to test.
 
+### Optimizing with Graalvm
+
+* You can run the Vertx Server in native assembled code by compiling the fat jar with graalvm.
+
+1. Install from <https://github.com/graalvm/graalvm-ce-builds/releases>.
+2. Follow install instructions.
+3. Execute ```gu install native-image``` to install the ```native-image``` program.
+4. In the dodex-vertx directory execute ```gradlew install``` and ```gradlew shadowJar```.
+5. Copy the dodexvm shell program located in the dodex-vertx directory to the graalvm directory.
+6. Modify the shell to local installed directories.
+7. In the graalvm directory execute the dodexvm shell program. This should create an executable named ```io.vertx.core.Launcher```.
+8. Execute the productions server with ```io.vertx.core.Launcher``` or ```io.vertx.core.Launcher run dmo.fs.vertx.Server```.
+
 ### Docker
 
 * Run under Docker, assumes Docker is installed and daemon is running.

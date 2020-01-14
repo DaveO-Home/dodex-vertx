@@ -1,4 +1,4 @@
-# doDex-vertx, a java asynchronous server for Dodex and Dodex-mess
+# doDex-vertx, a java asynchronous server for Dodex, Dodex-input and Dodex-mess
 
 ## Install Assumptions
 
@@ -13,7 +13,7 @@
 3. ```cd <install directory>/dodex-vertx``` and execute ```gradlew run```. This should install java dependencies and startup the server in development mode against the default sqlite3 database. In this mode, any modifications to java source will be recompiled.
 4. Execute url ```http://localhost:8087/test``` in a browser.
 5. You can also run ```http://localhost:8087/test/bootstrap.html``` for a bootstrap example.
-6. Follow instructions for dodex at <https://github.com/DaveO-Home/dodex-mess>.
+6. Follow instructions for dodex at <https://www.npmjs.com/package/dodex-mess> and <https://www.npmjs.com/package/dodex-input>.
 
 ### Operation
 
@@ -33,6 +33,7 @@
 3. Ctrl+Double-Click a dial or bottom card to popup the messaging client.
 4. To test the messaging, open up the URL in a different browser and make a connection by Ctrl+Double-Clicking the bottom card. Make sure you create a handle.
 5. Enter a message and click send to test.
+6. For dodex-input Double-Click a dial or bottom card to popup the input dialog. Allows for uploading, editing and removal of private content. Content in JSON can be defined as arrays to make HTML more readable.
 
 ### Optimizing with Graalvm
 
@@ -45,7 +46,7 @@
 5. Copy the dodexvm shell program located in the dodex-vertx directory to the graalvm directory.
 6. Modify the shell to local installed directories.
 7. In the graalvm directory execute the dodexvm shell program. This should create an executable named ```io.vertx.core.Launcher```.
-8. Execute the productions server with ```io.vertx.core.Launcher``` or ```io.vertx.core.Launcher run dmo.fs.vertx.Server```.
+8. Execute the production server with ```io.vertx.core.Launcher``` or ```io.vertx.core.Launcher run dmo.fs.vertx.Server```.
 
 ### Docker
 

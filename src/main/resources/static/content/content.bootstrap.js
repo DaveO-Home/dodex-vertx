@@ -134,5 +134,13 @@
 		// 			`
 		// 	}
 		// }
-	}
-}
+		,"card58": {
+			"tab": "",
+			"front": {
+			  "content": ""
+			},
+			"back": {
+			  "content": "<table class=\"demo\"><row>\n\t\t\t\t<td>\n\t\t\t\t<div><a href=\"https://www.aaa.com/stop/\" target=\"_\">AAA</a></div>\n\t\t\t\t<div><a href=\"https://seniordriving.aaa.com/\" target=\"_\">Senior AAA</a></div>\n\t\t\t\t<div><a href=\"https://www.bbb.org/\" target=\"_\">Better Business</a></div>\n\t\t\t\t<div><a href=\"https://top5-websitebuilders.com/?utm_source=B\" target=\"_\">Web Builder</a></div>\n\t\t\t\t<div><a href=\"https://www.cyclingabout.com/touring-bicycle-buyers-guide/\" target=\"_\">Bike Guide</a></div>\n\t\t\t\t<div><a href=\"https://www.lonelyplanet.com/\" target=\"_\">Travel</a></div>\n\t\t\t\t</td>\n\t\t\t\t<td><div><p id=\"one\"><a href=\"https://news.google.com/?hl=en-US&tab=wn&gl=US&ceid=US:en\" target=\"_\">Google News</a></p></div></td>\n\t\t\t\t<td><div><p id=\"two\"><a href=\"https://www.yahoo.com/\" target=\"_\">Yahoo News</a></p></div></td>\n\t\t\t\t<td><div><p id=\"three\"><a href=\"https://news.microsoft.com/\" target=\"_\">Microsoft News</a></p></div></td>\n\t\t\t\t</row></table>\n\t\t\t\t  <footer class=\"footer\" style=\"width:350px\">\n\t\t\t\t  <div class=\"container\">\n\t\t\t\t\t<div class=\"row\">\n\t\t\t\t\t  <div class=\"footer-col col-sm-10\">\n\t\t\t\t\t\t<ul class=\"list-inline\" style=\"width:345px;\">\n\t\t\t\t\t\t  <li class=\"list-inline-item\"><a class=\"btn-social btn-outline\" href=\"https://www.facebook.com/\" target=\"_\"><i class=\"fa fa-fw fa-facebook\"></i></a></li>\n\t\t\t\t\t\t  <li class=\"list-inline-item\"><a class=\"btn-social btn-outline\" href=\"https://news.google.com/\" target=\"_\"><i class=\"fa fa-fw fa-google\"></i></a></li>\n\t\t\t\t\t\t  <li class=\"list-inline-item\"><a class=\"btn-social btn-outline\" href=\"https://twitter.com/Twitter\" target=\"_\"><i class=\"fa fa-fw fa-twitter\"></i></a></li>\n\t\t\t\t\t\t  <li class=\"list-inline-item\"><a class=\"btn-social btn-outline\" href=\"https://instagram.com\" target=\"_\"><i class=\"fa fa-fw fa-instagram\"></i></a></li>\n\t\t\t\t\t\t  <li class=\"list-inline-item\"><a class=\"btn-social btn-outline\" href=\"https://www.linkedin.com/\" target=\"_\"><i class=\"fa fa-fw fa-linkedin\"></i></a></li>\n\t\t\t\t\t\t  <li class=\"list-inline-item\"><a class=\"btn-social btn-outline\" href=\"https://dribbble.com/\" target=\"_\"><i class=\"fa fa-fw fa-dribbble\"></i></a></li>\n\t\t\t\t\t\t  <li class=\"float-right mr-2\"><h1 style=\"font-size: 14px;\">\n\t\t\t\t\t\t  <svg height=\"18\" width=\"17\" style=\"font-family: 'Open Sans', sans-serif;\">\n\t\t\t\t\t\t  <text x=\"3\" y=\"18\" fill=\"#059\">O</text><text x=\"0\" y=\"15\" fill=\"#059\">D</text></svg> doDex</h1></li>\n\t\t\t\t\t\t</ul>\n\t\t\t\t\t  </div>\n\t\t\t\t\t</div>\n\t\t\t\t  </div></footer>\n\t\t\t\t\n\t\t\t}\n\t\t"
+			}
+			}
+		}}

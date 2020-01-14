@@ -18,12 +18,20 @@
       rel="stylesheet" 
       integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" 
       crossorigin="anonymous">
+  <link href="../node_modules/jsoneditor/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
+  <style>
+    .editor {
+      width: 80%; height: 400px; position: fixed;	bottom: 0; left: 0;
+    }
+  </style>
 </head>
 
 <body>
   <div class="dodex--open">
-    <img src="../../node_modules/dodex/dist/dodex_g.ico">
+    <img src="../node_modules/dodex/dist/dodex_g.ico">
   </div>
+  <div id="jsoneditor" class="editor"></div>
+
   <script src="../node_modules/dodex/dist/dodex.min.js" type="text/javascript"></script>
   <script src="../node_modules/dodex-input/dist/dodex-input.min.js" type="text/javascript"></script>
   <script src="../node_modules/dodex-mess/dist/dodex-mess.min.js" type="text/javascript"></script>
@@ -33,6 +41,8 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js" 
       integrity="sha384-wfSDF2E50Y2D1uUdj0O3uMBJnjuUD4Ih7YwaYd1iqfktj0Uod8GCExl3Og8ifwB6"
       crossorigin="anonymous"></script>
+  <script src="../node_modules/jsoneditor/dist/jsoneditor.min.js"></script>
+
   <script>
     const dodex = window.doDex;
     const input = window.doDexInput;

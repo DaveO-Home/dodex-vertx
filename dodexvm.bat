@@ -4,7 +4,7 @@ set LIB=<dodex-vertx install>\build\install\dodex-vertx\lib
 set CD2=
 for /F %%p in ('dir /b %LIB%\*.jar') DO call :append %%p
 
-native-image io.vertx.core.Launcher -jar <dodex-vertx install>\buils\libs\dodex-vertx-3.8.4.jar  -cp <dodex-vertx>\build\classes\java/main;%CD2% --initialize-at-build-time=org.slf4j,org.apache.commons.logging
+native-image io.vertx.core.Launcher -jar <dodex-vertx install>\build\libs\dodex-vertx-3.8.4.jar  -cp <dodex-vertx>\build\classes\java/main;%CD2% --initialize-at-build-time=org.slf4j,org.apache.commons.logging
 goto end
 
 :append

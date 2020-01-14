@@ -13,8 +13,9 @@
   "author": "daveo",
   "license": "ISC",
   "dependencies": {
-    "dodex": "^1.3.0",
-    "dodex-input": "^1.2.0",
-    "dodex-mess": "^1.1.2"
+    "dodex": "^1.3.3",
+    "dodex-input": "^1.3.0",
+    "dodex-mess": "^1.1.4",
+    "jsoneditor": "^8.1.2"
   }
 }

@@ -40,13 +40,14 @@
 * You can run the Vertx Server in native assembled code by compiling the fat jar with graalvm.
 
 1. Install from <https://github.com/graalvm/graalvm-ce-builds/releases>.
-2. Follow install instructions.
-3. Execute ```gu install native-image``` to install the ```native-image``` program.
-4. In the dodex-vertx directory execute ```gradlew install``` and ```gradlew shadowJar```.
-5. Copy the dodexvm shell program located in the dodex-vertx directory to the graalvm directory.
-6. Modify the shell to local installed directories.
-7. In the graalvm directory execute the dodexvm shell program. This should create an executable named ```io.vertx.core.Launcher```.
-8. Execute the production server with ```io.vertx.core.Launcher``` or ```io.vertx.core.Launcher run dmo.fs.vertx.Server```.
+1. Follow install instructions.
+1. Execute ```<graalvm directory>/bin/gu install native-image``` to install the ```native-image``` program.
+1. In the dodex-vertx directory execute ```gradlew installDist``` and ```gradlew shadowJar```.
+1. Modify the dodexvm or dodexvm.bat shell to the graalvm install directory.
+1. In your dodex-vertx directory execute the dodexvm shell program. This should create an executable named ```io.vertx.core.Launcher```.
+1. Execute the production server with ```io.vertx.core.Launcher```.
+
+   __Note;__ A Java VM(JAVA_HOME) is required since ```dodex-vertx``` is a server.
 
 ### Docker
 

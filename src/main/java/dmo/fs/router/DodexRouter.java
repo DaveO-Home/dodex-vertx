@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -38,36 +39,43 @@ public class DodexRouter {
     private final Hashtable<String, ServerWebSocket> clients = new Hashtable<String, ServerWebSocket>();
     DodexDatabase dodexDatabase = null;
 
-    public DodexRouter(Vertx vertx) throws InterruptedException {
+    public DodexRouter(final Vertx vertx) throws InterruptedException {
         this.vertx = vertx;
     }
 
-    public void setWebSocket(HttpServer server) throws InterruptedException, IOException, SQLException {
+    public void setWebSocket(final HttpServer server) throws InterruptedException, IOException, SQLException {
         /**
-         * You can customize the db config here by: Map = db config, Properties =
-         * credentials Map overrideMap = new Map(); Properties overrideProperties = new
-         * Properties(); // set override or additional values... dodexDatabase =
-         * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
+         * You can customize the db config here by: 
+         *  Map = db configuration, 
+         *  Properties = credentials 
+         * e.g. Map overrideMap = new Map(); 
+         *      Properties overrideProperties = new Properties(); 
+         * set override or additional values... 
+         * dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
          */
         dodexDatabase = DbConfiguration.getDefaultDb();
         /**
-         * Optional auto user cleanup - config in "application-conf.json".
-         * When client changes handle when server is down, old users and 
-         * undelivered messages will be orphaned.
+         * Optional auto user cleanup - config in "application-conf.json". When client
+         * changes handle when server is down, old users and undelivered messages will
+         * be orphaned.
          * 
-         * Defaults: off - when turned on
-         * 1. execute on start up and every 7 days thereafter.
-         * 2. remove users who have not logged in for 90 days.
+         * Defaults: off - when turned on 1. execute on start up and every 7 days
+         * thereafter. 2. remove users who have not logged in for 90 days.
          */
-        if(Vertx.currentContext() != null) {
-            JsonObject config = Vertx.currentContext().config();
-            if(!config.isEmpty() && config.getBoolean("clean.run")) {
-                CleanOrphanedUsers clean = new CleanOrphanedUsers();
+        final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
+        try {
+            final JsonObject config = jsonObject.isPresent() ? jsonObject.get() : new JsonObject();
+            final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
+            if (runClean.isPresent() && runClean.get()) {
+                final CleanOrphanedUsers clean = new CleanOrphanedUsers();
                 clean.startClean(config);
             }
+        } catch (final Exception exception) {
+            logger.info("{0}Context Configuration failed...{1}{2} ",
+                    new Object[] { ConsoleColors.RED_BOLD_BRIGHT, exception.getMessage(), ConsoleColors.RESET });
         }
 
-        SharedData sd = vertx.sharedData();
+        final SharedData sd = vertx.sharedData();
         String startupMessage = "In Production";
 
         startupMessage = DodexUtil.getEnv().equals("dev") ? "In Development" : startupMessage;
@@ -81,23 +89,23 @@ public class DodexRouter {
                                 URLDecoder.decode(ParseQuery.getQueryMap(ws.query()).get("handle"),
                                         StandardCharsets.UTF_8.name()),
                                 ConsoleColors.RESET });
-            } catch (UnsupportedEncodingException e) {
+            } catch (final UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
 
             MessageUser resultUser = dodexDatabase.createMessageUser();
-            DodexUtil dodexUtil = new DodexUtil();
+            final DodexUtil dodexUtil = new DodexUtil();
 
             if (!ws.path().equals("/dodex")) {
                 ws.reject();
             } else {
-                LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
-                MessageUser messageUser = dodexDatabase.createMessageUser();
-                Database db = dodexDatabase.getDatabase();
+                final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
+                final MessageUser messageUser = dodexDatabase.createMessageUser();
+                final Database db = dodexDatabase.getDatabase();
 
                 try {
                     wsChatSessions.put(ws.textHandlerID(), URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
-                } catch (UnsupportedEncodingException e) {
+                } catch (final UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
                 clients.put(ws.textHandlerID(), ws);
@@ -115,10 +123,10 @@ public class DodexRouter {
                     @Override
                     public void handle(final Buffer data) {
                         String selectedUsers = null;
-                        ArrayList<String> onlineUsers = new ArrayList<>();
-                        String message = data.getString(0, data.length());
+                        final ArrayList<String> onlineUsers = new ArrayList<>();
+                        final String message = data.getString(0, data.length());
                         // Checking if message or command
-                        Map<String, String> returnObject = dodexUtil.commandMessage(ws, message, messageUser);
+                        final Map<String, String> returnObject = dodexUtil.commandMessage(ws, message, messageUser);
                         // message with command stripped out
                         String computedMessage = null;
                         String command = null;
@@ -137,16 +145,16 @@ public class DodexRouter {
                         if (computedMessage.length() > 0) {
                             // private users to send message
                             selectedUsers = returnObject.get("selectedUsers");
-                            Set<String> websockets = clients.keySet();
+                            final Set<String> websockets = clients.keySet();
                             Map<String, String> query = null;
 
-                            for (String websocket : websockets) {
-                                ServerWebSocket webSocket = clients.get(websocket);
+                            for (final String websocket : websockets) {
+                                final ServerWebSocket webSocket = clients.get(websocket);
                                 if (!webSocket.isClosed()) {
                                     if (!websocket.equals(ws.textHandlerID())) {
                                         // broadcast message
                                         query = ParseQuery.getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
-                                        String handle = query.get("handle");
+                                        final String handle = query.get("handle");
                                         if (selectedUsers == null && command == null) {
                                             webSocket.writeTextMessage(messageUser.getName() + ": " + computedMessage);
                                             // private message
@@ -173,8 +181,8 @@ public class DodexRouter {
 
                         // calculate difference between selected and online users
                         if (selectedUsers != null) {
-                            List<String> selected = Arrays.asList(selectedUsers.split(","));
-                            List<String> disconnectedUsers = selected.stream()
+                            final List<String> selected = Arrays.asList(selectedUsers.split(","));
+                            final List<String> disconnectedUsers = selected.stream()
                                     .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
                             // Save private message to send when to-user logs in
                             if (disconnectedUsers.size() > 0) {
@@ -186,7 +194,7 @@ public class DodexRouter {
                                 }
                                 try {
                                     dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
-                                } catch (SQLException e) {
+                                } catch (final SQLException e) {
                                     e.printStackTrace();
                                 }
                             }

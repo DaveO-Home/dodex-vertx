@@ -26,6 +26,22 @@
 7. When Dodex-vertx is configured for the Cubrid database, the database must be created using UTF-8. For example ```cubrid createdb dodex en_US.utf8```.
 8. Version 1.3.0 adds an auto user clean up process. See ```application-conf.json``` for configuration. It is turned off by default. Users and messages may be orphaned when clients change a handle when the server is offline.
 
+## Debug
+
+* Execute `gradlew run -DDEBUG=true` to debug the Vertx Vertical.
+* The default port is 5005, see `build.gradle` to change.
+* Tested with VSCode, the `launch.json` =
+  
+```javascript
+    {
+            "type": "java",
+            "name": "Debug (Launch) - Dodex",
+            "request": "attach",
+            "hostName": "localhost",
+            "port": 5005
+    }
+```
+
 ## Test
 
 1. Make sure the demo Java-vertx server is running in development mode.

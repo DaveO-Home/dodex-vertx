@@ -42,11 +42,15 @@ public class Server extends AbstractVerticle {
   }
 
   private static String OS = System.getProperty("os.name").toLowerCase();
+  private static String development = System.getenv("VERTXWEB_ENVIRONMENT").toLowerCase();
   private HttpServer server;
 
   public void start(Promise<Void> promise) 
       throws InterruptedException, URISyntaxException, IOException, SQLException {
-
+    if(development.equals("dev")) {
+      port = 8087;
+    }
+    
     if (isUnix()) {
       server = configureLinuxOptions(vertx, true, true, true, true);
     } else {

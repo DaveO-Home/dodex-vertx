@@ -32,6 +32,7 @@ repositories {
 }
 
 version = "3.8.4"
+
 ext {
     vertxVersion = "3.8.4"
     junitJupiterEngineVersion = "5.4.0"
@@ -76,12 +77,17 @@ application {
 def mainVerticleName = "dmo.fs.vertx.Server"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = 'src/**/*.java'
+def debug = ""
 
 apply plugin: 'nu.studer.jooq'
 
 run {
+     if (System.getProperty('DEBUG', 'false') == 'true') {
+        debug = "--java-opts=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+    }
+
     environment "VERTXWEB_ENVIRONMENT", "dev"
-    args = ['run', mainVerticleName, "--java-optsX=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005", "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/java/application-conf.json"]
+    args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/java/application-conf.json"]
     systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
 }
 

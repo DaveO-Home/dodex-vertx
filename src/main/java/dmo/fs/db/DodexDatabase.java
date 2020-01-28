@@ -36,7 +36,7 @@ public interface DodexDatabase {
 
 	public void addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException;
 
-	public int processUserMessages(ServerWebSocket ws, MessageUser messageUser);
+	public int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser);
 
 	public Database getDatabase();
 
@@ -46,6 +46,6 @@ public interface DodexDatabase {
 
 	public MessageUser selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) throws InterruptedException, SQLException;
 
-	public StringBuilder buildUsersJson(MessageUser messageUser) throws InterruptedException, SQLException;
+	public StringBuilder buildUsersJson(Database db, MessageUser messageUser) throws InterruptedException, SQLException;
 
 }

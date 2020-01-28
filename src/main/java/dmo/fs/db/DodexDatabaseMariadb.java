@@ -58,7 +58,6 @@ public class DodexDatabaseMariadb extends DbMariadb implements DodexDatabase {
 
 		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
 		databaseSetup();
-		setDatabase(db);
 	}
 
 	public DodexDatabaseMariadb() throws InterruptedException, IOException, SQLException {
@@ -73,7 +72,6 @@ public class DodexDatabaseMariadb extends DbMariadb implements DodexDatabase {
 		dbProperties.setProperty("foreign_keys", "true");
 
 		databaseSetup();
-		setDatabase(db);
 	}
 
 	@Override

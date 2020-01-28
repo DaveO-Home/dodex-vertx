@@ -29,6 +29,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.SharedData;
+import io.vertx.core.Context;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
@@ -62,17 +63,20 @@ public class DodexRouter {
          * Defaults: off - when turned on 1. execute on start up and every 7 days
          * thereafter. 2. remove users who have not logged in for 90 days.
          */
-        final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
-        try {
-            final JsonObject config = jsonObject.isPresent() ? jsonObject.get() : new JsonObject();
-            final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
-            if (runClean.isPresent() && runClean.get()) {
-                final CleanOrphanedUsers clean = new CleanOrphanedUsers();
-                clean.startClean(config);
+        final Optional<Context> context = Optional.ofNullable(Vertx.currentContext());
+        if(context.isPresent()) {
+            final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
+            try {
+                final JsonObject config = jsonObject.isPresent() ? jsonObject.get() : new JsonObject();
+                final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
+                if (runClean.isPresent() && runClean.get()) {
+                    final CleanOrphanedUsers clean = new CleanOrphanedUsers();
+                    clean.startClean(config);
+                }
+            } catch (final Exception exception) {
+                logger.info("{0}Context Configuration failed...{1}{2} ",
+                        new Object[] { ConsoleColors.RED_BOLD_BRIGHT, exception.getMessage(), ConsoleColors.RESET });
             }
-        } catch (final Exception exception) {
-            logger.info("{0}Context Configuration failed...{1}{2} ",
-                    new Object[] { ConsoleColors.RED_BOLD_BRIGHT, exception.getMessage(), ConsoleColors.RESET });
         }
 
         final SharedData sd = vertx.sharedData();
@@ -220,7 +224,7 @@ public class DodexRouter {
 
                 try {
                     resultUser = dodexDatabase.selectUser(messageUser, ws, db);
-                    userJson = dodexDatabase.buildUsersJson(messageUser);
+                    userJson = dodexDatabase.buildUsersJson(db, messageUser);
                 } catch (InterruptedException | SQLException e) {
                     e.printStackTrace();
                 }
@@ -229,7 +233,7 @@ public class DodexRouter {
                 /*
                  * Send undelivered messages and remove user related messages.
                  */
-                dodexDatabase.processUserMessages(ws, resultUser);
+                dodexDatabase.processUserMessages(ws, db, resultUser);
             }
         });
     }

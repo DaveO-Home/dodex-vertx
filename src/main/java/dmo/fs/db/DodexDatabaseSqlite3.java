@@ -72,7 +72,6 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 implements DodexDatabase {
 		dbProperties.setProperty("foreign_keys", "true");
 
 		databaseSetup();
-		setDatabase(db);
 	}
 
 	@Override

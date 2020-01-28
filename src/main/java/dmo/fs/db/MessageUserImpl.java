@@ -1,6 +1,8 @@
 package dmo.fs.db;
 
 import java.sql.Timestamp;
+import java.util.Date;
+import java.util.Optional;
 
 public class MessageUserImpl implements MessageUser {
 
@@ -13,26 +15,25 @@ public class MessageUserImpl implements MessageUser {
     private Timestamp lastLogin;
 
     @Override
-    public void setId(Long id) {
-        if(id instanceof Long) {
+    public void setId(final Long id) {
+        if (id instanceof Long) {
             this.id = id;
-        }
-        else
+        } else
             this.id = Long.parseLong(id.toString());
     }
 
     @Override
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = name;
     }
 
     @Override
-    public void setPassword(String password) {
+    public void setPassword(final String password) {
         this.password = password;
     }
 
     @Override
-    public void setIp(String ip) {
+    public void setIp(final String ip) {
         this.ip = ip;
     }
 
@@ -57,12 +58,26 @@ public class MessageUserImpl implements MessageUser {
     }
 
     @Override
-    public void setLastLogin(Timestamp lastLogin) {
-        this.lastLogin = lastLogin;
+    public void setLastLogin(final Object lastLogin) {
+        Optional<?> login = Optional.of(lastLogin);
+        Optional<Timestamp> loginTimestamp = login
+            .filter(Timestamp.class::isInstance)
+            .map(Timestamp.class::cast);
+        if(loginTimestamp.isPresent()) {
+            this.lastLogin = loginTimestamp.get();
+        }
+        else {
+            Optional<Date> loginDate = login
+                .filter(Date.class::isInstance)
+                .map(Date.class::cast);
+            if(loginDate.isPresent()) {
+                this.lastLogin = new Timestamp((loginDate.get()).getTime());
+            }
+        }
     }
 
     @Override
     public Timestamp getLastLogin() {
-        return lastLogin;
+        return  lastLogin;
     }
 }

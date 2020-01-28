@@ -68,7 +68,6 @@ public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
 		dbProperties = dodexUtil.mapToProperties(dbMap);
 
 		databaseSetup();
-		setDatabase(db);
 	}
 
 	@Override

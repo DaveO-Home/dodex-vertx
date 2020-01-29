@@ -9,7 +9,7 @@ public interface MessageUser {
     public void setName(String name);
     public void setPassword(String password);
     public void setIp(String ip);
-    public void setLastLogin(Object lastLogin);
+    public <T>void setLastLogin(T lastLogin);
     public Long getId();
     public String getName();
     public String getPassword();

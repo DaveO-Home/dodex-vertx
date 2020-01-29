@@ -58,7 +58,7 @@ public class MessageUserImpl implements MessageUser {
     }
 
     @Override
-    public void setLastLogin(final Object lastLogin) {
+    public <T>void setLastLogin(T lastLogin) {
         Optional<?> login = Optional.of(lastLogin);
         Optional<Timestamp> loginTimestamp = login
             .filter(Timestamp.class::isInstance)

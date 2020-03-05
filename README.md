@@ -1,5 +1,7 @@
 # doDex-vertx, a java asynchronous server for Dodex, Dodex-input and Dodex-mess
 
+* A functional demo is running under a Websphere Liberty server on the IBM Cloud Foundary @ <https://daveomix.us-south.cf.appdomain.cloud/ddex/index.html> or `.../bootstrap.html`.
+
 ## Install Assumptions
 
 1. Java 8 or higher installed with JAVA_HOME set.
@@ -19,7 +21,7 @@
 
 1. Execute ```gradlew tasks``` to view all tasks.
 2. Execute ```gradlew shadowJar``` to build the production fat jar.
-3. Execute ```java -jar build/libs/dodex-vertx-3.8.4.jar``` to startup the production server.
+3. Execute ```java -jar build/libs/dodex-vertx-3.8.5.jar``` to startup the production server.
 4. Execute url ```http://localhost:8080/dodex``` or ```.../dodex/bootstrap.html``` in a browser. __Note;__ This is a different port and url than development. Also __Note;__ The default database on the backend is "Sqlite3", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb implementations. See ```<install directory>/dodex-vertx/src/main/resources/static/database_config.json``` for configuration.
 5. Swapping among databases; Use environment variable ```DEFAULT_DB``` by setting it to either ```sqlite3``` ,```postgres```, ```cubrid```, ```mariadb``` or set the default database in ```database_config.json```.
 6. The environment variable ```VERTXWEB_ENVIRONMENT``` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.

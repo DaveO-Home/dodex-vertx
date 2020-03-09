@@ -23,8 +23,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class DodexDatabaseCubrid extends DbCubrid implements DodexDatabase {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabasePostgres.class.getName());
+public class DodexDatabaseCubrid extends DbCubrid {
+	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseCubrid.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;
 	protected NonBlockingConnectionPool pool;

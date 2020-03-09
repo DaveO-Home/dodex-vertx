@@ -21,6 +21,7 @@ public class DbConfiguration {
     private static Boolean isUsingPostgres = false;
     private static Boolean isUsingCubrid = false;
     private static Boolean isUsingMariadb = false;
+    private static Boolean isUsingIbmDB2 = false;
     private static String defaultDb = "sqlite3";
     private static DodexUtil dodexUtil = new DodexUtil();
     private static DodexDatabase dodexDatabase = null;
@@ -55,6 +56,11 @@ public class DbConfiguration {
                 properties.get("user").toString(), properties.get("password").toString());
     }
 
+    public static ConnectionProvider getIbmDb2ConnectionProvider() {
+        isUsingIbmDB2 = true;
+        return ConnectionProvider.from(map.get("url") + map.get("host") + map.get("dbname"), properties);
+    }
+
     public static boolean isUsingSqlite3() {
         return isUsingSqlite3;
     }
@@ -71,6 +77,10 @@ public class DbConfiguration {
         return isUsingMariadb;
     }
 
+    public static boolean isUsingIbmDB2() {
+        return isUsingIbmDB2;
+    }
+
     public static DodexDatabase getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
         try {
@@ -82,6 +92,8 @@ public class DbConfiguration {
                 dodexDatabase = new DodexDatabaseCubrid();
             } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseMariadb();
+            } else if(defaultDb.equals("ibmdb2") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseIbmDB2();
             }
         } catch (Exception exception) { 
             throw exception;
@@ -101,6 +113,8 @@ public class DbConfiguration {
                 dodexDatabase = new DodexDatabaseCubrid(overrideMap, overrideProps);
             } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseMariadb(overrideMap, overrideProps);
+            } else if(defaultDb.equals("ibmdb2") && dodexDatabase == null) {
+                dodexDatabase = new DodexDatabaseIbmDB2(overrideMap, overrideProps);
             }
         } catch (Exception exception) { 
             throw exception;

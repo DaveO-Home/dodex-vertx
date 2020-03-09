@@ -58,6 +58,7 @@ dependencies {
     implementation group: 'cubrid', name: 'cubrid-jdbc', version: '10.1.3.7765'
     implementation 'org.mariadb.jdbc:mariadb-java-client:2.5.2'
     implementation 'io.vertx:vertx-mongo-client:3.8.3'
+    implementation group: 'com.ibm.db2.jcc', name: 'db2jcc', version: 'db2jcc4'
 
     // This dependency is used by the application.
     implementation "com.google.guava:guava:28.0-jre"

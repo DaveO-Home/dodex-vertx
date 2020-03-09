@@ -23,7 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class DodexDatabaseMariadb extends DbMariadb implements DodexDatabase {
+public class DodexDatabaseMariadb extends DbMariadb {
 	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseMariadb.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;

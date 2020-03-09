@@ -95,10 +95,13 @@ public class DodexRouter {
                                     URLDecoder.decode(ParseQuery.getQueryMap(ws.query()).get("handle"),
                                             StandardCharsets.UTF_8.name()),
                                     ConsoleColors.RESET });
-                } catch (final UnsupportedEncodingException e) {
+                } 
+                // catch (final UnsupportedEncodingException e) {
+                //     e.printStackTrace();
+                // } 
+                catch (final Exception e) {
                     e.printStackTrace();
                 }
-
                 MessageUser resultUser = dodexDatabase.createMessageUser();
                 final DodexUtil dodexUtil = new DodexUtil();
 
@@ -108,7 +111,6 @@ public class DodexRouter {
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                     final MessageUser messageUser = dodexDatabase.createMessageUser();
                     final Database db = dodexDatabase.getDatabase();
-
                     try {
                         wsChatSessions.put(ws.textHandlerID(),
                                 URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));

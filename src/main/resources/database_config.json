@@ -29,7 +29,7 @@
             "config": {
                 "host": "//localhost",
                 "url": "jdbc:postgresql:",
-                "dbname": "/test"
+                "dbname": "/testdb"
             }
         },
         "prod": { 
@@ -48,7 +48,7 @@
     "cubrid": {
         "dev": { 
             "credentials": {
-                "user": "user",
+                "user": "dba",
                 "password": "password",
                 "ssl": "false"
             },
@@ -94,6 +94,32 @@
                 "host": "//localhost:3306",
                 "url": "jdbc:mariadb:",
                 "dbname": "/dodex"
+            }
+        }
+    },
+    "ibmdb2": {
+        "dev": { 
+            "credentials": {
+                "user": "db2inst1",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:50000",
+                "url": "jdbc:db2:",
+                "dbname": "/testdb"
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:50000",
+                "url": "jdbc:db2:",
+                "dbname": "/dodexdb"
             }
         }
     }

@@ -244,10 +244,11 @@ public abstract class DbDefinitionBase {
 	public int updateUser(ServerWebSocket ws, Database db, MessageUser messageUser)
 			throws InterruptedException, SQLException {
 		int count[] = { 0 };
+		Timestamp dateTime = new Timestamp(new Date().getTime());
 
 		Disposable disposable = db.update(getUpdateUser()).parameter("ID", messageUser.getId())
 				.parameter("NAME", messageUser.getName()).parameter("PASSWORD", messageUser.getPassword())
-				.parameter("IP", messageUser.getIp()).parameter("LASTLOGIN", new Timestamp(new Date().getTime()))
+				.parameter("IP", messageUser.getIp()).parameter("LASTLOGIN", dateTime)
 				.counts().doOnNext(c -> count[0] += c).subscribe(result -> {
 					//
 				}, throwable -> {
@@ -260,12 +261,14 @@ public abstract class DbDefinitionBase {
 		return count[0];
 	}
 
-	public int updateSqliteUser(ServerWebSocket ws, Database db, MessageUser messageUser)
+	public int updateCustomUser(ServerWebSocket ws, Database db, MessageUser messageUser, String type)
 			throws InterruptedException, SQLException {
 		int count[] = { 0 };
 
 		Disposable disposable = db.update(getSqliteUpdateUser()).parameter("USERID", messageUser.getId())
-				.parameter("LASTLOGIN", new Date().getTime()).counts().doOnNext(c -> count[0] += c)
+				.parameter("LASTLOGIN", type.equals("date")? new Date().getTime(): new Timestamp(new Date().getTime()))
+				.counts()
+				.doOnNext(c -> count[0] += c)
 				.subscribe(result -> {
 					//
 				}, throwable -> {
@@ -471,7 +474,9 @@ public abstract class DbDefinitionBase {
 		await(disposable);
 		//Changing last login datetime
 		if(DbConfiguration.isUsingSqlite3()) {
-			updateSqliteUser(ws, db, resultUser);
+			updateCustomUser(ws, db, resultUser, "date");
+		} else if(DbConfiguration.isUsingIbmDB2()) {
+			updateCustomUser(ws, db, resultUser, "timestamp");
 		}
 		else {
 			updateUser(ws, db, resultUser);

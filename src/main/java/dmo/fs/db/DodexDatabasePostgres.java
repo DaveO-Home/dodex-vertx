@@ -23,7 +23,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
-public class DodexDatabasePostgres extends DbPostgres implements DodexDatabase {
+public class DodexDatabasePostgres extends DbPostgres {
 	private final static Logger logger = LoggerFactory.getLogger(DodexDatabasePostgres.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;

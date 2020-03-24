@@ -42,12 +42,15 @@ public class Server extends AbstractVerticle {
   }
 
   private static String OS = System.getProperty("os.name").toLowerCase();
-  private static String development = System.getenv("VERTXWEB_ENVIRONMENT").toLowerCase();
+  private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
   private HttpServer server;
 
-  public void start(Promise<Void> promise) 
+  public void start(Promise<Void> promise)
       throws InterruptedException, URISyntaxException, IOException, SQLException {
-    if(development.equals("dev")) {
+    if(development == null || development.equals("")) {
+      development = "prod";
+    }
+    else if(development.toLowerCase().equals("dev")) {
       port = 8087;
     }
     
@@ -84,11 +87,25 @@ public class Server extends AbstractVerticle {
     }
   }
 
-  private HttpServer configureLinuxOptions(Vertx vertx, boolean fastOpen, boolean cork, boolean quickAck,
+  private HttpServer configureLinuxOptions(Vertx vertx, 
+      boolean fastOpen, 
+      boolean cork, 
+      boolean quickAck,
       boolean reusePort) {
     // Available on Linux
-    return vertx.createHttpServer(new HttpServerOptions().setTcpFastOpen(fastOpen).setTcpCork(cork)
-        .setTcpQuickAck(quickAck).setReusePort(reusePort));
+    return vertx.createHttpServer(new HttpServerOptions()
+        .setTcpFastOpen(fastOpen)
+        .setTcpCork(cork)
+        .setTcpQuickAck(quickAck)
+        .setReusePort(reusePort)
+    // https - generate and get signed your certificate
+    // Self signed for testing, per; sslshopper.com/article-most-common-java-keytool-keystore-commands.html
+    // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks -storepass password -validity 360 -keysize 2048
+        // .setKeyStoreOptions(new JksOptions()
+        // .setPath("server-keystore.jks")
+        // .setPassword("password"))
+        // .setSsl(true)
+        );
   }
 
   public static boolean isWindows() {

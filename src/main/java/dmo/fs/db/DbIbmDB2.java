@@ -6,23 +6,23 @@ public abstract class DbIbmDB2 extends JavaRxTimestampDb {
 	private enum CreateTable {
 		CREATEUSERS(
 			"CREATE TABLE USERS (" +
-				"id INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY," +
-				"name VARCHAR(255) NOT NULL," +
-				"password VARCHAR(255) NOT NULL," +
-				"ip VARCHAR(255) NOT NULL," +
+				"id INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY, " +
+				"name VARCHAR(255) NOT NULL, " +
+				"password VARCHAR(255) NOT NULL, " +
+				"ip VARCHAR(255) NOT NULL, " +
 				"last_login TIMESTAMP(12) NOT NULL, " +
-				"PRIMARY KEY (id));"),
+				"PRIMARY KEY (id))"),
 		CREATEUSERSINDEX(
 			"CREATE UNIQUE INDEX XUSERS " +
 			"ON USERS " +
-		  "(name ASC, password ASC);"),
+		  "(name ASC, password ASC)"),
 		CREATEMESSAGES(
 			"CREATE TABLE MESSAGES (" +
 				"id INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY," +
 				"message CLOB NOT NULL," +
 				"from_handle VARCHAR(255) NOT NULL," +
 				"post_date TIMESTAMP(12) NOT NULL, " +
-				"PRIMARY KEY (id));"),
+				"PRIMARY KEY (id))"),
 		CREATEUNDELIVERED(
 			"CREATE TABLE UNDELIVERED (" +
 				"user_id INTEGER NOT NULL," +
@@ -30,7 +30,7 @@ public abstract class DbIbmDB2 extends JavaRxTimestampDb {
 				"FOREIGN KEY (USER_ID) " +
 				"REFERENCES USERS (ID) ON DELETE RESTRICT, " +
 				"FOREIGN KEY (MESSAGE_ID) " +
-				"REFERENCES MESSAGES (ID) ON DELETE RESTRICT);"
+				"REFERENCES MESSAGES (ID) ON DELETE RESTRICT)"
 				);
 
         private String sql;

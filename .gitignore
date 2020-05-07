@@ -1,4 +1,11 @@
 # Ignore Gradle project-specific cache directory
+server-started
+allure*
+.cache
+my*
+dodexvmX*
+src/main/resources/static/dist*
+src/dist*
 .gradle
 io.vertx.core.Launcher
 # Ignore Gradle build output directory

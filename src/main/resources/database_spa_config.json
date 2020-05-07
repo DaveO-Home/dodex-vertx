@@ -1,0 +1,124 @@
+{
+    "application": "spa",
+    "defaultdb": "sqlite3",
+    "sqlite3": {
+        "dev": {
+            "credentials": {},
+            "config": {
+                "filename": "build/dodex_tests.db",
+                "url": "jdbc:sqlite:"
+            }
+        },
+        "prod": {
+            "credentials": {},
+            "config": {
+                "filename": "dodex.db",
+                "url": "jdbc:sqlite:"
+            }
+        }
+    },
+    "postgres": {
+        "dev": {
+            "credentials": {
+                "user": "daveo",
+                "password": "albatross",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost",
+                "url": "jdbc:postgresql:",
+                "dbname": "/daveo"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost",
+                "url": "jdbc:postgresql:",
+                "dbname": "/dodex"
+            }
+        }
+    },
+    "cubrid": {
+        "dev": {
+            "credentials": {
+                "user": "dba",
+                "password": "albatross",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "localhost:33000:",
+                "url": "jdbc:cubrid:",
+                "dbname": "test:public::"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "localhost:33000",
+                "url": "jdbc:CUBRID:",
+                "dbname": "dodex:public::"
+            }
+        }
+    },
+    "mariadb": {
+        "dev": {
+            "credentials": {
+                "user": "daveo",
+                "password": "albatross",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:3306",
+                "url": "jdbc:mariadb:",
+                "dbname": "/test"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:3306",
+                "url": "jdbc:mariadb:",
+                "dbname": "/dodex"
+            }
+        }
+    },
+    "ibmdb2": {
+        "dev": {
+            "credentials": {
+                "user": "rlq77780",
+                "password": "9mjzjds@5ww3fl38",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//dashdb-txn-sbox-yp-dal09-04.services.dal.bluemix.net:50000",
+                "url": "jdbc:db2:",
+                "dbname": "/BLUDB"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:50000",
+                "url": "jdbc:db2:",
+                "dbname": "/dodexdb"
+            }
+        }
+    }
+}

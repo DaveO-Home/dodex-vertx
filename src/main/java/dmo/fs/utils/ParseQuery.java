@@ -7,8 +7,12 @@ import java.util.Map;
 public class ParseQuery {
 
     public static Map<String, String> getQueryMap(String query) {
-        String[] params = query.substring(query.indexOf("?") + 1).split("&");
         Map<String, String> map = new Hashtable<String, String>();
+        if(query == null) {
+            return map;
+        }
+        String[] params = query.substring(query.indexOf("?") + 1).split("&");
+                
         for (String param : params)
         {
             String name = param.split("=")[0];

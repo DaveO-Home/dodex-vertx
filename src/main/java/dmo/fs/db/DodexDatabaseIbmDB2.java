@@ -149,7 +149,6 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 { // implements DodexDatabase 
 		return new MessageUserImpl();
 	}
 
-	// per stack overflow
 	private static boolean tableExist(Connection conn, String tableName) throws SQLException {
 		boolean exists = false;
 		Statement stat = conn.createStatement();

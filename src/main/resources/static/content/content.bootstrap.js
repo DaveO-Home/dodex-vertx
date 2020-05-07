@@ -22,7 +22,7 @@
 		card3: {
 			tab: "C",
 			front: {
-				"content": `<h1>Best's Contact Form</h1><a href="#!contact"><i class="fa fa-fw fa-phone pr-4"></i>Contact</a>`
+				"content": `<h1>Best's Contact Form</h1><a href="#contact"><i class="fa fa-fw fa-phone pr-4"></i>Contact</a>`
 			},
 			back: {
 				content: `<h1>Lorem Ipsum</h1><a href="https://www.yahoo.com" target="_">Yahoo</a>`

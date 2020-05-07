@@ -96,11 +96,13 @@ public class DodexRouter {
                                             StandardCharsets.UTF_8.name()),
                                     ConsoleColors.RESET });
                 } 
-                // catch (final UnsupportedEncodingException e) {
-                //     e.printStackTrace();
-                // } 
+                catch (final UnsupportedEncodingException e) {
+                    // e.printStackTrace();
+                    logger.info(e.getMessage());
+                } 
                 catch (final Exception e) {
-                    e.printStackTrace();
+                    logger.info(e.getMessage());
+                    // e.printStackTrace();
                 }
                 MessageUser resultUser = dodexDatabase.createMessageUser();
                 final DodexUtil dodexUtil = new DodexUtil();

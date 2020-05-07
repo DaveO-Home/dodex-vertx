@@ -1,0 +1,154 @@
+package dmo.fs.spa.db;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
+import com.fasterxml.jackson.databind.JsonNode;
+
+import org.davidmoten.rx.jdbc.ConnectionProvider;
+import org.davidmoten.rx.jdbc.Database;
+import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
+import org.davidmoten.rx.jdbc.pool.Pools;
+
+import dmo.fs.db.DbConfiguration;
+import dmo.fs.spa.db.DbSqlite3;
+import dmo.fs.spa.utils.SpaLogin;
+import dmo.fs.spa.utils.SpaLoginImpl;
+import dmo.fs.db.MessageUser;
+import dmo.fs.db.MessageUserImpl;
+import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.DodexUtil;
+import io.reactivex.disposables.Disposable;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+
+public class SpaDatabaseSqlite3 extends DbSqlite3 {
+	private final static Logger logger = LoggerFactory.getLogger(SpaDatabaseSqlite3.class.getName());
+	protected Disposable disposable;
+	protected ConnectionProvider cp;
+	protected NonBlockingConnectionPool pool;
+	protected Database db;
+	protected Properties dbProperties = new Properties();
+	protected Map<String, String> dbOverrideMap = new HashMap<>();
+	protected Map<String, String> dbMap = new HashMap<>();
+	protected JsonNode defaultNode = null;
+	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
+	protected DodexUtil dodexUtil = new DodexUtil();
+
+	public SpaDatabaseSqlite3(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+			throws InterruptedException, IOException, SQLException {
+		super();
+
+		defaultNode = dodexUtil.getDefaultNode();
+
+		webEnv = webEnv == null || webEnv.equals("prod") ? "prod" : "dev";
+
+		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
+		dbProperties = dodexUtil.mapToProperties(dbMap);
+
+		if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
+			this.dbProperties = dbOverrideProps;
+		}
+		if (dbOverrideMap != null) {
+			this.dbOverrideMap = dbOverrideMap;
+		}
+
+		dbProperties.setProperty("foreign_keys", "true");
+
+		SpaDbConfiguration.mapMerge(dbMap, dbOverrideMap);
+		databaseSetup();
+	}
+
+	public SpaDatabaseSqlite3() throws InterruptedException, IOException, SQLException {
+		super();
+
+		defaultNode = dodexUtil.getDefaultNode();
+		webEnv = webEnv == null || webEnv.equals("prod") ? "prod" : "dev";
+
+		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
+		dbProperties = dodexUtil.mapToProperties(dbMap);
+
+		dbProperties.setProperty("foreign_keys", "true");
+
+		databaseSetup();
+	}
+
+	private void databaseSetup() throws InterruptedException, SQLException {
+		if (webEnv.equals("dev")) {
+			SpaDbConfiguration.configureTestDefaults(dbMap, dbProperties);
+		} else {
+			SpaDbConfiguration.configureDefaults(dbMap, dbProperties);
+		}
+		cp = SpaDbConfiguration.getSqlite3ConnectionProvider();
+
+		pool = Pools.nonBlocking().maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
+				.build();
+
+		db = Database.from(pool);
+
+		Disposable disposable = db.member().doOnSuccess(c -> {
+			Statement stat = c.value().createStatement();
+
+			// stat.executeUpdate("drop table login");
+
+			String sql = getCreateTable("LOGIN");
+			if (!tableExist(c.value(), "login")) {
+				stat.executeUpdate(sql);
+			}
+			stat.close();
+			c.value().close();
+		}).subscribe(result -> {
+			//
+		}, throwable -> {
+			logger.error("{0}Error creating database tables{1}",
+					new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
+			throwable.printStackTrace();
+		});
+		await(disposable);
+		// generate all jooq sql only once.
+		setupSql(db);
+	}
+
+	@Override
+	public Database getDatabase() {
+		return Database.from(pool);
+	}
+
+	@Override
+	public NonBlockingConnectionPool getPool() {
+		return pool;
+	}
+
+	// per stack overflow
+	private static boolean tableExist(Connection conn, String tableName) throws SQLException {
+		boolean exists = false;
+		try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName, null)) {
+			while (rs.next()) {
+				String name = rs.getString("TABLE_NAME");
+				if (name != null && name.toLowerCase().equals(tableName.toLowerCase())) {
+					exists = true;
+					break;
+				}
+			}
+		}
+		return exists;
+	}
+
+	private static void await(Disposable disposable) throws InterruptedException {
+		while (!disposable.isDisposed()) {
+			Thread.sleep(100);
+		}
+	}
+
+	@Override
+	public SpaLogin createSpaLogin() {
+		return new SpaLoginImpl();
+	}
+}

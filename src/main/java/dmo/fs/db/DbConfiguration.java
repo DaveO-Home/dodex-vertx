@@ -26,7 +26,7 @@ public class DbConfiguration {
     private static DodexUtil dodexUtil = new DodexUtil();
     private static DodexDatabase dodexDatabase = null;
 
-    DbConfiguration() {
+    protected DbConfiguration() {
     }
 
     public static ConnectionProvider getSqlite3ConnectionProvider() {

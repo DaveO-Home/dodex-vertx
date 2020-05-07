@@ -8,14 +8,14 @@
 
 plugins {
     // Apply the java plugin to add support for Java
-    id 'java'
+    id "java"
 
     // Apply the application plugin to add support for building a CLI application
-    id 'application'
+    id "application"
 
-    id 'com.github.johnrengelman.shadow' version '5.1.0'
+    id "com.github.johnrengelman.shadow" version "5.2.0"
 
-    id 'nu.studer.jooq' version '3.0.3'
+    id "nu.studer.jooq" version "4.1" // '3.0.3'
 }
 
 repositories {
@@ -24,7 +24,7 @@ repositories {
     jcenter()
     maven {
          url "https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc"
-         url 'https://plugins.gradle.org/m2/'
+         url "https://plugins.gradle.org/m2/"
          url "http://maven.cubrid.org/"
     }
     mavenCentral()
@@ -55,10 +55,10 @@ dependencies {
     implementation "org.postgresql:postgresql:42.2.8"
     implementation group:"org.xerial", name:"sqlite-jdbc", version:"3.28.0"
     implementation "org.jooq:jooq"
-    implementation group: 'cubrid', name: 'cubrid-jdbc', version: '10.1.3.7765'
-    implementation 'org.mariadb.jdbc:mariadb-java-client:2.5.2'
-    implementation 'io.vertx:vertx-mongo-client:3.8.3'
-    implementation group: 'com.ibm.db2.jcc', name: 'db2jcc', version: 'db2jcc4'
+    implementation group: "cubrid", name: "cubrid-jdbc", version: "10.1.3.7765"
+    implementation "org.mariadb.jdbc:mariadb-java-client:2.5.2"
+    implementation "io.vertx:vertx-mongo-client:3.8.3"
+    implementation group: "com.ibm.db2.jcc", name: "db2jcc", version: "db2jcc4"
 
     // This dependency is used by the application.
     implementation "com.google.guava:guava:28.0-jre"
@@ -77,13 +77,14 @@ application {
 
 def mainVerticleName = "dmo.fs.vertx.Server"
 def doOnChange = ".${File.separator}gradlew classes"
-def watchForChange = 'src/**/*.java'
+def watchForChange = "src/**/*.java"
 def debug = ""
+def OS = System.getProperty("os.name").toLowerCase();
 
-apply plugin: 'nu.studer.jooq'
+apply plugin: "nu.studer.jooq"
 
 run {
-     if (System.getProperty('DEBUG', 'false') == 'true') {
+     if (System.getProperty("DEBUG", "false") == "true") {
         debug = "--java-opts=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
     }
 
@@ -91,16 +92,56 @@ run {
     args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/java/application-conf.json"]
     systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
 }
+/*
+  The stop, start list Sever commands and be used after running "gradlew shadowJar".
+ */
+task stopServer(type:Exec) {
+  def id = System.getProperty("id") ? System.getProperty("id") : "";
+  workingDir "./build/libs"
+
+  //on windows:
+  if(OS.indexOf("win") >= 0) {
+    commandLine "cmd", "/c", "java" args "-jar", "dodex-vertx-${version}.jar", "stop" id
+  } else {
+  //on linux
+    commandLine "java" args "-jar", "dodex-vertx-${version}.jar", "stop", id
+  }
+}
+
+task startServer(type:Exec) {
+  workingDir "./build/libs"
+
+  //on windows:
+  if(OS.indexOf("win") >= 0) {
+    commandLine "cmd", "/c", "java"  args "-jar", "dodex-vertx-${version}.jar", "start" 
+  } else {
+  //on linux
+    commandLine "java"  args "-jar", "dodex-vertx-${version}.jar", "start"
+  } 
+}
+
+task listServer(type:Exec) {
+  workingDir "./build/libs"
+
+  //on windows:
+  if(OS.indexOf("win") >= 0) {
+    commandLine "cmd", "/c", "java" args "-jar", "dodex-vertex.${version}.jar", "list"
+  } else {
+  //on linux
+    commandLine "java"  args "-jar", "dodex-vertx-${version}.jar", "list"
+  }
+}
 
 shadowJar {
-  classifier = ''
-
-  manifest {
-      attributes "Main-Verticle": mainVerticleName 
-  }
+  classifier = ""
 
   mergeServiceFiles {
     include "META-INF/services/io.vertx.core.spi.VerticleFactory"
+  }
+
+  manifest{
+    attributes 'Main-Verticle': mainVerticleName
+    // attributes 'Main-Command': 'run'
   }
 }
 

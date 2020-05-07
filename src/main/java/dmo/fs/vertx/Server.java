@@ -12,10 +12,14 @@ import io.vertx.ext.web.Route;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.FileAlreadyExistsException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 
 import dmo.fs.router.Routes;
+import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ConsoleColors;
 
 public class Server extends AbstractVerticle {
@@ -53,7 +57,10 @@ public class Server extends AbstractVerticle {
     else if(development.toLowerCase().equals("dev")) {
       port = 8087;
     }
-    
+    else if(development.toLowerCase().equals("test")) {
+      port = 8089;
+    }
+
     if (isUnix()) {
       server = configureLinuxOptions(vertx, true, true, true, true);
     } else {
@@ -61,22 +68,32 @@ public class Server extends AbstractVerticle {
     }
 
     Routes routes = new Routes(vertx, server);
-    List<Route> routesList = routes.getRoutes().getRoutes();
+    SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter());
+
+    List<Route> routesList = allRoutes.getRouter().getRoutes();
 
     for (Route r : routesList) {
       logger.info("{0}Using Path {1}{2}",
           new Object[] { ConsoleColors.CYAN_BOLD_BRIGHT, r.getPath(), ConsoleColors.RESET });
     }
 
-    server.requestHandler(routes.getRoutes());
+    server.requestHandler(allRoutes.getRouter());
 
     try {
-      server.listen(config().getInteger("http.port", this.port == 0 ? 8080 : port), result -> {      
+      server.listen(config().getInteger("http.port", this.port == 0 ? 8081 : port), result -> {      
         if (result.succeeded()) {
           Integer port = this.port != 0? this.port : config().getInteger("http.port", 8080);
           logger.info("{0}Started on port: " + port + "{1}",
               new Object[] { ConsoleColors.GREEN_BOLD_BRIGHT, ConsoleColors.RESET });
           promise.complete();
+          try {
+              if(development.toLowerCase().equals("dev")) {
+                Files.createFile(Paths.get("./server-started"));
+              }
+          } catch (IOException e) {
+            logger.info("{0}Error creating dev file: {1} {2}",
+              new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
+          }
         } else {
           promise.fail(result.cause());
         }

@@ -1,28 +1,42 @@
 package dmo.fs.router;
 
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.sql.SQLException;
+import java.util.Optional;
 
+import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.Session;
+import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.FaviconHandler;
+import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.TimeoutHandler;
+import io.vertx.ext.web.sstore.LocalSessionStore;
+import io.vertx.ext.web.sstore.SessionStore;
 
 public class Routes {
-	// private final static Logger logger = LoggerFactory.getLogger(Routes.class.getName());
+	private final static Logger logger = LoggerFactory.getLogger(Routes.class.getName());
 	protected Vertx vertx;
 	protected Router router;
 	protected HttpServer server;
+	protected SessionStore sessionStore;
+	Integer counter = 0;
 
 	public Routes(Vertx vertx, HttpServer server) throws InterruptedException, IOException, SQLException {
 		this.vertx = vertx;
 		router = Router.router(vertx);
+		sessionStore = LocalSessionStore.create(vertx);
 		this.server = server;
 
 		String value = System.getenv("VERTXWEB_ENVIRONMENT");
@@ -35,6 +49,8 @@ public class Routes {
 		setFavRoute();
 		setStaticRoute();
 		setDodexRoute();
+		// setLoginRoute();
+
 		if (DodexUtil.getEnv().equals("dev")) {
 			setTestRoute();
 		} else {
@@ -43,11 +59,14 @@ public class Routes {
 	}
 
 	public void setTestRoute() {
-		Route route = router.routeWithRegex(HttpMethod.GET, "/test[/]?|/test/.*\\.html");
+		Route route = router.routeWithRegex(HttpMethod.GET, "/test/[\\w/-]*\\.html|/test[/]?");
+		
 		route.handler(routingContext -> {
+			routingContext.put("name", "test");
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/html");
-			
+			// response.putHeader("Access-Control-Allow-Origin", "http://localhost:9876");
+			// response.putHeader("Vary", "Origin");
 			int length = routingContext.request().path().length();
 			String path = routingContext.request().path();
 			String file = length < 7 ? "test/index.html" : path.substring(1);
@@ -59,6 +78,7 @@ public class Routes {
 	public void setProdRoute() {
 		Route route = router.routeWithRegex(HttpMethod.GET, "/dodex[/]?|/dodex/.*\\.html");
 		route.handler(routingContext -> {
+			routingContext.put("name", "prod");
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/html");
 			
@@ -74,7 +94,12 @@ public class Routes {
 		StaticHandler staticHandler = StaticHandler.create();
 		staticHandler.setWebRoot("static");
 		staticHandler.setCachingEnabled(false);
-		router.route("/*").handler(staticHandler).handler(TimeoutHandler.create(2000));
+		
+		Route staticRoute = router.route("/*").handler(TimeoutHandler.create(2000));
+		if (DodexUtil.getEnv().equals("dev")) {
+			staticRoute.handler(CorsHandler.create("*"/*Need ports 8087 & 9876*/).allowedMethod(HttpMethod.GET));
+		}
+		staticRoute.handler(staticHandler);
 	}
 
 	public void setFavRoute() {
@@ -87,7 +112,7 @@ public class Routes {
 		dodexRouter.setWebSocket(server);
 	}
 
-	public Router getRoutes() throws InterruptedException {
+	public Router getRouter() throws InterruptedException {
 		return router;
 	}
 }

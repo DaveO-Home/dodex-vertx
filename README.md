@@ -57,23 +57,30 @@
 
 * You can run the Vertx Server in native assembled code by compiling the fat jar with graalvm.
 
-1. Install from <https://github.com/graalvm/graalvm-ce-builds/releases>.
-1. Follow install instructions.
-1. Execute ```<graalvm directory>/bin/gu install native-image``` to install the ```native-image``` program.
-1. In the dodex-vertx directory execute ```gradlew installDist``` and ```gradlew shadowJar```.
-1. Modify the dodexvm or dodexvm.bat shell to the graalvm install directory.
-1. In your dodex-vertx directory execute the dodexvm shell program. This should create an executable named ```io.vertx.core.Launcher```.
-1. Execute the production server with ```io.vertx.core.Launcher```.
+  1. Install from <https://github.com/graalvm/graalvm-ce-builds/releases>.
+  2. Follow install instructions.
+  3. Execute ```<graalvm directory>/bin/gu install native-image``` to install the ```native-image``` program.
+  4. In the dodex-vertx directory execute ```gradlew installDist``` and ```gradlew shadowJar```.
+  5. Modify the dodexvm or dodexvm.bat shell to the graalvm install directory.
+  6. In your dodex-vertx directory execute the dodexvm shell program. This should create an executable named ```io.vertx.core.Launcher```.
+  7. Execute the production server with ```io.vertx.core.Launcher```.
 
    __Note;__ A Java VM(JAVA_HOME) is required since ```dodex-vertx``` is a server.
+
+### Single Page React Application to demo Development and Integration Testing
+
+* Integrated in ***Dodex-Vertx*** at `src/spa-react`
+* Documentation <https://github.com/DaveO-Home/dodex-vertx/blob/master/src/spa-react/README.md>
+* Uses ***Sqlite3*** as backend database
+* Router added to `src/main/java/dmo/fs/vertx/Server.java`
 
 ### Docker
 
 * Run under Docker, assumes Docker is installed and daemon is running.
 
-1. From dodex-vertx directory; ```centos/buildcontainer``` or ```centos\buildcontainer```
-2. Execute ```gradlew run``` to start development. Execute ```ctl-c``` && ```exit``` to shutdown.
-3. Execute ```centos/execontainer``` or ```centos\execontainer``` on subsequent startups.
+  1. From dodex-vertx directory; ```centos/buildcontainer``` or ```centos\buildcontainer```
+  2. Execute ```gradlew run``` to start development. Execute ```ctl-c``` && ```exit``` to shutdown.
+  3. Execute ```centos/execontainer``` or ```centos\execontainer``` on subsequent startups.
 
 ## Authors
 

@@ -26,7 +26,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
                     }
                 }
             );
-        
+
             loginObject = $("small .login");
             loginObject.click();
 
@@ -106,7 +106,6 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             });
 
             it("Login form - verify java vertx backend routing", function (done) {
-                loginButton = $(".modal .submit-login");
                 loginButton.click();
                 let credentials;
                 let badUser;
@@ -117,9 +116,11 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
                     badUser = pwrdObject[0].validity.valueMissing === true;
                     isValid = pwrdObject[0].checkValidity(); 
                     credentials = sessionStorage.getItem("credentials");
+                    // Trying to login with invalid user
                     if ((!isValid && !credentials && badUser) || timer === 75) {
                         expect(badUser).toBe(true);
-                        expect(credentials).toBe(null);
+                        expect(credentials).toEqual(null);
+                        expect(isValid).toBe(false);
                         observable.unsubscribe();
                         done();
                     }
@@ -154,15 +155,14 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
                 const isValid = pwrdObject2[0].checkValidity();
                 let returnValue;
                 
-                loginButton = $(".modal .submit-login");          
                 loginButton.click();
 
-                let numbers = timer(100, 50);
+                let numbers = timer(100, 100);
                 let observable = numbers.subscribe(timer => {
                     returnValue = sessionStorage.getItem("credentials");
                     
-                    if ((isValid && returnValue && !badUser) || timer === 50) {
-                        expect(returnValue).not.toBeUndefined();
+                    if ((isValid && returnValue !== null && !badUser) || timer === 90) {
+                        expect(returnValue).not.toEqual(null);
                         expect(badUser).toBe(false);
                         expect(isValid).toBe(true);
                         observable.unsubscribe();
@@ -174,13 +174,15 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             it("Login form - Log Out User", function (done) {
                 let html = $("small .login").html();
                 expect(html).toBe("Log Out");
-                loginObject.on( "click", function(e) { // Lost react listener from previous test?
+
+                loginObject.on( "click", function(e) {
                     if($(".login:first").html() === "Log Out") {
                         login(null, true)(e);
                     } else {
                         Start["div .login click"](e);
                     }
                 });
+
                 loginObject.click();
 
                 let numbers = timer(100, 50);
@@ -189,7 +191,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
                     html = $("small .login").html();
                     if (html === "Log In" || timer === 50) {
                         expect(html).toBe("Log In");
-                        expect(credentials).toBe(null);
+                        expect(credentials).toEqual(null);
                         observable.unsubscribe();
                         done();
                     }
@@ -197,13 +199,13 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             });
 
             it("Login form - Reopen Login", function (done) {
-                loginObject = $("small .login");
                 loginObject.click();
-                let numbers = timer(100, 50);
+                let numbers = timer(50, 50);
                 let observable = numbers.subscribe(timer => {
                     modal = $("#modalTemplate");
-                    if (modal.length > 0 || timer === 50) {
-                        expect(modal.length > 0).toBe(true);
+
+                    if (modal.hasClass("show") && timer > 15) { // Give modal a chance to open
+                        expect(modal[0]).toBeVisible();
                         observable.unsubscribe();
                         done();
                     }
@@ -211,7 +213,6 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             });
 
             it("Login form - Remove added User", function (done) { // note: unregister is not a component
-                loginButton = $(".modal .submit-login");
                 sessionStorage.removeItem("credentials");
                 sessionStorage.setItem("credentials", `{"name":"abcde", "password":"945973053"}`);
                 login(loginButton, false)("DELETE", loginButton, "/userlogin/unregister").then(data => {
@@ -224,18 +225,14 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
         }
 
         it("Login form - verify cancel and removed from DOM", function (done) {
-            modal = $("#modalTemplate");
             expect(modal[0]).toExist();
-
+            
             closeButton = $(".close-modal");
             closeButton.click();
-
-            modal.remove(); // For some reason the Bootstrap code in test mode is broken? 
-
+            
             const numbers = timer(50, 50);
             const observable = numbers.subscribe(timer => {
-                modal = $("#modalTemplate");
-                if (modal.length === 0 || timer === 50) {
+                if (modal.hasClass("show") === false && timer > 15) { // give modal a chance to close
                     expect(modal[0]).not.toBeVisible();
                     expect(modal[0]).not.toBeInDOM();
                     observable.unsubscribe();
@@ -244,4 +241,36 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             });
         });
     });
+}
+async function karmaDisplay() {
+    // Load of test page(without html, head & body) to append to the Karma iframe
+    let url = "http://localhost:8087/dist_test/react-fusebox/appl/testapp_dev.html";
+    if(window._local) {
+        url = "/base/dist_test/react-fusebox/appl/appv_bootstrap.html";
+    }
+    // $("body").load(url, function () {
+    //     ReactDOM.render(
+    //         <Menulinks />,
+    //         document.getElementById("root")
+    //     );
+    //     ReactDOM.render(
+    //         <LoginC />,
+    //         document.getElementById("nav-login")
+    //     );
+    //     ReactDOM.render(
+    //         <Dodexlink />,
+    //         document.querySelector(".dodex--ico")
+    //     );
+        ReactDOM.render(
+            <LoginC />,
+            document.getElementById("nav-login"),
+            function handleClick(e) {
+                if($(".login:first").html() === "Log Out") {
+                    login(null, true)(e);
+                } else {
+                    Start["div .login click"](e);
+                }
+            }
+        );
+    // });
 }

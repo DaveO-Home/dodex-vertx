@@ -5,7 +5,6 @@ import static org.jooq.impl.DSL.deleteFrom;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.insertInto;
 import static org.jooq.impl.DSL.mergeInto;
-import static org.jooq.impl.DSL.notExists;
 import static org.jooq.impl.DSL.param;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
@@ -23,7 +22,9 @@ import dmo.fs.spa.db.RxJavaDateDb.Login;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
-import io.reactivex.disposables.Disposable;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -127,11 +128,16 @@ public abstract class SqlBuilder {
 
 	public abstract SpaLogin createSpaLogin();
 
-	public SpaLogin getLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException {
-		SpaLogin resultLogin = createSpaLogin();
-		Disposable disposable = null;
-
-		disposable = db.select(Login.class).parameter(spaLogin.getName()).parameters(spaLogin.getPassword()).get()
+	public Future<SpaLogin> getLogin(SpaLogin spaLogin, Database db)
+			throws InterruptedException, SQLException {
+		Promise<SpaLogin> promise = Promise.promise();
+		
+		Future.future(prom -> {
+			SpaLogin resultLogin = createSpaLogin();
+			db.select(Login.class)
+				.parameter(spaLogin.getName())
+				.parameters(spaLogin.getPassword())
+				.get()
 				.doOnNext(result -> {
 					resultLogin.setId(result.id());
 					resultLogin.setName(result.name());
@@ -144,38 +150,60 @@ public abstract class SqlBuilder {
 						resultLogin.setStatus("0");
 					}
 				}).subscribe(result -> {
-					//
+					if(resultLogin.getStatus().equals("0")) {
+						if(SpaDbConfiguration.isUsingSqlite3()) {
+							Future<Integer> future = updateCustomLogin(db, resultLogin, "date");
+							future.onSuccess(result2 -> {
+								promise.complete(resultLogin);
+							});
+
+							future.onFailure(failed -> {
+								logger.error("{0}Add Login Update failed...{1}{2} ", new Object[] {
+										ConsoleColors.RED_BOLD_BRIGHT, failed.getMessage(), ConsoleColors.RESET });
+								resultLogin.setStatus("-99");
+								promise.complete(resultLogin);
+							});
+						} 
+					}
+					else {
+						promise.complete(resultLogin);
+					}
 				}, throwable -> {
+					resultLogin.setStatus("-99");
+					promise.complete(resultLogin);
 					logger.error("{0}Error retrieving user {1}{2}",
 							new Object[] { ConsoleColors.RED, spaLogin.getName(), ConsoleColors.RESET });
 					throwable.printStackTrace();
 				});
+		});
 
-		await(disposable);
-
-		return resultLogin;
+		return promise.future();
 	}
 
-	public SpaLogin addLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException {
-		spaLogin.setStatus("0");
-		SpaLogin existingLogin = getLogin(spaLogin, db);
-		if (existingLogin.getStatus().equals("0")) {
-			spaLogin.setStatus("-2");
-			return spaLogin;
-		}
-		Disposable disposable = db.update(getInsertLogin()).parameter("NAME", spaLogin.getName())
+	public Future<SpaLogin> addLogin(SpaLogin spaLogin, Database db)
+			throws InterruptedException, SQLException {
+		Promise<SpaLogin> promise = Promise.promise();
+	
+		Future.future(prom -> {
+			spaLogin.setStatus("0");
+			db.update(getInsertLogin()).parameter("NAME", spaLogin.getName())
 				.parameter("PASSWORD", spaLogin.getPassword())
-				.parameter("LASTLOGIN", new Timestamp(new Date().getTime())).returnGeneratedKeys().getAs(Long.class)
-				.doOnNext(k -> spaLogin.setId(k)).subscribe(result -> {
-					//
+				.parameter("LASTLOGIN", new Timestamp(new Date().getTime()))
+				.returnGeneratedKeys()
+				.getAs(Long.class)
+				.doOnNext(k -> spaLogin.setId(k))
+				.subscribe(result -> {
+					promise.complete(spaLogin);
 				}, throwable -> {
 					spaLogin.setStatus("-3");
-					logger.error("{0}Error adding user{1}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
+					promise.complete(spaLogin);
+					logger.error("{0}Error adding user - {1}{2}",
+							new Object[] { ConsoleColors.RED, spaLogin.getName(), ConsoleColors.RESET });
 					throwable.printStackTrace();
 				});
-		await(disposable);
-
-		return spaLogin;
+		});
+		
+		return promise.future();
 	}
 
 	private static String setupRemoveLogin() {
@@ -189,32 +217,62 @@ public abstract class SqlBuilder {
 		return GETREMOVELOGIN;
 	}
 
-	public SpaLogin removeLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException {
-		Disposable disposable = db.update(getRemoveLogin()).parameter("NAME", spaLogin.getName())
-				.parameter("PASSWORD", spaLogin.getPassword()).counts().subscribe(result -> {
+	public Future<SpaLogin> removeLogin(SpaLogin spaLogin, Database db)
+			throws InterruptedException, SQLException {
+		Promise<SpaLogin> promise = Promise.promise();
+		
+		Future.future(prom -> {
+			db.update(getRemoveLogin()).parameter("NAME", spaLogin.getName())
+				.parameter("PASSWORD", spaLogin.getPassword())
+				.counts()
+				.subscribe(result -> {
 					spaLogin.setStatus(result.toString()); // result = records deleted
+					promise.complete(spaLogin);
 				}, throwable -> {
 					spaLogin.setStatus("-4");
+					promise.complete(spaLogin);
 					logger.error("{0}Error deleting user{1} {2}",
 							new Object[] { ConsoleColors.RED, ConsoleColors.RESET, spaLogin.getName() });
 					throwable.printStackTrace();
 				});
-		await(disposable);
+		});
 
-		return spaLogin;
+		return promise.future();
+	}
+
+	public Future<Integer> updateCustomLogin(Database db, SpaLogin spaLogin, String type)
+			throws InterruptedException, SQLException {
+		Promise<Integer> promise = Promise.promise();
+
+		Future.future(prom -> {
+			int count[] = { 0 };
+			db.update(getSqliteUpdateLogin()).parameter("LOGINID", spaLogin.getId())
+				.parameter("LASTLOGIN", type.equals("date")? new Date().getTime(): new Timestamp(new Date().getTime()))
+				.counts()
+				.doOnNext(c -> count[0] += c)
+				.subscribe(result -> {
+					promise.complete(count[0]);
+				}, throwable -> {
+					promise.complete(-99);
+					logger.error("{0}Error Updating user{1}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
+					throwable.printStackTrace();
+				});
+		});
+
+		return promise.future();
 	}
 
 	public void setIsTimestamp(Boolean isTimestamp) {
 		this.isTimestamp = isTimestamp;
 	}
 
-	private void await(Disposable disposable) {
-		while (!disposable.isDisposed()) {
-			try {
-				Thread.sleep(100);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-	}
+	// private void await(Disposable disposable, Vertx vertx) {
+	// 	while (!disposable.isDisposed()) {
+	// 		vertx.setTimer(100, l -> {
+	// 			if (disposable.isDisposed()) {
+	// 				return;
+	// 			}
+	// 		});
+	// 	}
+	// }
 }

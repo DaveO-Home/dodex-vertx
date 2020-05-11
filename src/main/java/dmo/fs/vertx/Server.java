@@ -1,26 +1,25 @@
 
 package dmo.fs.vertx;
 
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.*;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.Route;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.FileAlreadyExistsException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.SQLException;
 import java.util.List;
 
 import dmo.fs.router.Routes;
 import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ConsoleColors;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.file.FileSystem;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.HttpServerOptions;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.ext.web.Route;
 
 public class Server extends AbstractVerticle {
   private static Logger logger;
@@ -69,7 +68,8 @@ public class Server extends AbstractVerticle {
 
     Routes routes = new Routes(vertx, server);
     SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter());
-
+    FileSystem fs = vertx.fileSystem();
+    
     List<Route> routesList = allRoutes.getRouter().getRoutes();
 
     for (Route r : routesList) {
@@ -88,9 +88,15 @@ public class Server extends AbstractVerticle {
           promise.complete();
           try {
               if(development.toLowerCase().equals("dev")) {
-                Files.createFile(Paths.get("./server-started"));
+                Future<Void> future1 = Future.future(promise2 -> {
+                  fs.createFile("./server-started", promise2);
+                  promise2.complete();
+                });
+                if(!future1.succeeded()) {
+                  throw new Exception("server-started");
+                };
               }
-          } catch (IOException e) {
+          } catch (Exception e) {
             logger.info("{0}Error creating dev file: {1} {2}",
               new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
           }

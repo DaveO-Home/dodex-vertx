@@ -15,6 +15,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jooq.SQLDialect;
 
 import io.reactivex.disposables.Disposable;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -125,5 +127,32 @@ public class SpaUtil {
         }
 
         return SQLDialect.DEFAULT;
+      }
+
+      public static SpaLogin parseBody(String bodyData, SpaLogin spaLogin) {
+        JsonObject loginObject = new JsonObject(String.join("", "{\"data\":", bodyData, "}"));
+        JsonArray data = loginObject.getJsonArray("data");
+        int size = loginObject.getJsonArray("data").getList().size();
+        String userName = null;
+        String password = null;
+
+        for (int i = 0; i < size; i++) {
+            String name = data.getJsonObject(i).getString("name");
+            switch (name) {
+                case "username":
+                    userName = data.getJsonObject(i).getString("value");
+                    break;
+                case "password":
+                    password = data.getJsonObject(i).getString("value");
+                    break;
+                default:
+                    break;
+            }
+        }
+        
+        spaLogin.setName(userName);
+        spaLogin.setPassword(password);
+        
+        return spaLogin;
       }
 }

@@ -11,9 +11,11 @@ import org.davidmoten.rx.jdbc.Database;
 import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.db.SpaDatabase;
 import dmo.fs.spa.db.SpaDbConfiguration;
+import dmo.fs.spa.utils.SpaLogin;
+import dmo.fs.spa.utils.SpaUtil;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
-
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
@@ -56,18 +58,24 @@ public class SpaRoutes {
 		setUnregisterLoginRoute();
 	}
 
-	public void setGetLoginRoute() throws InterruptedException, SQLException, IOException {
-		SpaApplication spaApplication = new SpaApplication();
+	public void setGetLoginRoute() {
 		SessionHandler sessionHandler = SessionHandler.create(sessionStore);
 		Route route = router.route(HttpMethod.GET, "/userlogin").handler(sessionHandler);
 
 		if (DodexUtil.getEnv().equals("dev")) {
 			route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.GET));
 		}
+
 		route.handler(routingContext -> {
-			JsonObject loginObject = null;
+			SpaApplication spaApplication = null;
+			try {
+			
+				spaApplication = new SpaApplication();
+			
+			} catch (InterruptedException | IOException | SQLException e1) {
+				e1.printStackTrace();
+			}
 			Session session = routingContext.session();
-			String data = null;
 
 			routingContext.put("name", "getlogin");
 			if (session.get("login") != null) {
@@ -80,13 +88,18 @@ public class SpaRoutes {
 
 			if (queryData.isPresent()) {
 				try {
+					Future<SpaLogin> future = spaApplication.getLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
 
-					loginObject = spaApplication.getLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
-					data = loginObject.encode();
+					future.onSuccess(result -> {
+						session.put("login", new JsonObject(result.getMap()));
+						response.end(new JsonObject(result.getMap()).encode());
+					});
 
-					if (loginObject.getString("status").equals("0")) {
-						session.put("login", loginObject);
-					}
+					future.onFailure(failed -> {
+						logger.error("{0}Add Login failed...{1}{2} ", new Object[] { ConsoleColors.RED_BOLD_BRIGHT,
+								failed.getMessage(), ConsoleColors.RESET });
+						response.end(FAILURE);
+					});
 
 				} catch (UnsupportedEncodingException | InterruptedException | SQLException e) {
 					logger.info("{0}Context Configuration failed...{1}{2} ",
@@ -96,27 +109,28 @@ public class SpaRoutes {
 					exception.printStackTrace();
 				}
 			}
-
-			if (data == null) {
-				data = FAILURE;
-			}
-
-			response.end(data);
 		});
 	}
 
-	public void setPutLoginRoute() throws InterruptedException, IOException, SQLException {
-		SpaApplication spaApplication = new SpaApplication();
+	public void setPutLoginRoute() {
 		SessionHandler sessionHandler = SessionHandler.create(sessionStore);
 		Route route = router.route(HttpMethod.PUT, "/userlogin").handler(sessionHandler);
 
 		if (DodexUtil.getEnv().equals("dev")) {
 			route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.PUT));
 		}
+
 		route.handler(BodyHandler.create()).handler(routingContext -> {
-			JsonObject loginObject = null;
+			SpaApplication spaApplication = null;
+
+			try {
+			
+				spaApplication = new SpaApplication();
+			
+			} catch (InterruptedException | IOException | SQLException e1) {
+				e1.printStackTrace();
+			}
 			Session session = routingContext.session();
-			String data = null;
 
 			routingContext.put("name", "putlogin");
 			if (session.get("login") != null) {
@@ -129,13 +143,44 @@ public class SpaRoutes {
 
 			if (bodyData.isPresent()) {
 				try {
+					SpaLogin spaLogin = spaDatabase.createSpaLogin();
+					spaLogin = SpaUtil.parseBody(URLDecoder.decode(routingContext.getBodyAsString(), "UTF-8"), spaLogin);
 
-					loginObject = spaApplication.addLogin(routingContext.getBodyAsString());
-					data = loginObject.encode();
+					JsonObject jsonObject = new JsonObject(spaLogin.getMap());
 
-					if (loginObject.getString("status").equals("0")) {
-						session.put("login", loginObject);
-					}
+					Future<SpaLogin> futureLogin = spaApplication.getLogin(jsonObject.encode());
+
+					futureLogin.onSuccess(result -> {
+						if (result.getStatus().equals("0")) {
+							result.setStatus("-2");
+							response.end(new JsonObject(result.getMap()).encode());
+						} else {
+							Future<SpaLogin> future = null;
+							try {
+								future = new SpaApplication().addLogin(routingContext.getBodyAsString());
+							} catch (InterruptedException | SQLException | IOException e) {
+								e.printStackTrace();
+							}
+
+							future.onSuccess(result2 -> {
+								session.put("login", new JsonObject(result2.getMap()));
+								response.end(new JsonObject(result2.getMap()).encode());
+							});
+
+							future.onFailure(failed -> {
+								logger.error("{0}Add Login failed...{1}{2} ", new Object[] {
+										ConsoleColors.RED_BOLD_BRIGHT, failed.getMessage(), ConsoleColors.RESET });
+								response.end(FAILURE);
+							});
+						}
+
+					});
+
+					futureLogin.onFailure(failed -> {
+						logger.error("{0}Add Login failed...{1}{2} ", new Object[] { ConsoleColors.RED_BOLD_BRIGHT,
+								failed.getMessage(), ConsoleColors.RESET });
+						response.end(FAILURE);
+					});
 
 				} catch (InterruptedException | SQLException e) {
 					logger.info("{0}Context Configuration failed...{1}{2} ",
@@ -145,21 +190,16 @@ public class SpaRoutes {
 					exception.printStackTrace();
 				}
 			}
-
-			if (data == null) {
-				data = FAILURE;
-			}
-
-			response.end(data);
 		});
 	}
 
-	public void setLogoutRoute() throws InterruptedException, SQLException, IOException {
+	public void setLogoutRoute() {
 		SessionHandler sessionHandler = SessionHandler.create(sessionStore);
 		Route route = router.route(HttpMethod.DELETE, "/userlogin").handler(sessionHandler);
 		if (DodexUtil.getEnv().equals("dev")) {
 			route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.DELETE));
 		}
+
 		route.handler(routingContext -> {
 			Session session = routingContext.session();
 			String data = null;
@@ -177,13 +217,10 @@ public class SpaRoutes {
 			final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
 			if (queryData.isPresent()) {
 				try {
-
 					data = String.join("", "{\"status\":\"", status, "\"}");
-
 				} catch (Exception e) {
 					logger.info("{0}Context Configuration failed...{1}{2} ",
 							new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
-					// e.printStackTrace();
 				}
 			}
 
@@ -194,8 +231,7 @@ public class SpaRoutes {
 		});
 	}
 
-	public void setUnregisterLoginRoute() throws InterruptedException, SQLException, IOException {
-		SpaApplication spaApplication = new SpaApplication();
+	public void setUnregisterLoginRoute() {
 		SessionHandler sessionHandler = SessionHandler.create(sessionStore);
 		Route route = router.route(HttpMethod.DELETE, "/userlogin/unregister").handler(sessionHandler);
 
@@ -204,16 +240,21 @@ public class SpaRoutes {
 		}
 
 		route.handler(routingContext -> {
-			JsonObject loginObject = null;
+			SpaApplication spaApplication = null;
+			try {
+			
+				spaApplication = new SpaApplication();
+			
+			} catch (InterruptedException | IOException | SQLException e1) {
+				e1.printStackTrace();
+			}
 			Session session = routingContext.session();
-			String data = null;
 
 			routingContext.put("name", "unregisterlogin");
 
 			if (!session.isEmpty()) {
 				session.destroy();
 			}
-			;
 
 			HttpServerResponse response = routingContext.response();
 
@@ -221,22 +262,26 @@ public class SpaRoutes {
 			if (queryData.isPresent()) {
 				try {
 
-					loginObject = spaApplication.unregisterLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
-					data = loginObject.encode();
-					session.destroy();
+					Future<SpaLogin> future = spaApplication
+							.unregisterLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
+
+					future.onSuccess(result -> {
+						session.destroy();
+						response.end(new JsonObject(result.getMap()).encode());
+					});
+
+					future.onFailure(failed -> {
+						logger.error("{0}Unregister Login failed...{1}{2} ", new Object[] {
+								ConsoleColors.RED_BOLD_BRIGHT, failed.getMessage(), ConsoleColors.RESET });
+						response.end(FAILURE);
+					});
 
 				} catch (Exception e) {
 					logger.info("{0}Context Configuration failed...{1}{2} ",
 							new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
-					// e.printStackTrace();
+					e.printStackTrace();
 				}
 			}
-
-			if (data == null) {
-				data = FAILURE;
-			}
-
-			response.end(data);
 		});
 	}
 

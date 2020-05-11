@@ -1,25 +1,19 @@
 package dmo.fs.router;
 
 import java.io.IOException;
-import java.net.URLDecoder;
 import java.sql.SQLException;
-import java.util.Optional;
 
-import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerResponse;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
-import io.vertx.ext.web.Session;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.FaviconHandler;
-import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.TimeoutHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
@@ -40,8 +34,8 @@ public class Routes {
 		this.server = server;
 
 		String value = System.getenv("VERTXWEB_ENVIRONMENT");
-		if (value != null && value.equals("dev")) {
-			DodexUtil.setEnv(value);
+		if (value != null && (value.equals("dev") || value.equals("test"))) {
+			DodexUtil.setEnv("dev");
 		} else {
 			DodexUtil.setEnv("prod");
 		}
@@ -49,7 +43,6 @@ public class Routes {
 		setFavRoute();
 		setStaticRoute();
 		setDodexRoute();
-		// setLoginRoute();
 
 		if (DodexUtil.getEnv().equals("dev")) {
 			setTestRoute();
@@ -65,8 +58,7 @@ public class Routes {
 			routingContext.put("name", "test");
 			HttpServerResponse response = routingContext.response();
 			response.putHeader("content-type", "text/html");
-			// response.putHeader("Access-Control-Allow-Origin", "http://localhost:9876");
-			// response.putHeader("Vary", "Origin");
+			
 			int length = routingContext.request().path().length();
 			String path = routingContext.request().path();
 			String file = length < 7 ? "test/index.html" : path.substring(1);

@@ -12,7 +12,6 @@ import dmo.fs.spa.db.SpaDatabase;
 import dmo.fs.spa.db.SpaDbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 

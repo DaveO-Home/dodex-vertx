@@ -7,7 +7,6 @@ import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
 
 import dmo.fs.spa.utils.SpaLogin;
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
 
 public interface SpaDatabase {
 

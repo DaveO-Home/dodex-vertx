@@ -24,7 +24,6 @@ import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -194,8 +193,8 @@ public abstract class SqlBuilder {
 				.doOnNext(k -> spaLogin.setId(k))
 				.subscribe(result -> {
 					promise.complete(spaLogin);
-				}, throwable -> {
-					spaLogin.setStatus("-3");
+				},throwable -> {
+					spaLogin.setStatus("-4");
 					promise.complete(spaLogin);
 					logger.error("{0}Error adding user - {1}{2}",
 							new Object[] { ConsoleColors.RED, spaLogin.getName(), ConsoleColors.RESET });

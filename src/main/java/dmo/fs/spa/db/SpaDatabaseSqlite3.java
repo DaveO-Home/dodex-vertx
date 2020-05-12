@@ -1,5 +1,10 @@
 package dmo.fs.spa.db;
 
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -11,23 +16,13 @@ import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
 import org.davidmoten.rx.jdbc.pool.Pools;
 
-import dmo.fs.db.DbConfiguration;
-import dmo.fs.spa.db.DbSqlite3;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaLoginImpl;
-import dmo.fs.db.MessageUser;
-import dmo.fs.db.MessageUserImpl;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
 
 public class SpaDatabaseSqlite3 extends DbSqlite3 {
 	private final static Logger logger = LoggerFactory.getLogger(SpaDatabaseSqlite3.class.getName());

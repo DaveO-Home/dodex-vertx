@@ -53,7 +53,7 @@ function Login() {
                     $(".login:first").html("Log Out");
                     $(".close-modal:first").click();
                     Login.newLogin = false;
-                }
+                } 
             },
             dataType: "json",
             contentType: "application/json"
@@ -73,9 +73,11 @@ function Login() {
 
                     if (inputs[i].validity.valueMissing && !isValid) {
                         if (status === "-1") {
-                            inputs[i].setCustomValidity("User/password combination not fournd. New?");
+                            inputs[i].setCustomValidity("User/password combination not found. New?");
                         } else if (status === "-2") {
                             inputs[i].setCustomValidity("Failed, duplicate user id.");
+                        } else if (status === "-4") {
+                            inputs[i].setCustomValidity("Failed, non-unique?.");
                         } else {
                             inputs[i].setCustomValidity("Please enter data for required field");
                         }
@@ -130,7 +132,7 @@ function Login() {
 
             if (Login.newLogin) {
                 await this.user("PUT", Login.submitButton);
-                if (Login.returnData.status === "-2") {
+                if (Login.returnData.status === "-2" || Login.returnData.status === "-4") {
                     this.duplicateLogin();
                 }
             } else {
@@ -163,11 +165,13 @@ function Login() {
         Login.submitButton.click();
     };
     this.duplicateLogin = () => {
+        const name = Login.submitButton.parentElement.parentElement.querySelector("#inputUsername");
         const password = Login.submitButton.parentElement.parentElement.querySelector("#inputPassword");
         const password2 = Login.submitButton.parentElement.parentElement.querySelector("#inputPassword2");
 
         password.value = "";
         password2.value = "";
+        name.value = "";
         Login.submitButton.click();
     };
     this.newUser = () => {

@@ -204,7 +204,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
                 let observable = numbers.subscribe(timer => {
                     modal = $("#modalTemplate");
 
-                    if (modal.hasClass("show") && timer > 15) { // Give modal a chance to open
+                    if ((modal.hasClass("show") && timer > 15) || timer === 50) { // Give modal a chance to open
                         expect(modal[0]).toBeVisible();
                         observable.unsubscribe();
                         done();
@@ -232,7 +232,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             
             const numbers = timer(50, 50);
             const observable = numbers.subscribe(timer => {
-                if (modal.hasClass("show") === false && timer > 15) { // give modal a chance to close
+                if ((modal.hasClass("show") === false && timer > 15) || timer === 50) { // give modal a chance to close
                     expect(modal[0]).not.toBeVisible();
                     expect(modal[0]).not.toBeInDOM();
                     observable.unsubscribe();
@@ -241,36 +241,4 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             });
         });
     });
-}
-async function karmaDisplay() {
-    // Load of test page(without html, head & body) to append to the Karma iframe
-    let url = "http://localhost:8087/dist_test/react-fusebox/appl/testapp_dev.html";
-    if(window._local) {
-        url = "/base/dist_test/react-fusebox/appl/appv_bootstrap.html";
-    }
-    // $("body").load(url, function () {
-    //     ReactDOM.render(
-    //         <Menulinks />,
-    //         document.getElementById("root")
-    //     );
-    //     ReactDOM.render(
-    //         <LoginC />,
-    //         document.getElementById("nav-login")
-    //     );
-    //     ReactDOM.render(
-    //         <Dodexlink />,
-    //         document.querySelector(".dodex--ico")
-    //     );
-        ReactDOM.render(
-            <LoginC />,
-            document.getElementById("nav-login"),
-            function handleClick(e) {
-                if($(".login:first").html() === "Log Out") {
-                    login(null, true)(e);
-                } else {
-                    Start["div .login click"](e);
-                }
-            }
-        );
-    // });
 }

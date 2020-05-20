@@ -80,7 +80,7 @@ public class Server extends AbstractVerticle {
     server.requestHandler(allRoutes.getRouter());
 
     try {
-      server.listen(config().getInteger("http.port", this.port == 0 ? 8081 : port), result -> {      
+      server.listen(config().getInteger("http.port", this.port == 0 ? 8080 : port), result -> {      
         if (result.succeeded()) {
           Integer port = this.port != 0? this.port : config().getInteger("http.port", 8080);
           logger.info("{0}Started on port: " + port + "{1}",

@@ -15,7 +15,7 @@ plugins {
 
     id "com.github.johnrengelman.shadow" version "5.2.0"
 
-    id "nu.studer.jooq" version "4.1" // '3.0.3'
+    id "nu.studer.jooq" version "3.0.3"
 }
 
 repositories {
@@ -31,10 +31,10 @@ repositories {
     mavenLocal()
 }
 
-version = "3.8.5"
+version = "3.9.0"
 
 ext {
-    vertxVersion = "3.8.5"
+    vertxVersion = "3.9.0"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.12.3"
 }
@@ -93,7 +93,7 @@ run {
     systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
 }
 /*
-  The stop, start list Sever commands and be used after running "gradlew shadowJar".
+  The stop, start, list Sever commands can be used after running "gradlew shadowJar".
  */
 task stopServer(type:Exec) {
   def id = System.getProperty("id") ? System.getProperty("id") : "";
@@ -147,7 +147,7 @@ shadowJar {
 
 test {
     // Use junit platform for unit tests
-    environment "VERTXWEB_ENVIRONMENT", "dev"
+    environment "VERTXWEB_ENVIRONMENT", "test"
     useJUnitPlatform()
     testLogging {
         events "PASSED", "FAILED", "SKIPPED"

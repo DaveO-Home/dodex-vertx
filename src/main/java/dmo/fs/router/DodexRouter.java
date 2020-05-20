@@ -53,13 +53,15 @@ public class DodexRouter {
          * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
          */
         dodexDatabase = DbConfiguration.getDefaultDb();
+        dodexDatabase.setVertx(vertx);
         /**
          * Optional auto user cleanup - config in "application-conf.json". When client
          * changes handle when server is down, old users and undelivered messages will
          * be orphaned.
          * 
-         * Defaults: off - when turned on 1. execute on start up and every 7 days
-         * thereafter. 2. remove users who have not logged in for 90 days.
+         * Defaults: off - when turned on 
+         * 1. execute on start up and every 7 days thereafter. 
+         * 2. remove users who have not logged in for 90 days.
          */
         final Optional<Context> context = Optional.ofNullable(Vertx.currentContext());
         if (context.isPresent()) {

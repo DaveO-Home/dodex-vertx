@@ -19,8 +19,10 @@ import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.MessageUser;
 import dmo.fs.utils.ConsoleColors;
 import io.reactivex.Flowable;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Action;
 import io.reactivex.schedulers.Schedulers;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -30,8 +32,9 @@ import io.vertx.core.logging.LoggerFactory;
  * changes handle when server is down, old users and undelivered messages will
  * be orphaned.
  * 
- * Defaults: off - when turned on 1. execute on start up and every 7 days
- * thereafter. 2. remove users who have not logged in for 90 days.
+ * Defaults: off - when turned on 
+ * 1. execute on start up and every 7 days thereafter. 
+ * 2. remove users who have not logged in for 90 days.
  */
 public class CleanOrphanedUsers extends DbDefinitionBase {
     private static Logger logger = LoggerFactory.getLogger(CleanOrphanedUsers.class.getName());
@@ -62,40 +65,53 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
     }
 
     private void runClean() {
+        List<String> names = new ArrayList<>();
         Flowable.fromCallable(() -> {
-            List<Tuple5<Integer, String, String, String, Object>> users = getUsers(db);
-            List<Integer> possibleUsers = getPossibleOrphanedUsers(users);
-            List<String> names = new ArrayList<>();
+            Future<List<Tuple5<Integer, String, String, String, Object>>> users = getUsers(db);
+            users.onSuccess(data -> {
+                List<Integer> possibleUsers = getPossibleOrphanedUsers(data);
 
-            cleanUsers(db, possibleUsers);
+                cleanUsers(db, possibleUsers);
 
-            users.iterator().forEachRemaining(user -> {
-                if (possibleUsers.contains(user.value1())) {
-                    names.add(user.value2());
-                }
+                data.iterator().forEachRemaining(user -> {
+                    if (possibleUsers.contains(user.value1())) {
+                        names.add(user.value2());
+                    }
+                });
+
+                logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, "Cleaned users: ", names.toString(), ConsoleColors.RESET));
             });
 
-            return ConsoleColors.BLUE_BOLD_BRIGHT + "Cleaned users: " + names.toString() + ConsoleColors.RESET;
+            return String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, "Starting User/Undelivered/Message Clean: ", ConsoleColors.RESET);
+        
         }).subscribeOn(Schedulers.io()).observeOn(Schedulers.single()).subscribe(logger::info,
                 Throwable::printStackTrace);
     }
 
-    private List<Tuple5<Integer, String, String, String, Object>> getUsers(Database db) throws SQLException {
+    private Future<List<Tuple5<Integer, String, String, String, Object>>> getUsers(Database db) throws SQLException {
         List<Tuple5<Integer, String, String, String, Object>> listOfUsers = new ArrayList<>();
-
-        Disposable disposable = db.select(getAllUsers()).parameter("NAME", "DUMMY")
-                .getAs(Integer.class, String.class, String.class, String.class, Object.class).doOnNext(result -> {
+        Promise<List<Tuple5<Integer, String, String, String, Object>>> promise = Promise.promise();
+        GotUsers gotUsers = new GotUsers();
+		
+		Future.future(prom -> {
+            gotUsers.setPromise(promise);
+            gotUsers.setListOfUsers(listOfUsers);
+            
+            db.select(getAllUsers()).parameter("NAME", "DUMMY")
+                .getAs(Integer.class, String.class, String.class, String.class, Object.class)
+                .doOnNext(result -> {
                     listOfUsers.add(result);
-                }).subscribe(result -> {
+                })
+                .doOnComplete(gotUsers)
+                .subscribe(result -> {
                     //
                 }, throwable -> {
-                    logger.error("{0}Error building registered user list{1}",
-                            new Object[] { ConsoleColors.RED_BOLD_BRIGHT, ConsoleColors.RESET });
+                    logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error building registered user list",  ConsoleColors.RESET));
                     throwable.printStackTrace();
                 });
-
-        await(disposable);
-        return listOfUsers;
+            });
+            
+        return gotUsers.getPromise().future();
     }
 
     private static List<Integer> getPossibleOrphanedUsers(List<Tuple5<Integer, String, String, String, Object>> users) {
@@ -128,104 +144,191 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
         return diffInDays;
     }
 
+    Object value = null;
     private void cleanUsers(Database db, List<Integer> users) {
-        List<Integer> messageIds = new ArrayList<>();
+        List<Integer> messageIds = new ArrayList<>();        
 
         users.iterator().forEachRemaining(userId -> {
+            CleanObjects cleanObjects = new CleanObjects();
 
-            Disposable disposable = db.select(getUserUndelivered()).parameter("USERID", userId)
-                    .getAs(Integer.class, Integer.class).doOnEach(result -> {
+            Future.future(prom -> {
+                cleanObjects.setPromise(prom);
+                db.select(getUserUndelivered())
+                    .parameter("USERID", userId)
+                    .getAs(Integer.class, Integer.class)
+                    .doOnEach(result -> {
                         if (result.isOnNext()) {
                             Integer messageId = result.getValue().value2();
                             messageIds.add(messageId);
                         }
-                    }).subscribe(result -> {
-                        //
+                    })
+                    .doOnComplete(cleanObjects)
+                    .subscribe(result -> {
                     }, throwable -> {
-                        logger.error("{0}Error cleaning user list{1}",
-                                new Object[] { ConsoleColors.RED_BOLD_BRIGHT, ConsoleColors.RESET });
-                        throwable.printStackTrace();
+                        logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error cleaning user list: ", throwable.getMessage(), ConsoleColors.RESET ));
+                        // throwable.printStackTrace();
                     });
-
-            await(disposable);
-            cleanUndelivered(db, userId, messageIds);
-            cleanMessage(db, messageIds);
-            cleanRemainingUsers(db, users);
-        });
-    }
-
-    private int cleanUndelivered(Database db, Integer userId, List<Integer> messageIds) {
-        int count[] = { 0 };
-        messageIds.iterator().forEachRemaining(messageId -> {
-            Disposable disposable = db.update(getRemoveUndelivered()).parameter("USERID", userId)
-                    .parameter("MESSAGEID", messageId).counts().doOnNext(c -> count[0] += c).subscribe(result -> {
-                        //
-                    }, throwable -> {
-                        logger.error("{0}Error removing undelivered record{1}",
-                                new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
-                        throwable.printStackTrace();
-                    });
-
-            await(disposable);
-        });
-        return count[0];
-    }
-
-    private int cleanMessage(Database db, List<Integer> messageIds) {
-        int count[] = { 0 };
-        messageIds.iterator().forEachRemaining(messageId -> {
-            Disposable disposable = db.update(getRemoveMessage()).parameter("MESSAGEID", messageId).counts()
-                    .doOnNext(c -> count[0] += c).subscribe(result -> {
-                        //
-                    }, throwable -> {
-                        logger.error("{0}Error removing message: {2}{1}",
-                                new Object[] { ConsoleColors.RED, ConsoleColors.RESET, messageId });
-                        throwable.printStackTrace();
-                    });
-
-            await(disposable);
-        });
-        return count[0];
-    }
-
-    private int cleanUser(Database db, Integer userId) {
-        int count[] = { 0 };
-
-        Disposable disposable = db.update(getRemoveUsers()).parameter("USERID", userId).counts()
-                .doOnNext(c -> count[0] += c).subscribe(result -> {
-                    //
-                }, throwable -> {
-                    logger.error("{0}Error deleting user{1} {2}",
-                            new Object[] { ConsoleColors.RED, ConsoleColors.RESET, userId });
-                    throwable.printStackTrace();
+                
+                prom.future().onSuccess(result -> {
+                    cleanUndelivered(db, userId, messageIds, users);
+                    value = result;
                 });
+                
+            });
+            
+        });
+        if(value == null) {
+            cleanRemainingUsers(db, users);
+        }
+    }
 
-        await(disposable);
+    private int cleanUndelivered(Database db, Integer userId, List<Integer> messageIds, List<Integer> users) {
+        int count[] = { 0 };
+        messageIds.iterator().forEachRemaining(messageId -> {
+            CleanObjects cleanObjects = new CleanObjects();
+
+            Future.future(prom -> {
+                cleanObjects.setPromise(prom);
+                db.update(getRemoveUndelivered())
+                    .parameter("USERID", userId)
+                    .parameter("MESSAGEID", messageId)
+                    .counts()
+                    .doOnNext(c -> { 
+                        count[0] += c;
+                    })
+                    .doOnComplete(cleanObjects)
+                    .subscribe(result -> {
+                        cleanObjects.setCount(count[0]);
+                    }, throwable -> {
+                        logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error removing undelivered record: ", throwable.getMessage(), ConsoleColors.RESET ));
+                        // throwable.printStackTrace();
+                    });
+                
+                prom.future().onSuccess(result -> {
+                    if(result != null) {
+                        count[0] += (Integer)result;
+                    }
+                    cleanMessage(db, messageIds, users);
+                });
+            });
+        });
         return count[0];
+    }
+
+    private int cleanMessage(Database db, List<Integer> messageIds, List<Integer> users) {
+        int count[] = { 0 };
+        messageIds.iterator().forEachRemaining(messageId -> {
+            CleanObjects cleanObjects = new CleanObjects();
+
+            Future.future(prom -> {
+                cleanObjects.setPromise(prom);
+                db.update(getRemoveMessage())
+                    .parameter("MESSAGEID", messageId)
+                    .counts()
+                    .doOnNext(c -> count[0] += c)
+                    .doOnComplete(cleanObjects)
+                    .subscribe(result -> {
+                        cleanObjects.setCount(count[0]);
+                    }, throwable -> {
+                        logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, " Error removing message:", throwable.getMessage(), ConsoleColors.RESET ));
+                        // throwable.printStackTrace();
+                    });
+                prom.future().onSuccess(result -> {
+                    if(result != null) {
+                        count[0] += (Integer)result;
+                    }
+                    cleanRemainingUsers(db, users);
+                });
+            });
+        });
+        return count[0];
+    }
+
+    private Future<Object> cleanUser(Database db, Integer userId) {
+        int count[] = { 0 };
+        CleanObjects cleanObjects = new CleanObjects();
+
+        return Future.future(prom -> {
+            cleanObjects.setPromise(prom);
+            db.update(getRemoveUsers())
+                .parameter("USERID", userId)
+                .counts()
+                .doOnNext(c -> count[0] += c)
+                .doOnComplete(cleanObjects)
+                .subscribe(result -> {
+                    cleanObjects.setCount(count[0]);
+                }, throwable -> {
+                    logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, ":Error deleting user: ",  userId.toString(), " : ", throwable.getMessage(), ConsoleColors.RESET ));
+                    // throwable.printStackTrace();
+                });
+        });
     }
 
     private int cleanRemainingUsers(Database db, List<Integer> users) {
-        int count = 0;
+        int count[] = { 0 };
 
         users.iterator().forEachRemaining(userId -> {
-            cleanUser(db, userId);
+            cleanUser(db, userId).onSuccess(result -> {
+                if(result != null) {
+                    count[0] += (Integer)result;
+                }
+            });
         });
 
-        return count;
-    }
-
-    private static void await(Disposable disposable) {
-        while (!disposable.isDisposed()) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+        return count[0];
     }
 
     @Override
     public MessageUser createMessageUser() {
         return null;
+    }
+
+    class GotUsers implements Action {
+		List<Tuple5<Integer, String, String, String, Object>> listOfUsers = null;
+		Promise<List<Tuple5<Integer, String, String, String, Object>>> promise = null;
+
+		@Override
+		public void run() throws Exception {
+            promise.complete(listOfUsers);
+        }
+        
+        public void setPromise(Promise<List<Tuple5<Integer, String, String, String, Object>>> promise) {
+            this.promise = promise;
+        }
+
+        public Promise<List<Tuple5<Integer, String, String, String, Object>>> getPromise() {
+            return promise;
+        }
+
+        public void setListOfUsers(List<Tuple5<Integer, String, String, String, Object>> listOfUsers) {
+            this.listOfUsers = listOfUsers;
+        }
+    }
+
+    class CleanObjects implements Action {
+		Object object = null;
+        Promise <Object> promise = null;
+        Integer count = 0;
+        
+		@Override
+		public void run() throws Exception {
+            promise.complete(count);
+        }
+        
+        public void setPromise(Promise<Object> promise) {
+            this.promise = promise;
+        }
+
+        public Promise<Object> getPromise() {
+            return promise;
+        }
+
+        public void setObject(Object object) {
+            this.object = object;
+        }
+        
+        public void setCount(Integer count) {
+            this.count = count;
+        }
     }
 }

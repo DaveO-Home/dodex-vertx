@@ -6,6 +6,7 @@ import java.util.List;
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
 
+import io.vertx.core.Vertx;
 import io.vertx.core.http.ServerWebSocket;
 
 public interface DodexDatabase {
@@ -48,4 +49,7 @@ public interface DodexDatabase {
 
 	public StringBuilder buildUsersJson(Database db, MessageUser messageUser) throws InterruptedException, SQLException;
 
+	public void setVertx(Vertx vertx);
+
+	public Vertx getVertx();
 }

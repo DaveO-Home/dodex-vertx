@@ -19,6 +19,7 @@ import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -51,6 +52,7 @@ public abstract class DbDefinitionBase {
 	private static String GETSQLITEUPDATEUSER = null;
 	private static String GETREMOVEUSERS = null;
 	private Boolean isTimestamp = null;
+	private Vertx vertx = null;
 
 	public static void setupSql(Database db) throws SQLException {
 		Connection conn = db.connection().blockingGet();
@@ -661,10 +663,25 @@ public abstract class DbDefinitionBase {
 	private void await(Disposable disposable) {
 		while (!disposable.isDisposed()) {
 			try {
-				Thread.sleep(100);
+				if(vertx != null) {
+					vertx.setTimer(100, handler -> {
+					});
+				}
+				else {
+					Thread.sleep(100);
+				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 	}
+
+	public Vertx getVertx() {
+		return vertx;
+	}
+
+	public void setVertx(Vertx vertx) {
+		this.vertx = vertx;
+	}
+	
 }

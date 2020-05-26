@@ -2,8 +2,6 @@ package dmo.fs.db;
 
 import java.sql.Timestamp;
 
-// import java.sql.Timestamp;
-
 public interface MessageUser {
     public void setId(Long id);
     public void setName(String name);

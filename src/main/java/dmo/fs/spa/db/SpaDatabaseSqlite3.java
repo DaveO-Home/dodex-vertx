@@ -21,6 +21,7 @@ import dmo.fs.spa.utils.SpaLoginImpl;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
+import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -88,7 +89,8 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 
 		db = Database.from(pool);
 
-		Disposable disposable = db.member().doOnSuccess(c -> {
+		Future.future(prom -> {
+			db.member().doOnSuccess(c -> {
 			Statement stat = c.value().createStatement();
 
 			// stat.executeUpdate("drop table login");
@@ -97,18 +99,23 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 			if (!tableExist(c.value(), "login")) {
 				stat.executeUpdate(sql);
 			}
-			stat.close();
-			c.value().close();
-		}).subscribe(result -> {
-			//
-		}, throwable -> {
-			logger.error("{0}Error creating database tables{1}",
-					new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
-			throwable.printStackTrace();
+				stat.close();
+				c.value().close();
+			}).subscribe(result -> {
+				prom.complete();
+			}, throwable -> {
+				logger.error(String.join(ConsoleColors.RED, "Error creating database tables: ", throwable.getMessage(), ConsoleColors.RESET));
+				throwable.printStackTrace();
+			});
+			// generate all jooq sql only once.
+			prom.future().onSuccess(result -> {
+				try {
+					setupSql(db);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			});
 		});
-		await(disposable);
-		// generate all jooq sql only once.
-		setupSql(db);
 	}
 
 	@Override
@@ -134,12 +141,6 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 			}
 		}
 		return exists;
-	}
-
-	private static void await(Disposable disposable) throws InterruptedException {
-		while (!disposable.isDisposed()) {
-			Thread.sleep(100);
-		}
 	}
 
 	@Override

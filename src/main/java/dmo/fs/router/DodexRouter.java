@@ -29,8 +29,11 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.SharedData;
+import io.netty.util.internal.ObjectCleaner;
 import io.vertx.core.Context;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
 
@@ -44,8 +47,7 @@ public class DodexRouter {
         this.vertx = vertx;
     }
 
-    public void setWebSocket(final HttpServer server) 
-        throws InterruptedException, IOException, SQLException {
+    public void setWebSocket(final HttpServer server) throws InterruptedException, IOException, SQLException {
         /**
          * You can customize the db config here by: Map = db configuration, Properties =
          * credentials e.g. Map overrideMap = new Map(); Properties overrideProperties =
@@ -59,9 +61,8 @@ public class DodexRouter {
          * changes handle when server is down, old users and undelivered messages will
          * be orphaned.
          * 
-         * Defaults: off - when turned on 
-         * 1. execute on start up and every 7 days thereafter. 
-         * 2. remove users who have not logged in for 90 days.
+         * Defaults: off - when turned on 1. execute on start up and every 7 days
+         * thereafter. 2. remove users who have not logged in for 90 days.
          */
         final Optional<Context> context = Optional.ofNullable(Vertx.currentContext());
         if (context.isPresent()) {
@@ -74,8 +75,8 @@ public class DodexRouter {
                     clean.startClean(config);
                 }
             } catch (final Exception exception) {
-                logger.info("{0}Context Configuration failed...{1}{2} ",
-                        new Object[] { ConsoleColors.RED_BOLD_BRIGHT, exception.getMessage(), ConsoleColors.RESET });
+                logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...",
+                        ConsoleColors.RESET));
             }
         }
 
@@ -83,8 +84,7 @@ public class DodexRouter {
         String startupMessage = "In Production";
 
         startupMessage = DodexUtil.getEnv().equals("dev") ? "In Development" : startupMessage;
-        logger.info("{0}Starting Web Socket...{1}{2} ",
-                new Object[] { ConsoleColors.BLUE_BOLD_BRIGHT, startupMessage, ConsoleColors.RESET });
+        logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, startupMessage, ConsoleColors.RESET));
 
         Handler<ServerWebSocket> handler = new Handler<ServerWebSocket>() {
 
@@ -92,21 +92,14 @@ public class DodexRouter {
             public void handle(ServerWebSocket ws) {
 
                 try {
-                    logger.info("{0}Websocket-connection...{2}{1} ",
-                            new Object[] { ConsoleColors.BLUE_BOLD_BRIGHT,
-                                    URLDecoder.decode(ParseQuery.getQueryMap(ws.query()).get("handle"),
-                                            StandardCharsets.UTF_8.name()),
-                                    ConsoleColors.RESET });
-                } 
-                catch (final UnsupportedEncodingException e) {
-                    // e.printStackTrace();
-                    logger.info(e.getMessage());
-                } 
-                catch (final Exception e) {
-                    logger.info(e.getMessage());
+                    logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, URLDecoder
+                            .decode(ParseQuery.getQueryMap(ws.query()).get("handle"), StandardCharsets.UTF_8.name()),
+                            ConsoleColors.RESET));
+                } catch (final UnsupportedEncodingException e) {
+                    logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET));
                     // e.printStackTrace();
                 }
-                MessageUser resultUser = dodexDatabase.createMessageUser();
+
                 final DodexUtil dodexUtil = new DodexUtil();
 
                 if (!ws.path().equals("/dodex")) {
@@ -124,8 +117,8 @@ public class DodexRouter {
                     clients.put(ws.textHandlerID(), ws);
 
                     ws.closeHandler(ch -> {
-                        logger.info("{0}Closing ws-connection to client: {2}{1} ", new Object[] {
-                                ConsoleColors.BLUE_BOLD_BRIGHT, messageUser.getName(), ConsoleColors.RESET });
+                        logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, "Closing ws-connection to client: ",
+                                messageUser.getName(), ConsoleColors.RESET));
                         wsChatSessions.remove(ws.textHandlerID());
                         clients.remove(ws.textHandlerID());
                     });
@@ -135,87 +128,98 @@ public class DodexRouter {
                     ws.handler(new Handler<Buffer>() {
                         @Override
                         public void handle(final Buffer data) {
-                            String selectedUsers = null;
                             final ArrayList<String> onlineUsers = new ArrayList<>();
                             final String message = data.getString(0, data.length());
                             // Checking if message or command
                             final Map<String, String> returnObject = dodexUtil.commandMessage(ws, message, messageUser);
                             // message with command stripped out
-                            String computedMessage = null;
-                            String command = null;
+                            String computedMessage[] = { null };
+                            String command[] = { null };
 
-                            computedMessage = returnObject.get("message");
-                            command = returnObject.get("command");
-                            if (command != null && command.equals(";removeuser")) {
+                            computedMessage[0] = returnObject.get("message");
+                            command[0] = returnObject.get("command");
+
+                            Promise<Long> promise = Promise.promise();
+                            promise.complete(-1l);
+                            Future<Long> deleted = null;
+
+                            if (command[0] != null && command[0].equals(";removeuser")) {
                                 try {
-                                    dodexDatabase.deleteUser(ws, db, messageUser);
+                                    deleted = dodexDatabase.deleteUser(ws, db, messageUser);
                                 } catch (InterruptedException | SQLException e) {
                                     e.printStackTrace();
                                     ws.writeTextMessage("Your Previous handle did not delete: " + e.getMessage());
                                 }
+                            } else {
+                                deleted = promise.future();
                             }
 
-                            if (computedMessage.length() > 0) {
-                                // private users to send message
-                                selectedUsers = returnObject.get("selectedUsers");
-                                final Set<String> websockets = clients.keySet();
-                                Map<String, String> query = null;
+                            deleted.onSuccess(handler -> {
+                                String selectedUsers = null;
+                                if (computedMessage[0].length() > 0) {
+                                    // private users to send message
+                                    selectedUsers = returnObject.get("selectedUsers");
+                                    final Set<String> websockets = clients.keySet();
+                                    Map<String, String> query = null;
 
-                                for (final String websocket : websockets) {
-                                    final ServerWebSocket webSocket = clients.get(websocket);
-                                    if (!webSocket.isClosed()) {
-                                        if (!websocket.equals(ws.textHandlerID())) {
-                                            // broadcast message
-                                            query = ParseQuery
-                                                    .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
-                                            final String handle = query.get("handle");
-                                            if (selectedUsers == null && command == null) {
-                                                webSocket.writeTextMessage(
-                                                        messageUser.getName() + ": " + computedMessage);
-                                                // private message
-                                            } else if (Arrays.stream(selectedUsers.split(",")).anyMatch(h -> {
-                                                boolean isMatched = false;
-                                                if (!isMatched) {
-                                                    isMatched = h.contains(handle);
+                                    for (final String websocket : websockets) {
+                                        final ServerWebSocket webSocket = clients.get(websocket);
+                                        if (!webSocket.isClosed()) {
+                                            if (!websocket.equals(ws.textHandlerID())) {
+                                                // broadcast message
+                                                query = ParseQuery
+                                                        .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
+                                                final String handle = query.get("handle");
+                                                if (selectedUsers == null && command[0] == null) {
+                                                    webSocket.writeTextMessage(
+                                                            messageUser.getName() + ": " + computedMessage[0]);
+                                                    // private message
+                                                } else if (Arrays.stream(selectedUsers.split(",")).anyMatch(h -> {
+                                                    boolean isMatched = false;
+                                                    if (!isMatched) {
+                                                        isMatched = h.contains(handle);
+                                                    }
+                                                    return isMatched;
+                                                })) {
+                                                    webSocket.writeTextMessage(
+                                                            messageUser.getName() + ": " + computedMessage[0]);
+                                                    // keep track of delivered messages
+                                                    onlineUsers.add(handle);
                                                 }
-                                                return isMatched;
-                                            })) {
-                                                webSocket.writeTextMessage(
-                                                        messageUser.getName() + ": " + computedMessage);
-                                                // keep track of delivered messages
-                                                onlineUsers.add(handle);
+                                            } else {
+                                                if (selectedUsers == null && command[0] != null) {
+                                                    ws.writeTextMessage("Private user not selected");
+                                                } else
+                                                    ws.writeTextMessage("ok");
                                             }
-                                        } else {
-                                            if (selectedUsers == null && command != null) {
-                                                ws.writeTextMessage("Private user not selected");
-                                            } else
-                                                ws.writeTextMessage("ok");
                                         }
                                     }
                                 }
-                            }
 
-                            // calculate difference between selected and online users
-                            if (selectedUsers != null) {
-                                final List<String> selected = Arrays.asList(selectedUsers.split(","));
-                                final List<String> disconnectedUsers = selected.stream()
-                                        .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
-                                // Save private message to send when to-user logs in
-                                if (disconnectedUsers.size() > 0) {
-                                    long key = 0;
-                                    try {
-                                        key = dodexDatabase.addMessage(ws, messageUser, computedMessage, db);
-                                    } catch (InterruptedException | SQLException e) {
-                                        e.printStackTrace();
-                                    }
-                                    try {
-                                        dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
-                                    } catch (final SQLException e) {
-                                        e.printStackTrace();
+                                // calculate difference between selected and online users
+                                if (selectedUsers != null) {
+                                    final List<String> selected = Arrays.asList(selectedUsers.split(","));
+                                    final List<String> disconnectedUsers = selected.stream()
+                                            .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
+                                    // Save private message to send when to-user logs in
+                                    if (disconnectedUsers.size() > 0) {
+                                        Future<Long> future = null;
+                                        try {
+                                            future = dodexDatabase.addMessage(ws, messageUser, computedMessage[0], db);
+                                            future.onSuccess(key -> {
+                                                try {
+                                                    dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
+                                                } catch (SQLException e) {
+                                                    e.printStackTrace();
+                                                }
+                                            });
+                                        } catch (final SQLException | InterruptedException e) {
+                                            e.printStackTrace();
+                                        }
                                     }
                                 }
-                            }
-                        }
+                            });
+                        }                       
                     });
                     /*
                      * websocket.onConnection()
@@ -229,23 +233,31 @@ public class DodexRouter {
                     handle = query.get("handle");
                     id = query.get("id");
 
-                    StringBuilder userJson = new StringBuilder();
+                    // StringBuilder userJson = new StringBuilder();
                     messageUser.setName(handle);
                     messageUser.setPassword(id);
                     messageUser.setIp(ws.remoteAddress().toString());
 
                     try {
-                        resultUser = dodexDatabase.selectUser(messageUser, ws, db);
-                        userJson = dodexDatabase.buildUsersJson(db, messageUser);
+                        Future<MessageUser> future = dodexDatabase.selectUser(messageUser, ws, db);
+                        future.onSuccess(mUser -> {
+                            try {
+                                Future<StringBuilder> userJson = dodexDatabase.buildUsersJson(db, mUser);
+
+                                userJson.onSuccess(json -> {
+                                    ws.writeTextMessage("connected:" + json); // Users for private messages
+                                    /*
+                                    * Send undelivered messages and remove user related messages.
+                                    */
+                                    dodexDatabase.processUserMessages(ws, db, mUser);
+                                });
+                            } catch (InterruptedException | SQLException e) {
+                                e.printStackTrace();
+                            }
+                        });
                     } catch (InterruptedException | SQLException e) {
                         e.printStackTrace();
                     }
-
-                    ws.writeTextMessage("connected:" + userJson); // Users for private messages
-                    /*
-                     * Send undelivered messages and remove user related messages.
-                     */
-                    dodexDatabase.processUserMessages(ws, db, resultUser);
                 }
             }
         };

@@ -14,6 +14,7 @@ import org.davidmoten.rx.jdbc.pool.Pools;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
+import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -42,11 +43,11 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 
 		defaultNode = dodexUtil.getDefaultNode();
 
-		webEnv = webEnv == null || webEnv.equals("prod")? "prod": "dev";
+		webEnv = webEnv == null || webEnv.equals("prod") ? "prod" : "dev";
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
-		
+
 		if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
 			this.dbProperties = dbOverrideProps;
 		}
@@ -64,11 +65,11 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
-		webEnv = webEnv == null || webEnv.equals("prod")? "prod": "dev";
+		webEnv = webEnv == null || webEnv.equals("prod") ? "prod" : "dev";
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
-		
+
 		dbProperties.setProperty("foreign_keys", "true");
 
 		databaseSetup();
@@ -92,39 +93,45 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 
 		db = Database.from(pool);
 
-		Disposable disposable = db.member().doOnSuccess(c -> {
-			Statement stat = c.value().createStatement();
+		Future.future(prom -> {
+			db.member().doOnSuccess(c -> {
+				Statement stat = c.value().createStatement();
 
-			// stat.executeUpdate("drop table undelivered");
-			// stat.executeUpdate("drop table users");
-			// stat.executeUpdate("drop table messages");
+				// stat.executeUpdate("drop table undelivered");
+				// stat.executeUpdate("drop table users");
+				// stat.executeUpdate("drop table messages");
 
-			String sql = getCreateTable("USERS");
-			if (!tableExist(c.value(), "users")) {
-				stat.executeUpdate(sql);
-			}
-			sql = getCreateTable("MESSAGES");
-			if (!tableExist(c.value(), "messages")) {
-				stat.executeUpdate(sql);
-			}
-			sql = getCreateTable("UNDELIVERED");
-			if (!tableExist(c.value(), "undelivered")) {
-				stat.executeUpdate(sql);
-			}
-			stat.close();
-			c.value().close();
-		}).subscribe(result -> {
-			//
-		}, throwable -> {
-			logger.error("{0}Error creating database tables{1}",
-					new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
-			throwable.printStackTrace();
+				String sql = getCreateTable("USERS");
+				if (!tableExist(c.value(), "users")) {
+					stat.executeUpdate(sql);
+				}
+				sql = getCreateTable("MESSAGES");
+				if (!tableExist(c.value(), "messages")) {
+					stat.executeUpdate(sql);
+				}
+				sql = getCreateTable("UNDELIVERED");
+				if (!tableExist(c.value(), "undelivered")) {
+					stat.executeUpdate(sql);
+				}
+				stat.close();
+				c.value().close();
+			}).subscribe(result -> {
+				prom.complete();
+			}, throwable -> {
+				logger.error(String.join(ConsoleColors.RED, "Error creating database tables: ", throwable.getMessage(), ConsoleColors.RESET));
+				throwable.printStackTrace();
+			});
+			// generate all jooq sql only once.
+			prom.future().onSuccess(result -> {
+				try {
+					setupSql(db);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			});
 		});
-		await(disposable);
-		// generate all jooq sql only once.
-		setupSql(db);
 	}
-	
+
 	@Override
 	public Database getDatabase() {
 		return Database.from(pool);
@@ -153,11 +160,5 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 			}
 		}
 		return exists;
-	}
-
-	private static void await(Disposable disposable) throws InterruptedException {
-		while (!disposable.isDisposed()) {
-			Thread.sleep(100);
-		}
 	}
 }

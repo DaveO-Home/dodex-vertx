@@ -1,7 +1,5 @@
 # doDex-vertx, a java asynchronous server for Dodex, Dodex-input and Dodex-mess
 
-* A functional demo is running under a Websphere Liberty server on the IBM Cloud Foundary @ <https://daveomix.us-south.cf.appdomain.cloud/ddex/index.html> or `.../bootstrap.html`.
-
 ## Install Assumptions
 
 1. Java 8 or higher installed with JAVA_HOME set.

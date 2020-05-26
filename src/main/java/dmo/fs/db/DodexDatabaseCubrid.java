@@ -14,6 +14,7 @@ import org.davidmoten.rx.jdbc.pool.Pools;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
+import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -95,42 +96,48 @@ public class DodexDatabaseCubrid extends DbCubrid {
 		
 		db = Database.from(pool);
 		
-		Disposable disposable = db.member().doOnSuccess(c -> {
-			Statement stat = c.value().createStatement();
-			// try {
-			// 	stat.executeUpdate("drop table undelivered");
-			// 	stat.executeUpdate("drop table users");
-			// 	stat.executeUpdate("drop table messages");
-			// } catch(Exception e) {
-			// 	e.printStackTrace();
-			// }
+		Future.future(prom -> {
+			db.member().doOnSuccess(c -> {
+				Statement stat = c.value().createStatement();
+				// try {
+				// 	stat.executeUpdate("drop table undelivered");
+				// 	stat.executeUpdate("drop table users");
+				// 	stat.executeUpdate("drop table messages");
+				// } catch(Exception e) {
+				// 	e.printStackTrace();
+				// }
 
-			String sql = getCreateTable("USERS");
-			// Set defined user
-			if (!tableExist(c.value(), "users")) {
-				stat.executeUpdate(sql);
-				stat.executeUpdate("CREATE UNIQUE INDEX u_users_name ON users ([name], [password]);");
-			}
-			sql = getCreateTable("MESSAGES");
-			if (!tableExist(c.value(), "messages")) {
-				stat.executeUpdate(sql);
-			}
-			sql = getCreateTable("UNDELIVERED");
-			if (!tableExist(c.value(), "undelivered")) {
-				stat.executeUpdate(sql);
-			}
-			stat.close();
-			c.value().close();
-		}).subscribe(result -> {
-			//
-		}, throwable -> {
-			logger.error("{0}Error creating database tables{1}",
-					new Object[] { ConsoleColors.RED, ConsoleColors.RESET });
-			throwable.printStackTrace();
+				String sql = getCreateTable("USERS");
+				// Set defined user
+				if (!tableExist(c.value(), "users")) {
+					stat.executeUpdate(sql);
+					stat.executeUpdate("CREATE UNIQUE INDEX u_users_name ON users ([name], [password]);");
+				}
+				sql = getCreateTable("MESSAGES");
+				if (!tableExist(c.value(), "messages")) {
+					stat.executeUpdate(sql);
+				}
+				sql = getCreateTable("UNDELIVERED");
+				if (!tableExist(c.value(), "undelivered")) {
+					stat.executeUpdate(sql);
+				}
+				stat.close();
+				c.value().close();
+			}).subscribe(result -> {
+				prom.complete();
+			}, throwable -> {
+				logger.error(String.join(ConsoleColors.RED, "Error creating database tables: ", throwable.getMessage(), ConsoleColors.RESET));
+				throwable.printStackTrace();
+			});
+			// generate all jooq sql only once.
+			prom.future().onSuccess(result -> {
+				try {
+					setupSql(db);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			});
 		});
-		await(disposable);
-		// generate all jooq sql only once.
-		setupSql(db);
 	}
 
 	@Override
@@ -161,11 +168,5 @@ public class DodexDatabaseCubrid extends DbCubrid {
 			}
 		}
 		return exists;
-	}
-
-	private static void await(Disposable disposable) throws InterruptedException {
-		while (!disposable.isDisposed()) {
-			Thread.sleep(100);
-		}
 	}
 }

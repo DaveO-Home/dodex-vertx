@@ -22,6 +22,8 @@ import dmo.fs.db.JavaRxDateDb.Users;
 import dmo.fs.utils.ConsoleColors;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -150,6 +152,7 @@ class DbTest /*extends DbDefinitionBase*/ {
                 .connectionProvider(cp).build();
 
         db = Database.from(pool);
+        DbDefinitionBase.setupSql(db);
 
         assertNotEquals(dodexDatabase, null, "dodexDatabase should be created");
         assertNotEquals(db.member(), null, "database should should exist");
@@ -166,52 +169,54 @@ class DbTest /*extends DbDefinitionBase*/ {
         boolean emptyTable[] = { false, false, false };
         messageUser.setId(-1l);
 
-        Disposable disposable = db.select(Users.class)
-                .parameter(messageUser.getPassword())
-                .get()
-                .isEmpty()
-                .doOnSuccess(empty -> {
-                    if (empty) {
-                        emptyTable[0] = empty;
-                        dodexDatabase.addUser(null, db, messageUser);
+        Promise<MessageUser> promise = Promise.promise();
+
+		db.select(Users.class)
+			.parameter(messageUser.getPassword())
+			.get()
+			.doOnNext(result -> {
+				resultUser.setId(result.id());
+				resultUser.setName(result.name());
+				resultUser.setPassword(result.password());
+				resultUser.setIp(result.ip());
+				resultUser.setLastLogin(result.lastLogin());
+			})
+			.isEmpty()
+			.doOnSuccess(empty -> {
+				if (empty) {
+                    emptyTable[0] = empty;
+					Future<MessageUser> future2 = dodexDatabase.addUser(null, db, messageUser);
+					future2.onComplete(handler -> {
                         emptyTable[1] = messageUser.getId() > 0l;
-                    } else {
-                        emptyTable[1] = empty == false;
-                        emptyTable[0] = empty == false;
-                    }
-                }).doAfterSuccess(record -> {
-                    db.select(Users.class)
-                        .parameter(messageUser.getPassword())
-                        .get()
-                        .doOnNext(result -> {
-                            resultUser.setId(result.id());
-                            resultUser.setName(result.name());
-                            resultUser.setPassword(result.password());
-                            resultUser.setIp(result.ip());
-                            emptyTable[1] = true;
-                    }).subscribe(result -> {
-                        //
-                    }, throwable -> {
-                        logger.error("{0}Error finding user {1}{2}",
-                                new Object[] { ConsoleColors.RED, messageUser.getName(), ConsoleColors.RESET });
-                        throwable.printStackTrace();
-                    });
-                }).subscribe(result -> {
-                    emptyTable[2] = true;
-                }, throwable -> {
-                    assertEquals(throwable, null, "throwable should should not happen");
-                    logger.error("{0}Error adding user {1}{2}",
-                            new Object[] { ConsoleColors.RED, messageUser.getName(), ConsoleColors.RESET });
-                    throwable.printStackTrace();
-                });
+						MessageUser result = future2.result();
+						resultUser.setId(result.getId());
+						resultUser.setName(result.getName());
+						resultUser.setPassword(result.getPassword());
+						resultUser.setIp(result.getIp());
+                        resultUser.setLastLogin(result.getLastLogin());
+                        promise.complete(resultUser);
+					});					
+				} else {
+                    emptyTable[1] = empty == false;
+                    emptyTable[0] = empty == false;
+                }
+			})
+			.subscribe(result -> {
+                emptyTable[2] = true;
+			}, throwable -> {
+				logger.error(String.join(ConsoleColors.RED, "Error adding user: ", messageUser.getName(), " : ", throwable.getMessage(), ConsoleColors.RESET));
+				throwable.printStackTrace();
+            });
+            
         assertEquals(emptyTable[0], false, "javaRx should be running asynchronously");
         assertEquals(emptyTable[1], false, "javaRx should be running asynchronously");
-        await(disposable);
-        assertEquals(emptyTable[0], true, "user should be not found");
-        assertEquals(emptyTable[1], true, "user should be added to table Users");
-        assertEquals(resultUser.getId() > 0, true, "user id should be generated");
-        assertEquals(resultUser.getName(), "User1", "user should be retrieved");
-        assertEquals(emptyTable[2], true, "subscribe should finish");
+		promise.future().onSuccess(result -> {
+            assertEquals(emptyTable[0], true, "user should be not found");
+            assertEquals(emptyTable[1], true, "user should be added to table Users");
+            assertEquals(result.getId() > 0, true, "user id should be generated");
+            assertEquals(result.getName(), "User1", "user should be retrieved");
+            assertEquals(emptyTable[2], true, "subscribe should finish");
+        });
     }
 
     @Test
@@ -229,20 +234,25 @@ class DbTest /*extends DbDefinitionBase*/ {
     @Test
     void deleteUserFromDatabase() {
         messageUser.setId(-1l);
-        
-        Disposable disposable = db.update(dodexDatabase.getDeleteUser())
-                .parameter("NAME", messageUser.getName())
-                .parameter("PASSWORD", messageUser.getPassword())
-                .counts()
-                .subscribe(result -> {
-                    messageUser.setId(Long.parseLong(result.toString()));
-				}, throwable -> {
-					// logger.error("{0}Error deleting user{1} {2}", new Object[] { ConsoleColors.RED, ConsoleColors.RESET, messageUser.getName() });
-					throwable.printStackTrace();
-                });
+        Promise<Integer> promise = Promise.promise();
+
+		db.update(dodexDatabase.getDeleteUser())
+			.parameter("NAME", messageUser.getName())
+			.parameter("PASSWORD", messageUser.getPassword())
+			.counts()
+			.subscribe(result -> {
+				messageUser.setId(Long.parseLong(result.toString()));
+                promise.complete(result);
+			}, throwable -> {
+				logger.error(String.join(ConsoleColors.RED, "Error deleting user: ", messageUser.getName(), " : ",
+						throwable.getMessage(), ConsoleColors.RESET));
+				throwable.printStackTrace();
+			});
+		
         assertEquals(messageUser.getId() ==  -1l, true, "user deletion should not start yet");
-        await(disposable);
-        assertEquals((messageUser.getId() != -1l), true, "user deleted or not in database");
+        promise.future().onSuccess(result -> {
+            assertEquals((result == 1), true, "user deleted or not in database");
+        });
     }
 
     public void await(Disposable disposable) {

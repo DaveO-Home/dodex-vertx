@@ -31,10 +31,10 @@ repositories {
     mavenLocal()
 }
 
-version = "3.9.0"
+version = "3.9.1"
 
 ext {
-    vertxVersion = "3.9.0"
+    vertxVersion = "3.9.1"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.12.3"
 }

@@ -96,14 +96,12 @@ public class SpaRoutes {
 					});
 
 					future.onFailure(failed -> {
-						logger.error("{0}Add Login failed...{1}{2} ", new Object[] { ConsoleColors.RED_BOLD_BRIGHT,
-								failed.getMessage(), ConsoleColors.RESET });
+						logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Add Login Failed: ", failed.getMessage(), ConsoleColors.RESET ));
 						response.end(FAILURE);
 					});
 
 				} catch (UnsupportedEncodingException | InterruptedException | SQLException e) {
-					logger.info("{0}Context Configuration failed...{1}{2} ",
-							new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
+					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
 
 				} catch (Exception exception) {
 					exception.printStackTrace();
@@ -168,8 +166,7 @@ public class SpaRoutes {
 							});
 
 							future.onFailure(failed -> {
-								logger.error("{0}Add Login failed...{1}{2} ", new Object[] {
-										ConsoleColors.RED_BOLD_BRIGHT, failed.getMessage(), ConsoleColors.RESET });
+								logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Add Login failed...: ", failed.getMessage(), ConsoleColors.RESET ));
 								response.end(FAILURE);
 							});
 						}
@@ -177,14 +174,12 @@ public class SpaRoutes {
 					});
 
 					futureLogin.onFailure(failed -> {
-						logger.error("{0}Add Login failed...{1}{2} ", new Object[] { ConsoleColors.RED_BOLD_BRIGHT,
-								failed.getMessage(), ConsoleColors.RESET });
+						logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Add Login failed...: ", failed.getMessage(), ConsoleColors.RESET ));
 						response.end(FAILURE);
 					});
 
 				} catch (InterruptedException | SQLException e) {
-					logger.info("{0}Context Configuration failed...{1}{2} ",
-							new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
+					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
 
 				} catch (Exception exception) {
 					exception.printStackTrace();
@@ -219,8 +214,7 @@ public class SpaRoutes {
 				try {
 					data = String.join("", "{\"status\":\"", status, "\"}");
 				} catch (Exception e) {
-					logger.info("{0}Context Configuration failed...{1}{2} ",
-							new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
+					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
 				}
 			}
 
@@ -271,14 +265,12 @@ public class SpaRoutes {
 					});
 
 					future.onFailure(failed -> {
-						logger.error("{0}Unregister Login failed...{1}{2} ", new Object[] {
-								ConsoleColors.RED_BOLD_BRIGHT, failed.getMessage(), ConsoleColors.RESET });
+						logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Unregister Login failed...: ", failed.getMessage(), ConsoleColors.RESET ));
 						response.end(FAILURE);
 					});
 
 				} catch (Exception e) {
-					logger.info("{0}Context Configuration failed...{1}{2} ",
-							new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
+					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
 					e.printStackTrace();
 				}
 			}

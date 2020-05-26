@@ -42,7 +42,7 @@ public class TestMainVerticle {
     String deploymentId = server.deploymentID();
     
     Routes routes = new Routes(vertx, vertx.createHttpServer());
-    List<Route> routesList = routes.getRoutes().getRoutes();
+    List<Route> routesList = routes.getRouter().getRoutes();
 
     boolean hasPathDodex = false;
 

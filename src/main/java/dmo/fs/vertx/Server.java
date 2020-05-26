@@ -73,8 +73,7 @@ public class Server extends AbstractVerticle {
     List<Route> routesList = allRoutes.getRouter().getRoutes();
 
     for (Route r : routesList) {
-      logger.info("{0}Using Path {1}{2}",
-          new Object[] { ConsoleColors.CYAN_BOLD_BRIGHT, r.getPath(), ConsoleColors.RESET });
+      logger.info(String.join("", ConsoleColors.CYAN_BOLD_BRIGHT, r.getPath(), ConsoleColors.RESET));
     }
 
     server.requestHandler(allRoutes.getRouter());
@@ -83,30 +82,27 @@ public class Server extends AbstractVerticle {
       server.listen(config().getInteger("http.port", this.port == 0 ? 8080 : port), result -> {      
         if (result.succeeded()) {
           Integer port = this.port != 0? this.port : config().getInteger("http.port", 8080);
-          logger.info("{0}Started on port: " + port + "{1}",
-              new Object[] { ConsoleColors.GREEN_BOLD_BRIGHT, ConsoleColors.RESET });
+          logger.info(String.join("", ConsoleColors.GREEN_BOLD_BRIGHT, "Started on port: ", port.toString(), ConsoleColors.RESET));
           promise.complete();
           try {
               if(development.toLowerCase().equals("dev")) {
-                Future<Void> future1 = Future.future(promise2 -> {
-                  fs.createFile("./server-started", promise2);
-                  promise2.complete();
-                });
-                if(!future1.succeeded()) {
-                  throw new Exception("server-started");
-                };
+                  Future<Void> future1 = Future.future(promise2 -> {
+                    fs.createFile("./server-started", promise2);
+                    promise2.complete();
+                  });
+                  if(!future1.succeeded()) {
+                    throw new Exception("server-started");
+                  };
               }
           } catch (Exception e) {
-            logger.info("{0}Error creating dev file: {1} {2}",
-              new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
+            logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET));
           }
         } else {
-          promise.fail(result.cause());
+            promise.fail(result.cause());
         }
       });
     } catch (Error e) {
-      logger.error("{0}Using Path {1}{2}",
-          new Object[] { ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET });
+      logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET));
     }
   }
 

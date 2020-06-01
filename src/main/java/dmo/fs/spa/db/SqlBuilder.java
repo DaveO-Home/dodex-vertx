@@ -20,7 +20,7 @@ import org.jooq.impl.DSL;
 
 import dmo.fs.spa.db.RxJavaDateDb.Login;
 import dmo.fs.spa.utils.SpaLogin;
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -31,30 +31,29 @@ public abstract class SqlBuilder {
 	private final static Logger logger = LoggerFactory.getLogger(SqlBuilder.class.getName());
 	protected final static String QUERYLOGIN = "select * from LOGIN where name=?";
 
-	private static DSLContext create = null;
+	private static DSLContext create;
 
-	private static String GETLOGINBYNP = null;
-	private static String GETLOGINBYNAME = null;
-	private static String GETINSERTLOGIN = null;
-	private static String GETREMOVELOGIN = null;
-	private static String GETUPDATELOGIN = null;
-	private static String GETLOGINBYID = null;
-	private static String GETSQLITEUPDATELOGIN = null;
-	private Boolean isTimestamp = null;
+	private static String GETLOGINBYNP;
+	private static String GETLOGINBYNAME;
+	private static String GETINSERTLOGIN;
+	private static String GETREMOVELOGIN;
+	private static String GETUPDATELOGIN;
+	private static String GETLOGINBYID;
+	private static String GETSQLITEUPDATELOGIN;
+	private Boolean isTimestamp;
 
 	public static void setupSql(Database db) throws SQLException {
-		Connection conn = db.connection().blockingGet();
-		create = DSL.using(conn, DodexUtil.getSqlDialect());
+		try(Connection conn = db.connection().blockingGet()) {
+			create = DSL.using(conn, DodexUtil.getSqlDialect());
 
-		GETLOGINBYNP = setupLoginByNamePassword();
-		GETLOGINBYNAME = setupLoginByName();
-		GETINSERTLOGIN = setupInsertLogin();
-		GETREMOVELOGIN = setupRemoveLogin();
-		GETLOGINBYID = setupLoginById();
-		GETUPDATELOGIN = setupUpdateLogin();
-		GETSQLITEUPDATELOGIN = setupSqliteUpdateLogin();
-
-		conn.close();
+			GETLOGINBYNP = setupLoginByNamePassword();
+			GETLOGINBYNAME = setupLoginByName();
+			GETINSERTLOGIN = setupInsertLogin();
+			GETREMOVELOGIN = setupRemoveLogin();
+			GETLOGINBYID = setupLoginById();
+			GETUPDATELOGIN = setupUpdateLogin();
+			GETSQLITEUPDATELOGIN = setupSqliteUpdateLogin();
+		}
 	}
 
 	private static String setupLoginByNamePassword() {
@@ -133,11 +132,15 @@ public abstract class SqlBuilder {
 			}).isEmpty().doOnSuccess(empty -> {
 				if (empty || !(resultLogin.getPassword().equals(spaLogin.getPassword()))) {
 					resultLogin.setStatus("-1");
+					resultLogin.setId(0l);
+					resultLogin.setName(spaLogin.getName());
+					resultLogin.setPassword(spaLogin.getPassword());
+					resultLogin.setLastLogin(new Date());
 				} else {
 					resultLogin.setStatus("0");
 				}
 			}).subscribe(result -> {
-				if(resultLogin.getStatus().equals("0")) {
+				if("0".equals(resultLogin.getStatus())) {
 					if(SpaDbConfiguration.isUsingSqlite3()) {
 						Future<Integer> future = updateCustomLogin(db, resultLogin, "date");
 						future.onSuccess(result2 -> {
@@ -145,7 +148,7 @@ public abstract class SqlBuilder {
 						});
 
 						future.onFailure(failed -> {
-							logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Add Login Update failed...: ", failed.getMessage(), ConsoleColors.RESET ));
+							logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Add Login Update failed...: ", failed.getMessage(), ColorUtilConstants.RESET ));
 							resultLogin.setStatus("-99");
 							promise.complete(resultLogin);
 						});
@@ -157,7 +160,7 @@ public abstract class SqlBuilder {
 			}, throwable -> {
 				resultLogin.setStatus("-99");
 				promise.complete(resultLogin);
-				logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error retrieving user: ", spaLogin.getName(), " : ", throwable.getMessage(), ConsoleColors.RESET ));
+				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error retrieving user: ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
 				throwable.printStackTrace();
 			});
 
@@ -180,7 +183,7 @@ public abstract class SqlBuilder {
 			},throwable -> {
 				spaLogin.setStatus("-4");
 				promise.complete(spaLogin);
-				logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error adding user -  ", spaLogin.getName(), " : ", throwable.getMessage(), ConsoleColors.RESET ));
+				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error adding user -  ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
 				throwable.printStackTrace();
 			});
 		
@@ -205,11 +208,17 @@ public abstract class SqlBuilder {
 			.counts()
 			.subscribe(result -> {
 				spaLogin.setStatus(result.toString()); // result = records deleted
+				if(spaLogin.getId() == null) {
+					spaLogin.setId(-1l);
+				}
+				if(spaLogin.getLastLogin() == null) {
+					spaLogin.setLastLogin(new Date());
+				}
 				promise.complete(spaLogin);
 			}, throwable -> {
 				spaLogin.setStatus("-4");
 				promise.complete(spaLogin);
-				logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error deleting user: ", spaLogin.getName(), " : ", throwable.getMessage(), ConsoleColors.RESET ));
+				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error deleting user: ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
 				throwable.printStackTrace();
 			});
 
@@ -222,14 +231,14 @@ public abstract class SqlBuilder {
 
 		int count[] = { 0 };
 		db.update(getSqliteUpdateLogin()).parameter("LOGINID", spaLogin.getId())
-			.parameter("LASTLOGIN", type.equals("date")? new Date().getTime(): new Timestamp(new Date().getTime()))
+			.parameter("LASTLOGIN", "date".equals(type)? new Date().getTime(): new Timestamp(new Date().getTime()))
 			.counts()
 			.doOnNext(c -> count[0] += c)
 			.subscribe(result -> {
 				promise.complete(count[0]);
 			}, throwable -> {
 				promise.complete(-99);
-				logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error Updating user: ", spaLogin.getName(), " : ", throwable.getMessage(), ConsoleColors.RESET ));
+				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error Updating user: ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
 				throwable.printStackTrace();
 			});
 
@@ -238,5 +247,9 @@ public abstract class SqlBuilder {
 
 	public void setIsTimestamp(Boolean isTimestamp) {
 		this.isTimestamp = isTimestamp;
+	}
+
+	public Boolean getIsTimestamp() {
+		return isTimestamp;
 	}
 }

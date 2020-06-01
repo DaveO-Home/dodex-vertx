@@ -13,7 +13,7 @@ import dmo.fs.spa.db.SpaDatabase;
 import dmo.fs.spa.db.SpaDbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaUtil;
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
@@ -69,9 +69,9 @@ public class SpaRoutes {
 		route.handler(routingContext -> {
 			SpaApplication spaApplication = null;
 			try {
-			
+
 				spaApplication = new SpaApplication();
-			
+
 			} catch (InterruptedException | IOException | SQLException e1) {
 				e1.printStackTrace();
 			}
@@ -91,17 +91,22 @@ public class SpaRoutes {
 					Future<SpaLogin> future = spaApplication.getLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
 
 					future.onSuccess(result -> {
+						if (result.getId() == null) {
+							result.setId(0l);
+						}
 						session.put("login", new JsonObject(result.getMap()));
 						response.end(new JsonObject(result.getMap()).encode());
 					});
 
 					future.onFailure(failed -> {
-						logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Add Login Failed: ", failed.getMessage(), ConsoleColors.RESET ));
+						logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Add Login Failed: ",
+								failed.getMessage(), ColorUtilConstants.RESET));
 						response.end(FAILURE);
 					});
 
 				} catch (UnsupportedEncodingException | InterruptedException | SQLException e) {
-					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
+					logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+							"Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
 
 				} catch (Exception exception) {
 					exception.printStackTrace();
@@ -122,9 +127,9 @@ public class SpaRoutes {
 			SpaApplication spaApplication = null;
 
 			try {
-			
+
 				spaApplication = new SpaApplication();
-			
+
 			} catch (InterruptedException | IOException | SQLException e1) {
 				e1.printStackTrace();
 			}
@@ -142,7 +147,8 @@ public class SpaRoutes {
 			if (bodyData.isPresent()) {
 				try {
 					SpaLogin spaLogin = spaDatabase.createSpaLogin();
-					spaLogin = SpaUtil.parseBody(URLDecoder.decode(routingContext.getBodyAsString(), "UTF-8"), spaLogin);
+					spaLogin = SpaUtil.parseBody(URLDecoder.decode(routingContext.getBodyAsString(), "UTF-8"),
+							spaLogin);
 
 					JsonObject jsonObject = new JsonObject(spaLogin.getMap());
 
@@ -166,7 +172,8 @@ public class SpaRoutes {
 							});
 
 							future.onFailure(failed -> {
-								logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Add Login failed...: ", failed.getMessage(), ConsoleColors.RESET ));
+								logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+										"Add Login failed...: ", failed.getMessage(), ColorUtilConstants.RESET));
 								response.end(FAILURE);
 							});
 						}
@@ -174,12 +181,14 @@ public class SpaRoutes {
 					});
 
 					futureLogin.onFailure(failed -> {
-						logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Add Login failed...: ", failed.getMessage(), ConsoleColors.RESET ));
+						logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Add Login failed...: ",
+								failed.getMessage(), ColorUtilConstants.RESET));
 						response.end(FAILURE);
 					});
 
 				} catch (InterruptedException | SQLException e) {
-					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
+					logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+							"Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
 
 				} catch (Exception exception) {
 					exception.printStackTrace();
@@ -214,7 +223,8 @@ public class SpaRoutes {
 				try {
 					data = String.join("", "{\"status\":\"", status, "\"}");
 				} catch (Exception e) {
-					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
+					logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+							"Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
 				}
 			}
 
@@ -236,9 +246,9 @@ public class SpaRoutes {
 		route.handler(routingContext -> {
 			SpaApplication spaApplication = null;
 			try {
-			
+
 				spaApplication = new SpaApplication();
-			
+
 			} catch (InterruptedException | IOException | SQLException e1) {
 				e1.printStackTrace();
 			}
@@ -265,12 +275,14 @@ public class SpaRoutes {
 					});
 
 					future.onFailure(failed -> {
-						logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Unregister Login failed...: ", failed.getMessage(), ConsoleColors.RESET ));
+						logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Unregister Login failed...: ",
+								failed.getMessage(), ColorUtilConstants.RESET));
 						response.end(FAILURE);
 					});
 
 				} catch (Exception e) {
-					logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...: ", e.getMessage(), ConsoleColors.RESET ));
+					logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+							"Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
 					e.printStackTrace();
 				}
 			}

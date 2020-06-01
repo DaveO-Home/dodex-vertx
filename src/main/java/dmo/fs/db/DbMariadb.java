@@ -37,9 +37,9 @@ public abstract class DbMariadb extends JavaRxDateDb {
 					"ON DELETE NO ACTION " +
 					"ON UPDATE NO ACTION);");
 
-        private String sql;
+        String sql;
 
-        private CreateTable(String sql) {
+        CreateTable(String sql) {
             this.sql = sql;
         }
     };

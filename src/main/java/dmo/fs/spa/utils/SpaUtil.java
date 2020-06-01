@@ -3,11 +3,12 @@ package dmo.fs.spa.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,16 +18,10 @@ import org.jooq.SQLDialect;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class SpaUtil {
-    private final static Logger logger = LoggerFactory.getLogger(SpaUtil.class.getName());
     private static String env = "dev";
     private static String defaultDb = "sqlite3";
-
-    public SpaUtil() {
-    }
 
     public void await(final Disposable disposable) {
         while (!disposable.isDisposed()) {
@@ -47,23 +42,23 @@ public class SpaUtil {
     }
 
     public static JsonNode getDefaultNode() throws IOException {
-        final InputStream in = SpaUtil.class.getResourceAsStream("/database_spa_config.json");
         final ObjectMapper jsonMapper = new ObjectMapper();
+        JsonNode node;
+        
+        try(InputStream in = SpaUtil.class.getResourceAsStream("/database_spa_config.json")) {
+            node = jsonMapper.readTree(in);
+        }
 
-        final JsonNode node = jsonMapper.readTree(in);
-        in.close();
         final String defaultdbProp = System.getProperty("DEFAULT_DB");
         final String defaultdbEnv = System.getenv("DEFAULT_DB");
         defaultDb = node.get("defaultdb").textValue();
-
         /*
          * use environment variable first, if set, than properties and then from config
          * json
          */
         defaultDb = defaultdbEnv != null ? defaultdbEnv : defaultdbProp != null ? defaultdbProp : defaultDb;
 
-        final JsonNode defaultNode = node.get(defaultDb);
-        return defaultNode;
+        return node.get(defaultDb);
     }
 
     public static String getDefaultDb() throws IOException {
@@ -72,7 +67,7 @@ public class SpaUtil {
     }
 
     public static Map<String, String> jsonNodeToMap(final JsonNode jsonNode, final String env) {
-        final Map<String, String> defaultMap = new HashMap<>();
+        final Map<String, String> defaultMap = new ConcurrentHashMap<>();
         final JsonNode credentials = jsonNode.get(env).get("credentials");
         final JsonNode config = jsonNode.get(env).get("config");
         Iterator<String> fields = config.fieldNames();
@@ -112,16 +107,15 @@ public class SpaUtil {
     }
 
     public static SQLDialect getSqlDialect() {
-        String database = null;
+        String database;
         try {
             database = getDefaultDb();
-            database = database.equals("sqlite3") ? "SQLITE" : database.toUpperCase();
+            database = "sqlite3".equals(database) ? "SQLITE" : database.toUpperCase();
             for (final SQLDialect sqlDialect : SQLDialect.values()) {
                 if (database.equals(sqlDialect.name())) {
                     return sqlDialect;
                 }
             }
-            ;
         } catch (final IOException e) {
             e.printStackTrace();
         }
@@ -152,6 +146,9 @@ public class SpaUtil {
         
         spaLogin.setName(userName);
         spaLogin.setPassword(password);
+        spaLogin.setId(0l);
+        spaLogin.setLastLogin(new Date());
+        spaLogin.setStatus("0");
         
         return spaLogin;
       }

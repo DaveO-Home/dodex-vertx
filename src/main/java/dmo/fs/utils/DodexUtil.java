@@ -3,20 +3,18 @@ package dmo.fs.utils;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.jooq.SQLDialect;
 
-import dmo.fs.db.MessageUser;
 import io.reactivex.disposables.Disposable;
-import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
@@ -27,62 +25,55 @@ public class DodexUtil {
     private static String env = "dev";
     String defaultDb = "sqlite3";
 
-    public DodexUtil() {
-    }
-
     public void await(Disposable disposable) {
         while (!disposable.isDisposed()) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                logger.error(String.join("", "Await: ", e.getMessage()));
             }
         }
     }
 
-    public Map<String, String> commandMessage(ServerWebSocket ws, String clientData, MessageUser messageUser) {
-        Map<String, String> returnObject = new HashMap<>();
+    public Map<String, String> commandMessage(String clientData) {
+        Map<String, String> returnObject = new ConcurrentHashMap<>();
     
         try {
-            String message = ClientInfo.getMessage(clientData);
-            String command = ClientInfo.getCommand(clientData);
-            String data = ClientInfo.getData(clientData);
+            String message = ClientInfoUtilHelper.getMessage(clientData);
+            String command = ClientInfoUtilHelper.getCommand(clientData);
+            String data = ClientInfoUtilHelper.getData(clientData);
             
-            returnObject = processCommand(ws, command, data, messageUser);
+            returnObject = processCommand(command, data);
             returnObject.put("message", message);
         } catch (Exception e) {
+            logger.error(String.join("", "Command Message: ", e.getMessage()));
             e.printStackTrace();
         }
         return returnObject;
     }
 
-    private Map<String, String> processCommand(ServerWebSocket ws, String command, String data, MessageUser messageUser)
+    private Map<String, String> processCommand(String command, String data)
             throws InterruptedException {
-        String selectedUsers = null;
-        Map<String, String> returnObject = new HashMap<>();
+        String selectedUsers = "";
+        Map<String, String> returnObject = new ConcurrentHashMap<>();
+        String switchValue = command == null ? "" : command;
 
-        switch (command == null? "": command) {
+        switch (switchValue) {
         // Remove user from db when client changes handle.
         // There should not be any undelivered messages against this user if using the dodex client.
         // Howerver, if the browser cache is cleared or server is down, the user may remain in db(obsoleted).
         case REMOVEUSER:
-            // DodexDatabase dodexDatabase = new DodexDatabase();
-            // Database db = dodexDatabase.getDatabase();
-            // dodexDatabase.deleteUser(ws, db, messageUser);
+            // Happening in DodexRouter
             break;
         // Set users for private messaging.
         case USERS:
-            selectedUsers = data.substring(1, data.lastIndexOf("]")).replace("\"", "");
-            if(selectedUsers != null && selectedUsers.length() == 0) {
-                selectedUsers = null;
-            }
+            selectedUsers = data.substring(1, data.lastIndexOf(']')).replace("\"", "");
             break;
         default:
-            command = null;
             break;
         }
         returnObject.put("selectedUsers", selectedUsers);
-        returnObject.put("command", command);
+        returnObject.put("command", switchValue);
         return returnObject;
     }
 
@@ -97,7 +88,7 @@ public class DodexUtil {
     /*
         Split out command and data from client message.
     */
-    public static class ClientInfo {
+    public static class ClientInfoUtilHelper {
         private final static String[] commands = { REMOVEUSER, USERS };
 
         private static String command(String  clientData) {
@@ -128,14 +119,19 @@ public class DodexUtil {
             }
             return clientData.substring(clientData.lastIndexOf("!!") + 2);
         }
+
+        private ClientInfoUtilHelper() {
+        }
     }
 
     public JsonNode getDefaultNode() throws IOException {
-		InputStream in = getClass().getResourceAsStream("/database_config.json");
-		ObjectMapper jsonMapper = new ObjectMapper();
+        ObjectMapper jsonMapper = new ObjectMapper();
+        JsonNode node;
 
-		JsonNode node = jsonMapper.readTree(in);
-		in.close();
+        try(InputStream in = getClass().getResourceAsStream("/database_config.json")) {
+            node = jsonMapper.readTree(in);
+        }
+
         String defaultdbProp = System.getProperty("DEFAULT_DB");
         String defaultdbEnv = System.getenv("DEFAULT_DB");
         defaultDb = node.get("defaultdb").textValue();
@@ -143,8 +139,7 @@ public class DodexUtil {
         /* use environment variable first, if set, than properties and then from config json */
         defaultDb = defaultdbEnv != null? defaultdbEnv: defaultdbProp != null? defaultdbProp: defaultDb;
 
-        JsonNode defaultNode = node.get(defaultDb);
-		return defaultNode;
+		return node.get(defaultDb);
 	}
     
     public String getDefaultDb() throws IOException {
@@ -153,7 +148,7 @@ public class DodexUtil {
     }
 
 	public Map<String,String> jsonNodeToMap(JsonNode jsonNode, String env) {
-        Map<String, String>defaultMap = new HashMap<>();
+        Map<String, String>defaultMap = new ConcurrentHashMap<>();
         JsonNode credentials = jsonNode.get(env).get("credentials");
         JsonNode config = jsonNode.get(env).get("config");
 		Iterator<String> fields = config.fieldNames();
@@ -197,14 +192,14 @@ public class DodexUtil {
         String database = null;
         try {
             database = dodexUtil.getDefaultDb();
-            database = database.equals("sqlite3")? "SQLITE": database.toUpperCase();
+            database = "SQLITE".equals(database)? "SQLITE": database.toUpperCase();
             for (SQLDialect sqlDialect : SQLDialect.values()) {
                 if(database.equals(sqlDialect.name())) {
                     return sqlDialect;
                 }
-            };
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(String.join("", "SqlDialect: ", e.getMessage()));
         }
 
         return SQLDialect.DEFAULT;

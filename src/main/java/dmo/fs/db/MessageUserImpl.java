@@ -6,8 +6,6 @@ import java.util.Optional;
 
 public class MessageUserImpl implements MessageUser {
 
-    public MessageUserImpl() {
-    }
     private Long id;
     private String name;
     private String password;
@@ -18,8 +16,9 @@ public class MessageUserImpl implements MessageUser {
     public void setId(final Long id) {
         if (id instanceof Long) {
             this.id = id;
-        } else
+        } else {
             this.id = Long.parseLong(id.toString());
+        }  
     }
 
     @Override
@@ -71,7 +70,7 @@ public class MessageUserImpl implements MessageUser {
                 .filter(Date.class::isInstance)
                 .map(Date.class::cast);
             if(loginDate.isPresent()) {
-                this.lastLogin = new Timestamp((loginDate.get()).getTime());
+                this.lastLogin = new Timestamp(loginDate.get().getTime());
             }
         }
     }

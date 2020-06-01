@@ -1,9 +1,9 @@
 package dmo.fs.vertx;
 
-import io.vertx.core.Vertx;
-import io.vertx.ext.web.Route;
-import io.vertx.junit5.VertxExtension;
-import io.vertx.junit5.VertxTestContext;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,10 +12,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.rules.Timeout;
 
 import dmo.fs.router.Routes;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.List;
+import io.vertx.core.Vertx;
+import io.vertx.ext.web.Route;
+import io.vertx.junit5.VertxExtension;
+import io.vertx.junit5.VertxTestContext;
 
 
 @ExtendWith(VertxExtension.class)
@@ -26,19 +26,19 @@ public class TestMainVerticle {
   Server server = new Server(8087);
 
   @BeforeEach
-  void deploy_verticle(Vertx vertx, VertxTestContext testContext) {
+  void deployVerticle(Vertx vertx, VertxTestContext testContext) {
     vertx.deployVerticle(server, testContext.succeeding(id -> {
       testContext.completeNow();
     }));
   }
 
   @Test
-  void verticle_deployed(Vertx vertx, VertxTestContext testContext) throws Throwable {
+  void verticleDeployed(Vertx vertx, VertxTestContext testContext) throws Throwable {
     testContext.completeNow();
   }
 
   @Test
-  void verticle_configured(Vertx vertx, VertxTestContext testContext) throws Throwable {
+  void verticleConfigured(Vertx vertx, VertxTestContext testContext) throws Throwable {
     String deploymentId = server.deploymentID();
     
     Routes routes = new Routes(vertx, vertx.createHttpServer());

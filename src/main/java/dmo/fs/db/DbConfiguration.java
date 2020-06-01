@@ -4,17 +4,17 @@ import java.io.IOException;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.davidmoten.rx.jdbc.ConnectionProvider;
 
 import dmo.fs.utils.DodexUtil;
 
-public class DbConfiguration {
+public abstract class DbConfiguration {
 
-    private static Map<String, String> map = new HashMap<>();
+    private static Map<String, String> map = new ConcurrentHashMap<>();
     private static Properties properties = new Properties();
 
     private static Boolean isUsingSqlite3 = false;
@@ -24,10 +24,21 @@ public class DbConfiguration {
     private static Boolean isUsingIbmDB2 = false;
     private static String defaultDb = "sqlite3";
     private static DodexUtil dodexUtil = new DodexUtil();
-    private static DodexDatabase dodexDatabase = null;
+    private static DodexDatabase dodexDatabase;
 
-    protected DbConfiguration() {
-    }
+    private enum DbTypes {
+        POSTGRES("postgres"),
+        SQLITE3("sqlite3"),
+        CUBRID("cubrid"),
+        MARIADB("mariadb"),
+        IBMDB2("ibmdb2");
+
+        String db;
+
+        DbTypes(String db) {
+            this.db = db;
+        }
+    };
 
     public static ConnectionProvider getSqlite3ConnectionProvider() {
         isUsingSqlite3 = true;
@@ -84,15 +95,15 @@ public class DbConfiguration {
     public static DodexDatabase getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
         try {
-            if(defaultDb.equals("postgres") && dodexDatabase == null) {
+            if(defaultDb.equals(DbTypes.POSTGRES.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabasePostgres();
-            } else if(defaultDb.equals("sqlite3") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseSqlite3();
-            } else if(defaultDb.equals("cubrid") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.CUBRID.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseCubrid();
-            } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.MARIADB.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseMariadb();
-            } else if(defaultDb.equals("ibmdb2") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseIbmDB2();
             }
         } catch (Exception exception) { 
@@ -105,15 +116,15 @@ public class DbConfiguration {
         defaultDb = dodexUtil.getDefaultDb();
         
         try {
-            if(defaultDb.equals("postgres") && dodexDatabase == null) {
+            if(defaultDb.equals(DbTypes.POSTGRES.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabasePostgres(overrideMap, overrideProps);
-            } else if(defaultDb.equals("sqlite3") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseSqlite3(overrideMap, overrideProps);
-            } else if(defaultDb.equals("cubrid") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.CUBRID.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseCubrid(overrideMap, overrideProps);
-            } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.MARIADB.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseMariadb(overrideMap, overrideProps);
-            } else if(defaultDb.equals("ibmdb2") && dodexDatabase == null) {
+            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseIbmDB2(overrideMap, overrideProps);
             }
         } catch (Exception exception) { 
@@ -141,4 +152,5 @@ public class DbConfiguration {
         map2.forEach((key, value) -> map1
             .merge( key, value, (v1, v2) -> v2));  // let duplicate key in map2 win
     }
+
 }

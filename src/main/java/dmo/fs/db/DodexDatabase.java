@@ -12,45 +12,45 @@ import io.vertx.core.http.ServerWebSocket;
 
 public interface DodexDatabase {
 
-	public String getAllUsers();
+	String getAllUsers();
 
-	public String getUserByName();
+	String getUserByName();
 
-    public String getInsertUser();
+    String getInsertUser();
     
-	public String getRemoveUndelivered();
+	String getRemoveUndelivered();
 
-	public String getRemoveMessage();
+	String getRemoveMessage();
 
-    public String getUndeliveredMessage();
+    String getUndeliveredMessage();
 	
-	public String getDeleteUser();
+	String getDeleteUser();
 
-	public Future<MessageUser> addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
+	Future<MessageUser> addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
 
-	public Future<Long> deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
+	Future<Long> deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
 
-	public Future<Long> addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws SQLException, InterruptedException;
+	Future<Long> addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws SQLException, InterruptedException;
 
-	public Future<Void> addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId, Database db) throws SQLException;
+	Future<Void> addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId, Database db) throws SQLException;
 
-	public Future<Long> getUserIdByName(String name, Database db) throws InterruptedException, SQLException;
+	Future<Long> getUserIdByName(String name, Database db) throws InterruptedException, SQLException;
 
-	public Future<Void> addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException;
+	Future<Void> addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException;
 
-	public int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser);
+	int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser);
 
-	public Database getDatabase();
+	Database getDatabase();
 
-	public NonBlockingConnectionPool getPool();
+	NonBlockingConnectionPool getPool();
 
-	public MessageUser createMessageUser();
+	MessageUser createMessageUser();
 
-	public Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) throws InterruptedException, SQLException;
+	Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) throws InterruptedException, SQLException;
 
-	public Future<StringBuilder> buildUsersJson(Database db, MessageUser messageUser) throws InterruptedException, SQLException;
+	Future<StringBuilder> buildUsersJson(Database db, MessageUser messageUser) throws InterruptedException, SQLException;
 
-	public void setVertx(Vertx vertx);
+	void setVertx(Vertx vertx);
 
-	public Vertx getVertx();
+	Vertx getVertx();
 }

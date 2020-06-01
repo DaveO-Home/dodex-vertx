@@ -2,14 +2,11 @@ package dmo.fs.spa.utils;
 
 import java.sql.Timestamp;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SpaLoginImpl implements SpaLogin {
-
-    public SpaLoginImpl() {
-    }
 
     private Long id;
     private String name;
@@ -21,8 +18,9 @@ public class SpaLoginImpl implements SpaLogin {
     public void setId(final Long id) {
         if (id instanceof Long) {
             this.id = id;
-        } else
+        } else {
             this.id = Long.parseLong(id.toString());
+        }
     }
 
     @Override
@@ -59,7 +57,7 @@ public class SpaLoginImpl implements SpaLogin {
         } else {
             Optional<Date> loginDate = login.filter(Date.class::isInstance).map(Date.class::cast);
             if (loginDate.isPresent()) {
-                this.lastLogin = new Timestamp((loginDate.get()).getTime());
+                this.lastLogin = new Timestamp(loginDate.get().getTime());
             }
         }
     }
@@ -79,8 +77,9 @@ public class SpaLoginImpl implements SpaLogin {
         this.status = status;
     }
 
+    @Override
     public Map<String, Object> getMap() {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new ConcurrentHashMap<String, Object>();
         map.put("id", getId());
         map.put("name", getName());
         map.put("password", getPassword());

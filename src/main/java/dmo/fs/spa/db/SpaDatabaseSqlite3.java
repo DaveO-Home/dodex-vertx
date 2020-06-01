@@ -5,9 +5,9 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -18,7 +18,7 @@ import org.davidmoten.rx.jdbc.pool.Pools;
 
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaLoginImpl;
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.Future;
@@ -32,9 +32,9 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 	protected NonBlockingConnectionPool pool;
 	protected Database db;
 	protected Properties dbProperties = new Properties();
-	protected Map<String, String> dbOverrideMap = new HashMap<>();
-	protected Map<String, String> dbMap = new HashMap<>();
-	protected JsonNode defaultNode = null;
+	protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
+	protected Map<String, String> dbMap = new ConcurrentHashMap<>();
+	protected JsonNode defaultNode;
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
 
@@ -44,7 +44,7 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 
 		defaultNode = dodexUtil.getDefaultNode();
 
-		webEnv = webEnv == null || webEnv.equals("prod") ? "prod" : "dev";
+		webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
@@ -66,7 +66,7 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
-		webEnv = webEnv == null || webEnv.equals("prod") ? "prod" : "dev";
+		webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
@@ -77,7 +77,7 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 	}
 
 	private void databaseSetup() throws InterruptedException, SQLException {
-		if (webEnv.equals("dev")) {
+		if ("dev".equals(webEnv)) {
 			SpaDbConfiguration.configureTestDefaults(dbMap, dbProperties);
 		} else {
 			SpaDbConfiguration.configureDefaults(dbMap, dbProperties);
@@ -104,7 +104,7 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 			}).subscribe(result -> {
 				prom.complete();
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error creating database tables: ", throwable.getMessage(), ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error creating database tables: ", throwable.getMessage(), ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 			});
 			// generate all jooq sql only once.
@@ -134,7 +134,7 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 		try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName, null)) {
 			while (rs.next()) {
 				String name = rs.getString("TABLE_NAME");
-				if (name != null && name.toLowerCase().equals(tableName.toLowerCase())) {
+				if (name != null && name.equalsIgnoreCase(tableName)) {
 					exists = true;
 					break;
 				}

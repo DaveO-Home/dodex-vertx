@@ -20,28 +20,28 @@ import dmo.fs.admin.CleanOrphanedUsers;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.MessageUser;
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import dmo.fs.utils.ParseQuery;
-import io.vertx.core.http.*;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.core.shareddata.LocalMap;
-import io.vertx.core.shareddata.SharedData;
-import io.netty.util.internal.ObjectCleaner;
+import dmo.fs.utils.ParseQueryUtilHelper;
 import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpServer;
+import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+import io.vertx.core.shareddata.LocalMap;
+import io.vertx.core.shareddata.SharedData;
 
 public class DodexRouter {
     private final static Logger logger = LoggerFactory.getLogger(DodexRouter.class.getName());
     protected final Vertx vertx;
     private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();;
-    DodexDatabase dodexDatabase = null;
+    DodexDatabase dodexDatabase;
 
     public DodexRouter(final Vertx vertx) throws InterruptedException {
         this.vertx = vertx;
@@ -75,8 +75,8 @@ public class DodexRouter {
                     clean.startClean(config);
                 }
             } catch (final Exception exception) {
-                logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Context Configuration failed...",
-                        ConsoleColors.RESET));
+                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Context Configuration failed...",
+                        ColorUtilConstants.RESET));
             }
         }
 
@@ -84,7 +84,7 @@ public class DodexRouter {
         String startupMessage = "In Production";
 
         startupMessage = DodexUtil.getEnv().equals("dev") ? "In Development" : startupMessage;
-        logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, startupMessage, ConsoleColors.RESET));
+        logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, startupMessage, ColorUtilConstants.RESET));
 
         Handler<ServerWebSocket> handler = new Handler<ServerWebSocket>() {
 
@@ -92,11 +92,11 @@ public class DodexRouter {
             public void handle(ServerWebSocket ws) {
 
                 try {
-                    logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, URLDecoder
-                            .decode(ParseQuery.getQueryMap(ws.query()).get("handle"), StandardCharsets.UTF_8.name()),
-                            ConsoleColors.RESET));
+                    logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, URLDecoder
+                            .decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"), StandardCharsets.UTF_8.name()),
+                            ColorUtilConstants.RESET));
                 } catch (final UnsupportedEncodingException e) {
-                    logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET));
+                    logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET));
                     // e.printStackTrace();
                 }
 
@@ -117,8 +117,8 @@ public class DodexRouter {
                     clients.put(ws.textHandlerID(), ws);
 
                     ws.closeHandler(ch -> {
-                        logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, "Closing ws-connection to client: ",
-                                messageUser.getName(), ConsoleColors.RESET));
+                        logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Closing ws-connection to client: ",
+                                messageUser.getName(), ColorUtilConstants.RESET));
                         wsChatSessions.remove(ws.textHandlerID());
                         clients.remove(ws.textHandlerID());
                     });
@@ -131,10 +131,10 @@ public class DodexRouter {
                             final ArrayList<String> onlineUsers = new ArrayList<>();
                             final String message = data.getString(0, data.length());
                             // Checking if message or command
-                            final Map<String, String> returnObject = dodexUtil.commandMessage(ws, message, messageUser);
+                            final Map<String, String> returnObject = dodexUtil.commandMessage(message);
                             // message with command stripped out
-                            String computedMessage[] = { null };
-                            String command[] = { null };
+                            String[] computedMessage = { "" };
+                            String[] command = { "" };
 
                             computedMessage[0] = returnObject.get("message");
                             command[0] = returnObject.get("command");
@@ -143,7 +143,7 @@ public class DodexRouter {
                             promise.complete(-1l);
                             Future<Long> deleted = null;
 
-                            if (command[0] != null && command[0].equals(";removeuser")) {
+                            if (command[0].length() > 0 && command[0].equals(";removeuser")) {
                                 try {
                                     deleted = dodexDatabase.deleteUser(ws, db, messageUser);
                                 } catch (InterruptedException | SQLException e) {
@@ -155,7 +155,7 @@ public class DodexRouter {
                             }
 
                             deleted.onSuccess(handler -> {
-                                String selectedUsers = null;
+                                String selectedUsers = "";
                                 if (computedMessage[0].length() > 0) {
                                     // private users to send message
                                     selectedUsers = returnObject.get("selectedUsers");
@@ -167,10 +167,10 @@ public class DodexRouter {
                                         if (!webSocket.isClosed()) {
                                             if (!websocket.equals(ws.textHandlerID())) {
                                                 // broadcast message
-                                                query = ParseQuery
+                                                query = ParseQueryUtilHelper
                                                         .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
                                                 final String handle = query.get("handle");
-                                                if (selectedUsers == null && command[0] == null) {
+                                                if (selectedUsers.length() == 0 && command[0].length() == 0) {
                                                     webSocket.writeTextMessage(
                                                             messageUser.getName() + ": " + computedMessage[0]);
                                                     // private message
@@ -187,17 +187,18 @@ public class DodexRouter {
                                                     onlineUsers.add(handle);
                                                 }
                                             } else {
-                                                if (selectedUsers == null && command[0] != null) {
+                                                if (selectedUsers.length() == 0 && command[0].length() > 0) {
                                                     ws.writeTextMessage("Private user not selected");
-                                                } else
+                                                } else {
                                                     ws.writeTextMessage("ok");
+                                                }
                                             }
                                         }
                                     }
                                 }
 
                                 // calculate difference between selected and online users
-                                if (selectedUsers != null) {
+                                if (selectedUsers.length() > 0) {
                                     final List<String> selected = Arrays.asList(selectedUsers.split(","));
                                     final List<String> disconnectedUsers = selected.stream()
                                             .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
@@ -228,7 +229,7 @@ public class DodexRouter {
                     String id = "";
                     Map<String, String> query = null;
 
-                    query = ParseQuery.getQueryMap(wsChatSessions.get(ws.textHandlerID()));
+                    query = ParseQueryUtilHelper.getQueryMap(wsChatSessions.get(ws.textHandlerID()));
 
                     handle = query.get("handle");
                     id = query.get("id");

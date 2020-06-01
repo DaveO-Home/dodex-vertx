@@ -1,17 +1,17 @@
 
 package dmo.fs.utils;
 
-import java.util.Hashtable;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class ParseQuery {
-
+public final class ParseQueryUtilHelper {
+    
     public static Map<String, String> getQueryMap(String query) {
-        Map<String, String> map = new Hashtable<String, String>();
+        Map<String, String> map = new ConcurrentHashMap<String, String>();
         if(query == null) {
             return map;
         }
-        String[] params = query.substring(query.indexOf("?") + 1).split("&");
+        String[] params = query.substring(query.indexOf('?') + 1).split("&");
                 
         for (String param : params)
         {
@@ -21,4 +21,8 @@ public class ParseQuery {
         }
         return map;
     }
+
+    private ParseQueryUtilHelper() {
+    }
+
 }

@@ -33,9 +33,9 @@ public abstract class DbIbmDB2 extends JavaRxTimestampDb {
 				"REFERENCES MESSAGES (ID) ON DELETE RESTRICT)"
 				);
 
-        private String sql;
+        String sql;
 
-        private CreateTable(String sql) {
+        CreateTable(String sql) {
             this.sql = sql;
         }
     };

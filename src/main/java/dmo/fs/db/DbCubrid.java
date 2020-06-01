@@ -33,9 +33,9 @@ public abstract class DbCubrid extends JavaRxTimestampDb {
 				"REUSE_OID; "
 				);
 
-        private String sql;
+        String sql;
 
-        private CreateTable(String sql) {
+        CreateTable(String sql) {
             this.sql = sql;
         }
     };

@@ -16,6 +16,8 @@ plugins {
     id "com.github.johnrengelman.shadow" version "5.2.0"
 
     id "nu.studer.jooq" version "3.0.3"
+
+    id 'pmd'
 }
 
 repositories {
@@ -36,13 +38,20 @@ version = "3.9.1"
 ext {
     vertxVersion = "3.9.1"
     junitJupiterEngineVersion = "5.4.0"
-    jooqVersion = "3.12.3"
+    jooqVersion = "3.13.2"
 }
 sourceCompatibility = "1.8"
 
 jooq {
-  version = "3.12.3"
+  version = "3.13.2"
   edition = "OSS"
+}
+
+pmd {
+    ruleSetFiles = files("dodexstart.xml")
+    ruleSets = []
+    ignoreFailures = true
+    toolVersion = "6.24.0"
 }
 
 dependencies {
@@ -144,6 +153,8 @@ shadowJar {
     // attributes 'Main-Command': 'run'
   }
 }
+
+
 
 test {
     // Use junit platform for unit tests

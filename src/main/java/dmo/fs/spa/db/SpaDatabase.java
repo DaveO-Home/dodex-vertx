@@ -10,16 +10,16 @@ import io.vertx.core.Future;
 
 public interface SpaDatabase {
 
-	public Database getDatabase();
+	Database getDatabase();
 
-	public NonBlockingConnectionPool getPool();
+	NonBlockingConnectionPool getPool();
 
-	public SpaLogin createSpaLogin();
+	SpaLogin createSpaLogin();
 
-	public Future<SpaLogin> getLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException;
+	Future<SpaLogin> getLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException;
 
-	public Future<SpaLogin> addLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException;
+	Future<SpaLogin> addLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException;
 	
-	public Future<SpaLogin> removeLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException;
+	Future<SpaLogin> removeLogin(SpaLogin spaLogin, Database db) throws InterruptedException, SQLException;
 
 }

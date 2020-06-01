@@ -51,6 +51,11 @@
 5. Enter a message and click send to test.
 6. For dodex-input Double-Click a dial or bottom card to popup the input dialog. Allows for uploading, editing and removal of private content. Content in JSON can be defined as arrays to make HTML more readable.
 
+## Java Linting with PMD
+
+* Run `gradlew pmdMain` and `gradlew pmdTest` to verify code using a subset of PMD rules in `dodexstart.xml`
+* Reports can be found in `build/reports/pmd`
+
 ### Optimizing with Graalvm
 
 * You can run the Vertx Server in native assembled code by compiling the fat jar with graalvm.

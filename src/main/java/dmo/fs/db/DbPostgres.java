@@ -41,9 +41,9 @@ public abstract class DbPostgres extends JavaRxTimestampDb {
 				"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
 			"ALTER TABLE public.undelivered OWNER to dummy;");
 
-        private String sql;
+        String sql;
 
-        private CreateTable(String sql) {
+        CreateTable(String sql) {
             this.sql = sql;
         }
     };

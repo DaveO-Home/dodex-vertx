@@ -1,6 +1,15 @@
 
 package dmo.fs.db;
 
+import static org.jooq.impl.DSL.deleteFrom;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.insertInto;
+import static org.jooq.impl.DSL.mergeInto;
+import static org.jooq.impl.DSL.notExists;
+import static org.jooq.impl.DSL.param;
+import static org.jooq.impl.DSL.select;
+import static org.jooq.impl.DSL.table;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -12,12 +21,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.davidmoten.rx.jdbc.Database;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 
 import dmo.fs.db.JavaRxDateDb.Undelivered;
 import dmo.fs.db.JavaRxDateDb.Users;
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -25,8 +34,6 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import static org.jooq.impl.DSL.*;
-import org.jooq.impl.DSL;
 
 public abstract class DbDefinitionBase {
 	private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
@@ -34,59 +41,56 @@ public abstract class DbDefinitionBase {
 	protected final static String QUERYMESSAGES = "select * from MESSAGES where id=?";
 	protected final static String QUERYUNDELIVERED = "Select message_id, name, message, from_handle, post_date from USERS, UNDELIVERED, MESSAGES where USERS.id = user_id and MESSAGES.id = message_id and USERS.id = :id";
 
-	private static DSLContext create = null;
+	private static DSLContext create;
 
-	private static String GETALLUSERS = null;
-	private static String GETUSERBYNAME = null;
-	private static String GETINSERTUSER = null;
-	private static String GETUPDATEUSER = null;
-	private static String GETREMOVEUNDELIVERED = null;
-	private static String GETREMOVEMESSAGE = null;
-	private static String GETUNDELIVEREDMESSAGE = null;
-	private static String GETDELETEUSER = null;
-	private static String GETADDMESSAGE = null;
-	private static String GETADDUNDELIVERED = null;
-	private static String GETUSERNAMES = null;
-	private static String GETUSERBYID = null;
-	private static String GETREMOVEUSERUNDELIVERED = null;
-	private static String GETUSERUNDELIVERED = null;
-	private static String GETDELETEUSERBYID = null;
-	private static String GETSQLITEUPDATEUSER = null;
-	private static String GETREMOVEUSERS = null;
-	private Boolean isTimestamp = null;
-	private Vertx vertx = null;
+	private static String GETALLUSERS;
+	private static String GETUSERBYNAME;
+	private static String GETINSERTUSER;
+	private static String GETUPDATEUSER;
+	private static String GETREMOVEUNDELIVERED;
+	private static String GETREMOVEMESSAGE;
+	private static String GETUNDELIVEREDMESSAGE;
+	private static String GETDELETEUSER;
+	private static String GETADDMESSAGE;
+	private static String GETADDUNDELIVERED;
+	private static String GETUSERNAMES;
+	private static String GETUSERBYID;
+	private static String GETREMOVEUSERUNDELIVERED;
+	private static String GETUSERUNDELIVERED;
+	private static String GETDELETEUSERBYID;
+	private static String GETSQLITEUPDATEUSER;
+	private static String GETREMOVEUSERS;
+	private Boolean isTimestamp;
+	private Vertx vertx;
 
 	public static void setupSql(Database db) throws SQLException {
-		Connection conn = db.connection().blockingGet();
-		create = DSL.using(conn, DodexUtil.getSqlDialect());
+		try (Connection conn = db.connection().blockingGet()) {
+			create = DSL.using(conn, DodexUtil.getSqlDialect());
 
-		GETALLUSERS = setupAllUsers();
-		GETUSERBYNAME = setupUserByName();
-		GETINSERTUSER = setupInsertUser();
-		GETUPDATEUSER = setupUpdateUser();
-		GETREMOVEUNDELIVERED = setupRemoveUndelivered();
-		GETREMOVEMESSAGE = setupRemoveMessage();
-		GETUNDELIVEREDMESSAGE = setupUndeliveredMessage();
-		GETDELETEUSER = setupDeleteUser();
-		GETADDMESSAGE = setupAddMessage();
-		GETADDUNDELIVERED = setupAddUndelivered();
-		GETUSERNAMES = setupUserNames();
-		GETUSERBYID = setupUserById();
-		GETREMOVEUSERUNDELIVERED = setupRemoveUserUndelivered();
-		GETUSERUNDELIVERED = setupUserUndelivered();
-		GETDELETEUSERBYID = setupDeleteUserById();
-		GETSQLITEUPDATEUSER = setupSqliteUpdateUser();
-		GETREMOVEUSERS = setupRemoveUsers();
-
-		conn.close();
+			GETALLUSERS = setupAllUsers();
+			GETUSERBYNAME = setupUserByName();
+			GETINSERTUSER = setupInsertUser();
+			GETUPDATEUSER = setupUpdateUser();
+			GETREMOVEUNDELIVERED = setupRemoveUndelivered();
+			GETREMOVEMESSAGE = setupRemoveMessage();
+			GETUNDELIVEREDMESSAGE = setupUndeliveredMessage();
+			GETDELETEUSER = setupDeleteUser();
+			GETADDMESSAGE = setupAddMessage();
+			GETADDUNDELIVERED = setupAddUndelivered();
+			GETUSERNAMES = setupUserNames();
+			GETUSERBYID = setupUserById();
+			GETREMOVEUSERUNDELIVERED = setupRemoveUserUndelivered();
+			GETUSERUNDELIVERED = setupUserUndelivered();
+			GETDELETEUSERBYID = setupDeleteUserById();
+			GETSQLITEUPDATEUSER = setupSqliteUpdateUser();
+			GETREMOVEUSERS = setupRemoveUsers();
+		} 
 	}
 
 	private static String setupAllUsers() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
 						.from(table("USERS")).where(field("NAME").ne(param("NAME", ":name"))));
-
-		return sql;
 	}
 
 	public String getAllUsers() {
@@ -94,11 +98,9 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupUserByName() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
 						.from(table("USERS")).where(field("NAME").eq(param("NAME", ":name"))));
-
-		return sql;
 	}
 
 	public String getUserByName() {
@@ -106,11 +108,9 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupUserById() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
 						.from(table("USERS")).where(field("NAME").eq(param("NAME", ":name"))));
-
-		return sql;
 	}
 
 	public String getUserById() {
@@ -118,12 +118,10 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupInsertUser() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				insertInto(table("USERS")).columns(field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
 						.values(param("NAME", ":name"), param("PASSWORD", ":password"), param("IP", ":ip"),
 								param("LASTLOGIN", ":lastlogin")));
-
-		return sql;
 	}
 
 	public String getInsertUser() {
@@ -131,11 +129,10 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupUpdateUser() {
-		String sql = create.renderNamedParams(mergeInto(table("USERS"))
+		return create.renderNamedParams(mergeInto(table("USERS"))
 				.columns(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
 				.key(field("ID")).values(param("ID", ":id"), param("NAME", ":name"), param("PASSWORD", ":password"),
 						param("IP", ":ip"), param("LASTLOGIN", ":lastlogin")));
-		return sql;
 	}
 
 	public String getUpdateUser() {
@@ -143,9 +140,7 @@ public abstract class DbDefinitionBase {
 	}
 
 	public static String setupSqliteUpdateUser() {
-		String sql = "update USERS set last_login = :LASTLOGIN where id = :USERID";
-
-		return sql;
+		return "update USERS set last_login = :LASTLOGIN where id = :USERID";
 	}
 
 	public String getSqliteUpdateUser() {
@@ -153,11 +148,9 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupRemoveUndelivered() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				deleteFrom(table("UNDELIVERED")).where(field("USER_ID").eq(param("USERID", ":userid")),
 						field("MESSAGE_ID").eq(param("MESSAGEID", ":messageid"))));
-
-		return sql;
 	}
 
 	public String getRemoveUndelivered() {
@@ -165,10 +158,8 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupRemoveUserUndelivered() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				deleteFrom(table("UNDELIVERED")).where(field("USER_ID").eq(param("USERID", ":userid"))));
-
-		return sql;
 	}
 
 	public String getRemoveUserUndelivered() {
@@ -176,13 +167,11 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupRemoveMessage() {
-		String sql = create.render(deleteFrom(table("MESSAGES"))
+		return create.render(deleteFrom(table("MESSAGES"))
 				.where(create.renderNamedParams(field("ID").eq(param("MESSAGEID", ":messageid"))
 						.and(create.renderNamedParams(notExists(select().from(table("MESSAGES"))
 								.join(table("UNDELIVERED")).on(field("ID").eq(field("MESSAGE_ID")))
 								.and(field("ID").eq(param("MESSAGEID", ":messageid")))))))));
-
-		return sql;
 	}
 
 	public String getRemoveMessage() {
@@ -190,13 +179,11 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupRemoveUsers() {
-		String sql = create.render(
+		return create.render(
 				deleteFrom(table("USERS")).where(create.renderNamedParams(field("ID").eq(param("USERID", ":userid"))
 						.and(create.renderNamedParams(notExists(select().from(table("USERS")).join(table("UNDELIVERED"))
 								.on(field("ID").eq(field("USER_ID")))
 								.and(field("ID").eq(param("USERID", ":userid")))))))));
-
-		return sql;
 	}
 
 	public String getRemoveUsers() {
@@ -204,12 +191,10 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupUndeliveredMessage() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				select(field("USER_ID"), field("MESSAGE_ID")).from(table("MESSAGES")).join(table("UNDELIVERED"))
 						.on(field("ID").eq(field("MESSAGE_ID"))).and(field("ID").eq(param("MESSAGEID", ":messageid")))
 						.and(field("USER_ID").eq(param("USERID", ":userid"))));
-
-		return sql;
 	}
 
 	public String getUndeliveredMessage() {
@@ -217,11 +202,9 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupUserUndelivered() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				select(field("USER_ID"), field("MESSAGE_ID")).from(table("USERS")).join(table("UNDELIVERED"))
 						.on(field("ID").eq(field("USER_ID"))).and(field("ID").eq(param("USERID", ":userid"))));
-
-		return sql;
 	}
 
 	public String getUserUndelivered() {
@@ -239,13 +222,13 @@ public abstract class DbDefinitionBase {
 			.parameter("LASTLOGIN", current)
 			.returnGeneratedKeys()
 			.getAs(Long.class)
-			.doOnNext(k -> messageUser.setId(k))
-			.subscribe(result -> {
+			.subscribe(key -> {
+				messageUser.setId(key);
 				messageUser.setLastLogin(current);
-				promise.complete(messageUser);
+				promise.tryComplete(messageUser);
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error adding user: ", throwable.getMessage(),
-						ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error adding user: ", throwable.getMessage(),
+						ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 				ws.writeTextMessage(throwable.getMessage());
 			});
@@ -269,8 +252,8 @@ public abstract class DbDefinitionBase {
 			.subscribe(result -> {
 				promise.complete(count[0]);
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error Updating user: ", throwable.getMessage(),
-						ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error Updating user: ", throwable.getMessage(),
+						ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 				ws.writeTextMessage(throwable.getMessage());
 			});
@@ -286,13 +269,13 @@ public abstract class DbDefinitionBase {
 
 		db.update(getSqliteUpdateUser()).parameter("USERID", messageUser.getId())
 			.parameter("LASTLOGIN",
-					type.equals("date") ? new Date().getTime() : new Timestamp(new Date().getTime()))
+					"date".equals(type) ? new Date().getTime() : new Timestamp(new Date().getTime()))
 			.counts().doOnNext(c -> count[0] += c)
 			.subscribe(result -> {
 				promise.complete(count[0]);
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error Updating user: ", throwable.getMessage(),
-						ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error Updating user: ", throwable.getMessage(),
+						ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 				ws.writeTextMessage(throwable.getMessage());
 			});
@@ -301,10 +284,8 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupDeleteUser() {
-		String sql = create.renderNamedParams(deleteFrom(table("USERS")).where(field("NAME").eq(param("NAME", ":name")),
+		return create.renderNamedParams(deleteFrom(table("USERS")).where(field("NAME").eq(param("NAME", ":name")),
 				field("PASSWORD").eq(param("PASSWORD", ":password"))));
-
-		return sql;
 	}
 
 	public String getDeleteUser() {
@@ -312,10 +293,8 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupDeleteUserById() {
-		String sql = create
+		return create
 				.renderNamedParams(deleteFrom(table("USERS")).where(field("ID").eq(param("USERID", ":userid"))));
-
-		return sql;
 	}
 
 	public String getDeleteUserById() {
@@ -334,8 +313,8 @@ public abstract class DbDefinitionBase {
 				messageUser.setId(Long.parseLong(result.toString()));
 				promise.complete(Long.parseLong(result.toString()));
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error deleting user: ", messageUser.getName(), " : ",
-						throwable.getMessage(), ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error deleting user: ", messageUser.getName(), " : ",
+						throwable.getMessage(), ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 				ws.writeTextMessage(throwable.getMessage());
 			});
@@ -344,12 +323,10 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupAddMessage() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				insertInto(table("MESSAGES")).columns(field("MESSAGE"), field("FROM_HANDLE"), field("POST_DATE"))
 						.values(param("MESSAGE", ":message"), param("FROMHANDLE", ":fromHandle"),
 								param("POSTDATE", ":postdate")));
-
-		return sql;
 	}
 
 	public String getAddMessage() {
@@ -369,8 +346,8 @@ public abstract class DbDefinitionBase {
 			.subscribe(result -> {
 				promise.complete(result);
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error adding messaage: ", message, " : ",
-						throwable.getMessage(), ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error adding messaage: ", message, " : ",
+						throwable.getMessage(), ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 				ws.writeTextMessage(throwable.getMessage());
 			});
@@ -379,11 +356,9 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupAddUndelivered() {
-		String sql = create
+		return create
 				.renderNamedParams(insertInto(table("UNDELIVERED")).columns(field("USER_ID"), field("MESSAGE_ID"))
 						.values(param("USERID", ":userid"), param("MESSAGEID", ":messageid")));
-
-		return sql;
 	}
 
 	public String getAddUndelivered() {
@@ -400,7 +375,7 @@ public abstract class DbDefinitionBase {
 			.subscribe(result -> {
 				promise.complete(); 
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Add Undelivered Error: ", throwable.getMessage(), ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Add Undelivered Error: ", throwable.getMessage(), ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 			});
 
@@ -408,11 +383,9 @@ public abstract class DbDefinitionBase {
 	}
 
 	private static String setupUserNames() {
-		String sql = create.renderNamedParams(
+		return create.renderNamedParams(
 				select(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
 						.from(table("USERS")).where(field("NAME").ne(param("NAME", ":name"))));
-
-		return sql;
 	}
 
 	public String getUserNames() {
@@ -431,7 +404,7 @@ public abstract class DbDefinitionBase {
 							promise.complete();
 						});
 					} catch (SQLException | InterruptedException e) {
-						e.printStackTrace();
+						logger.error(String.join("", "AddUndelivered: ", e.getMessage()));
 					}
 				});
 			}
@@ -453,8 +426,8 @@ public abstract class DbDefinitionBase {
 			.subscribe(result -> {
 			//
 		}, throwable -> {
-			logger.error(String.join(ConsoleColors.RED, "Error finding user by name: ", name, " : ",
-					throwable.getMessage(), ConsoleColors.RESET));
+			logger.error(String.join(ColorUtilConstants.RED, "Error finding user by name: ", name, " : ",
+					throwable.getMessage(), ColorUtilConstants.RESET));
 			throwable.printStackTrace();
 		});
 
@@ -526,7 +499,7 @@ public abstract class DbDefinitionBase {
 			.subscribe(result -> {
 				//
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error adding user: ", messageUser.getName(), " : ", throwable.getMessage(), ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error adding user: ", messageUser.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 			});
 
@@ -539,7 +512,7 @@ public abstract class DbDefinitionBase {
 		ObjectMapper mapper = new ObjectMapper();
 
 		class User {
-			String name = null;
+			String name;
 
 			public void setName(String name) {
 				this.name = name;
@@ -550,10 +523,10 @@ public abstract class DbDefinitionBase {
 			}
 		}
 		class AllUsers implements Action {
-			private Promise<StringBuilder> promise = null;
+			private Promise<StringBuilder> promise;
 			@Override
 			public void run() throws Exception {
-				userJson.append("]");
+				userJson.append(']');
 				promise.complete(userJson);
 			}
 			public void setPromise(Promise<StringBuilder>promise) {
@@ -569,7 +542,7 @@ public abstract class DbDefinitionBase {
 		allUsers.setPromise(promise);
 		List<String> delimiter = new ArrayList<>();
 		User user = new User();
-		userJson.append("[");
+		userJson.append('[');
 		delimiter.add("");
 
 		db.select(getAllUsers())
@@ -585,7 +558,7 @@ public abstract class DbDefinitionBase {
 			.subscribe(result -> {
 				//				
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error building registered user list: ", throwable.getMessage(), ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error building registered user list: ", throwable.getMessage(), ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 			});
 
@@ -595,9 +568,9 @@ public abstract class DbDefinitionBase {
 
 	class RemoveUndelivered implements Action {
 		List<Long> messageIds = new ArrayList<>();
-		Long userId = null;
-		int count = 0;
-		Database db = null;
+		Long userId;
+		int count;
+		Database db;
 
 		@Override
 		public void run() throws Exception {
@@ -610,7 +583,7 @@ public abstract class DbDefinitionBase {
 					.subscribe(result -> {
 						//
 					}, throwable -> {
-						logger.error(String.join(ConsoleColors.RED, "Error removing undelivered record: ", throwable.getMessage(), ConsoleColors.RESET));
+						logger.error(String.join(ColorUtilConstants.RED, "Error removing undelivered record: ", throwable.getMessage(), ColorUtilConstants.RESET));
 						throwable.printStackTrace();
 					});
 			}
@@ -648,8 +621,8 @@ public abstract class DbDefinitionBase {
 	RemoveUndelivered removeUndelivered = new RemoveUndelivered();
 
 	class RemoveMessage implements Action {
-		int count = 0;
-		Database db = null;
+		int count;
+		Database db;
 
 		@Override
 		public void run() throws Exception {
@@ -668,14 +641,14 @@ public abstract class DbDefinitionBase {
 								.subscribe(result -> {
 									//
 								}, throwable -> {
-									logger.error(String.join(ConsoleColors.RED, "Error removing undelivered message: ", throwable.getMessage(), ConsoleColors.RESET));
+									logger.error(String.join(ColorUtilConstants.RED, "Error removing undelivered message: ", throwable.getMessage(), ColorUtilConstants.RESET));
 									throwable.printStackTrace();
 								});
 						}
 					}).subscribe(result -> {
 						//
 					}, throwable -> {
-						logger.error(String.join(ConsoleColors.RED, "Error finding undelivered message: ", throwable.getMessage(), ConsoleColors.RESET));
+						logger.error(String.join(ColorUtilConstants.RED, "Error finding undelivered message: ", throwable.getMessage(), ColorUtilConstants.RESET));
 						throwable.printStackTrace();
 					});
 			}
@@ -718,10 +691,10 @@ public abstract class DbDefinitionBase {
 			})
 			// Remove undelivered for user
 			.doOnComplete(removeUndelivered)
-			.doOnError(error -> logger.error(String.join(ConsoleColors.RED, "Remove Undelivered Error: ", error.getMessage(), ConsoleColors.RESET)))
+			.doOnError(error -> logger.error(String.join(ColorUtilConstants.RED, "Remove Undelivered Error: ", error.getMessage(), ColorUtilConstants.RESET)))
 			// Remove message if no other users are attached
 			.doFinally(removeMessage)
-			.doOnError(error -> logger.error(String.join(ConsoleColors.RED, "Remove Message Error: ", error.getMessage(), ConsoleColors.RESET)))
+			.doOnError(error -> logger.error(String.join(ColorUtilConstants.RED, "Remove Message Error: ", error.getMessage(), ColorUtilConstants.RESET)))
 			.subscribe();
 
 		return removeUndelivered.getCount();
@@ -729,6 +702,10 @@ public abstract class DbDefinitionBase {
 
 	public void setIsTimestamp(Boolean isTimestamp) {
 		this.isTimestamp = isTimestamp;
+	}
+
+	public boolean getisTimestamp() {
+		return this.isTimestamp;
 	}
 
 	public Vertx getVertx() {

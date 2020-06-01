@@ -5,11 +5,7 @@ import java.sql.Clob;
 import org.davidmoten.rx.jdbc.annotations.Column;
 import org.davidmoten.rx.jdbc.annotations.Query;
 
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-
 public abstract class JavaRxDateDb extends DbDefinitionBase implements DodexDatabase {
-    private final static Logger logger = LoggerFactory.getLogger(JavaRxDateDb.class.getName());
 	private Boolean isTimestamp = false;
 
 	JavaRxDateDb() {

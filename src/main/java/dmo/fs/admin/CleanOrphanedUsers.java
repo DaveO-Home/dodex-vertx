@@ -17,7 +17,7 @@ import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DbDefinitionBase;
 import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.MessageUser;
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import io.reactivex.Flowable;
 import io.reactivex.functions.Action;
 import io.reactivex.schedulers.Schedulers;
@@ -39,18 +39,16 @@ import io.vertx.core.logging.LoggerFactory;
 public class CleanOrphanedUsers extends DbDefinitionBase {
     private static Logger logger = LoggerFactory.getLogger(CleanOrphanedUsers.class.getName());
 
-    private static DodexDatabase dodexDatabase = null;
-    private static Database db = null;
-    private static Integer age = null;
+    private static DodexDatabase dodexDatabase;
+    private static Database db;
+    private static Integer age;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Runnable clean = new Runnable() {
+        @Override
         public void run() {
             runClean();
         }
     };
-
-    public CleanOrphanedUsers() {
-    }
 
     public void startClean(JsonObject config) throws InterruptedException, IOException, SQLException {
         long delay = 0;
@@ -79,10 +77,10 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
                     }
                 });
 
-                logger.info(String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, "Cleaned users: ", names.toString(), ConsoleColors.RESET));
+                logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Cleaned users: ", names.toString(), ColorUtilConstants.RESET));
             });
 
-            return String.join("", ConsoleColors.BLUE_BOLD_BRIGHT, "Starting User/Undelivered/Message Clean: ", ConsoleColors.RESET);
+            return String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Starting User/Undelivered/Message Clean: ", ColorUtilConstants.RESET);
         
         }).subscribeOn(Schedulers.io()).observeOn(Schedulers.single()).subscribe(logger::info,
                 Throwable::printStackTrace);
@@ -93,22 +91,20 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
         Promise<List<Tuple5<Integer, String, String, String, Object>>> promise = Promise.promise();
         GotUsers gotUsers = new GotUsers();
 		
-		Future.future(prom -> {
-            gotUsers.setPromise(promise);
-            gotUsers.setListOfUsers(listOfUsers);
-            
-            db.select(getAllUsers()).parameter("NAME", "DUMMY")
-                .getAs(Integer.class, String.class, String.class, String.class, Object.class)
-                .doOnNext(result -> {
-                    listOfUsers.add(result);
-                })
-                .doOnComplete(gotUsers)
-                .subscribe(result -> {
-                    //
-                }, throwable -> {
-                    logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error building registered user list",  ConsoleColors.RESET));
-                    throwable.printStackTrace();
-                });
+        gotUsers.setPromise(promise);
+        gotUsers.setListOfUsers(listOfUsers);
+        
+        db.select(getAllUsers()).parameter("NAME", "DUMMY")
+            .getAs(Integer.class, String.class, String.class, String.class, Object.class)
+            .doOnNext(result -> {
+                listOfUsers.add(result);
+            })
+            .doOnComplete(gotUsers)
+            .subscribe(result -> {
+                //
+            }, throwable -> {
+                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error building registered user list",  ColorUtilConstants.RESET));
+                throwable.printStackTrace();
             });
             
         return gotUsers.getPromise().future();
@@ -140,11 +136,11 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
         }
 
         long diff = currentDate - loginDate;
-        diffInDays = (diff / (1000 * 60 * 60 * 24));
+        diffInDays = diff / (1000 * 60 * 60 * 24);
         return diffInDays;
     }
 
-    Object value = null;
+    Object value;
     private void cleanUsers(Database db, List<Integer> users) {
         List<Integer> messageIds = new ArrayList<>();        
 
@@ -165,8 +161,7 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
                     .doOnComplete(cleanObjects)
                     .subscribe(result -> {
                     }, throwable -> {
-                        logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error cleaning user list: ", throwable.getMessage(), ConsoleColors.RESET ));
-                        // throwable.printStackTrace();
+                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error cleaning user list: ", throwable.getMessage(), ColorUtilConstants.RESET ));
                     });
                 
                 prom.future().onSuccess(result -> {
@@ -200,8 +195,7 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
                     .subscribe(result -> {
                         cleanObjects.setCount(count[0]);
                     }, throwable -> {
-                        logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, "Error removing undelivered record: ", throwable.getMessage(), ConsoleColors.RESET ));
-                        // throwable.printStackTrace();
+                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error removing undelivered record: ", throwable.getMessage(), ColorUtilConstants.RESET ));
                     });
                 
                 prom.future().onSuccess(result -> {
@@ -230,8 +224,7 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
                     .subscribe(result -> {
                         cleanObjects.setCount(count[0]);
                     }, throwable -> {
-                        logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, " Error removing message:", throwable.getMessage(), ConsoleColors.RESET ));
-                        // throwable.printStackTrace();
+                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, " Error removing message:", throwable.getMessage(), ColorUtilConstants.RESET ));
                     });
                 prom.future().onSuccess(result -> {
                     if(result != null) {
@@ -245,7 +238,6 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
     }
 
     private Future<Object> cleanUser(Database db, Integer userId) {
-        int count[] = { 0 };
         CleanObjects cleanObjects = new CleanObjects();
 
         return Future.future(prom -> {
@@ -253,13 +245,12 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
             db.update(getRemoveUsers())
                 .parameter("USERID", userId)
                 .counts()
-                .doOnNext(c -> count[0] += c)
+                .doOnNext(c -> cleanObjects.setCount(cleanObjects.getCount() + c))
                 .doOnComplete(cleanObjects)
                 .subscribe(result -> {
-                    cleanObjects.setCount(count[0]);
+                    //
                 }, throwable -> {
-                    logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, ":Error deleting user: ",  userId.toString(), " : ", throwable.getMessage(), ConsoleColors.RESET ));
-                    // throwable.printStackTrace();
+                    logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, ":Error deleting user: ",  userId.toString(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
                 });
         });
     }
@@ -284,8 +275,8 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
     }
 
     class GotUsers implements Action {
-		List<Tuple5<Integer, String, String, String, Object>> listOfUsers = null;
-		Promise<List<Tuple5<Integer, String, String, String, Object>>> promise = null;
+		List<Tuple5<Integer, String, String, String, Object>> listOfUsers;
+		Promise<List<Tuple5<Integer, String, String, String, Object>>> promise;
 
 		@Override
 		public void run() throws Exception {
@@ -306,8 +297,8 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
     }
 
     class CleanObjects implements Action {
-		Object object = null;
-        Promise <Object> promise = null;
+		Object object;
+        Promise <Object> promise;
         Integer count = 0;
         
 		@Override
@@ -329,6 +320,10 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
         
         public void setCount(Integer count) {
             this.count = count;
+        }
+
+        public Integer getCount() {
+            return count;
         }
     }
 }

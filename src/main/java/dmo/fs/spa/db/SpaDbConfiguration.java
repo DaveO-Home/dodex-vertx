@@ -12,6 +12,20 @@ public class SpaDbConfiguration extends DbConfiguration {
     private static String defaultDb = "sqlite3";
     private static SpaDatabase spaDatabase;
     
+    private enum DbTypes {
+        POSTGRES("postgres"),
+        SQLITE3("sqlite3"),
+        CUBRID("cubrid"),
+        MARIADB("mariadb"),
+        IBMDB2("ibmdb2");
+
+        String db;
+
+        DbTypes(String db) {
+            this.db = db;
+        }
+    };
+
     SpaDbConfiguration() {
         super();
     }
@@ -19,17 +33,17 @@ public class SpaDbConfiguration extends DbConfiguration {
     public static SpaDatabase getSpaDb() throws InterruptedException , IOException , SQLException {
         defaultDb = SpaUtil.getDefaultDb().toLowerCase();
         try {
-            // if(defaultDb.equals("postgres") && dodexDatabase == null) {
+            // if(defaultDb.equals(DbTypes.POSTGRES.db) && dodexDatabase == null) {
             //     spaDatabase = new SpaDatabasePostgres();
             // } else 
-            if(defaultDb.equals("sqlite3") && spaDatabase == null) {
+            if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseSqlite3();
             } 
-            // else if(defaultDb.equals("cubrid") && dodexDatabase == null) {
+            // else if(defaultDb.equals(DbTypes.CUBRID.db) && dodexDatabase == null) {
             //     dodexDatabase = new DodexDatabaseCubrid();
-            // } else if(defaultDb.equals("mariadb") && dodexDatabase == null) {
+            // } else if(defaultDb.equals(DbTypes.MARIADB.db) && dodexDatabase == null) {
             //     dodexDatabase = new DodexDatabaseMariadb();
-            // } else if(defaultDb.equals("ibmdb2") && dodexDatabase == null) {
+            // } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase == null) {
             //     dodexDatabase = new DodexDatabaseIbmDB2();
             // }
         } catch (Exception exception) { 
@@ -43,17 +57,17 @@ public class SpaDbConfiguration extends DbConfiguration {
         defaultDb = SpaUtil.getDefaultDb().toLowerCase();
         
         try {
-            // if(defaultDb.equals("postgres") && spaDatabase == null) {
+            // if(defaultDb.equals(DbTypes.POSTGRES.db) && spaDatabase == null) {
             //     spaDatabase = new SpaDatabasePostgres(overrideMap, overrideProps);
             // } else 
-            if(defaultDb.equals("sqlite3") && spaDatabase == null) {
+            if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseSqlite3(overrideMap, overrideProps);
             } 
-            // else if(defaultDb.equals("cubrid") && spaDatabase == null) {
+            // else if(defaultDb.equals(DbTypes.CUBRID.db) && spaDatabase == null) {
             //     spaDatabase = new SpaDatabaseCubrid(overrideMap, overrideProps);
-            // } else if(defaultDb.equals("mariadb") && spaDatabase == null) {
+            // } else if(defaultDb.equals(DbTypes.MARIADB.db) && spaDatabase == null) {
             //     spaDatabase = new SpaDatabaseMariadb(overrideMap, overrideProps);
-            // } else if(defaultDb.equals("ibmdb2") && spaDatabase == null) {
+            // } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase == null) {
             //     spaDatabase = new SpaDatabaseIbmDB2(overrideMap, overrideProps);
             // }
         } catch (Exception exception) { 

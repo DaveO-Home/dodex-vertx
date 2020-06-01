@@ -6,12 +6,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Locale;
 
 import dmo.fs.router.Routes;
 import dmo.fs.spa.router.SpaRoutes;
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.file.FileSystem;
@@ -23,12 +23,14 @@ import io.vertx.ext.web.Route;
 
 public class Server extends AbstractVerticle {
   private static Logger logger;
-  private int port = 0;
+  private int port;
 
   public Server() {
+    Locale.setDefault(new Locale("US"));
   }
 
   public Server(int port) {
+    Locale.setDefault(new Locale("US"));
     this.port = port;
   }
 
@@ -47,16 +49,17 @@ public class Server extends AbstractVerticle {
   private static String OS = System.getProperty("os.name").toLowerCase();
   private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
   private HttpServer server;
-
+  
+  @Override
   public void start(Promise<Void> promise)
       throws InterruptedException, URISyntaxException, IOException, SQLException {
     if(development == null || development.equals("")) {
       development = "prod";
     }
-    else if(development.toLowerCase().equals("dev")) {
+    else if("dev".equalsIgnoreCase(development)) {
       port = 8087;
     }
-    else if(development.toLowerCase().equals("test")) {
+    else if("test".equalsIgnoreCase(development)) {
       port = 8089;
     }
 
@@ -69,11 +72,10 @@ public class Server extends AbstractVerticle {
     Routes routes = new Routes(vertx, server);
     SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter());
     FileSystem fs = vertx.fileSystem();
-    
     List<Route> routesList = allRoutes.getRouter().getRoutes();
 
     for (Route r : routesList) {
-      logger.info(String.join("", ConsoleColors.CYAN_BOLD_BRIGHT, r.getPath(), ConsoleColors.RESET));
+      logger.info(String.join("", ColorUtilConstants.CYAN_BOLD_BRIGHT, r.getPath(), ColorUtilConstants.RESET));
     }
 
     server.requestHandler(allRoutes.getRouter());
@@ -82,27 +84,24 @@ public class Server extends AbstractVerticle {
       server.listen(config().getInteger("http.port", this.port == 0 ? 8080 : port), result -> {      
         if (result.succeeded()) {
           Integer port = this.port != 0? this.port : config().getInteger("http.port", 8080);
-          logger.info(String.join("", ConsoleColors.GREEN_BOLD_BRIGHT, "Started on port: ", port.toString(), ConsoleColors.RESET));
+          logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT, "Started on port: ", port.toString(), ColorUtilConstants.RESET));
           promise.complete();
           try {
               if(development.toLowerCase().equals("dev")) {
-                  Future<Void> future1 = Future.future(promise2 -> {
-                    fs.createFile("./server-started", promise2);
-                    promise2.complete();
-                  });
-                  if(!future1.succeeded()) {
-                    throw new Exception("server-started");
-                  };
+                String fileStarted = "./server-started";
+                if(!fs.existsBlocking(fileStarted)) {
+                  fs.createFileBlocking(fileStarted);
+                }  
               }
           } catch (Exception e) {
-            logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET));
+            logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET));
           }
         } else {
             promise.fail(result.cause());
         }
       });
     } catch (Error e) {
-      logger.error(String.join("", ConsoleColors.RED_BOLD_BRIGHT, e.getMessage(), ConsoleColors.RESET));
+      logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET));
     }
   }
 
@@ -128,18 +127,18 @@ public class Server extends AbstractVerticle {
   }
 
   public static boolean isWindows() {
-    return (OS.indexOf("win") >= 0);
+    return OS.indexOf("win") >= 0;
   }
 
   public static boolean isMac() {
-    return (OS.indexOf("mac") >= 0);
+    return OS.indexOf("mac") >= 0;
   }
 
   public static boolean isUnix() {
-    return (OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0);
+    return OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0;
   }
 
   public static boolean isSolaris() {
-    return (OS.indexOf("sunos") >= 0);
+    return OS.indexOf("sunos") >= 0;
   }
 }

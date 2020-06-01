@@ -1,7 +1,14 @@
 # Ignore Gradle project-specific cache directory
+tcommit
+changes*
+lint-report*
+quickstart.xml
 server-started
-allure*
+x*
+y
+jersey
 .cache
+allure*
 my*
 dodexvmX*
 src/main/resources/static/dist*

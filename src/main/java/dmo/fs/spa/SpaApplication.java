@@ -3,6 +3,7 @@ package dmo.fs.spa;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -16,7 +17,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public class SpaApplication {
-    private static Database db;
+    private Database db;
     private SpaDatabase spaDatabase;
     private SpaLogin spaLogin;
 
@@ -28,8 +29,8 @@ public class SpaApplication {
 
     public Future<SpaLogin> getLogin(String queryData) throws InterruptedException, SQLException {
         JsonObject loginObject = new JsonObject(String.join("", "{\"data\":", queryData, "}"));
-        String name = null;
-        String password = null;
+        String name;
+        String password;
         if(!queryData.contains("[")) {
             name = loginObject.getJsonObject("data").getString("name");
             password = loginObject.getJsonObject("data").getString("password");
@@ -41,6 +42,7 @@ public class SpaApplication {
 
         spaLogin.setName(name);
         spaLogin.setPassword(password);
+        
         return spaDatabase.getLogin(spaLogin, db);
     }
 
@@ -67,17 +69,18 @@ public class SpaApplication {
 
         spaLogin.setName(userName);
         spaLogin.setPassword(password);
+        spaLogin.setId(0l);
+        spaLogin.setLastLogin(new Date());
+        spaLogin.setStatus("0");
 
         return spaDatabase.addLogin(spaLogin, db);
     }
 
     public Future<SpaLogin> unregisterLogin(String queryData) throws InterruptedException, SQLException {
-        String name = null;
-        String password = null;
         Map<String, String> queryMap = mapQuery(queryData);
 
-        name = queryMap.get("user");
-        password = queryMap.get("password");
+        String name = queryMap.get("user");
+        String password = queryMap.get("password");
 
         spaLogin.setName(name);
         spaLogin.setPassword(password);

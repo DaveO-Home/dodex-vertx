@@ -1,8 +1,13 @@
 package dmo.fs.db;
 
-import java.util.HashMap;
+import java.io.IOException;
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -11,29 +16,23 @@ import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
 import org.davidmoten.rx.jdbc.pool.Pools;
 
-import dmo.fs.utils.ConsoleColors;
+import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
-
-public class DodexDatabaseIbmDB2 extends DbIbmDB2 { // implements DodexDatabase {
+public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseIbmDB2.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;
 	protected NonBlockingConnectionPool pool;
 	protected Database db;
 	protected Properties dbProperties = new Properties();
-	protected Map<String, String> dbOverrideMap = new HashMap<>();
-	protected Map<String, String> dbMap = new HashMap<>();
-	protected JsonNode defaultNode = null;
+	protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
+	protected Map<String, String> dbMap = new ConcurrentHashMap<>();
+	protected JsonNode defaultNode;
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
 
@@ -43,7 +42,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 { // implements DodexDatabase 
 
 		defaultNode = dodexUtil.getDefaultNode();
 
-		webEnv = webEnv == null || webEnv.equals("prod")? "prod": "dev";
+		webEnv = webEnv == null || "prod".equals(webEnv)? "prod": "dev";
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
@@ -63,17 +62,12 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 { // implements DodexDatabase 
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
-		webEnv = webEnv == null || webEnv.equals("prod")? "prod": "dev";
+		webEnv = webEnv == null || "prod".equals(webEnv)? "prod": "dev";
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
 
 		databaseSetup();
-	}
-
-	@Override
-	public String getAllUsers() {
-		return super.getAllUsers();
 	}
 
 	private void databaseSetup() throws InterruptedException, SQLException {
@@ -82,7 +76,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 { // implements DodexDatabase 
 		// dbProperties.setProperty("password", "myPassword");
 		// dbProperties.setProperty("ssl", "false");
 		
-		if(webEnv.equals("dev")) {
+		if("dev".equals(webEnv)) {
 			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
 			DbConfiguration.configureTestDefaults(dbMap, dbProperties);
 		} else {
@@ -127,7 +121,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 { // implements DodexDatabase 
 			}).subscribe(result -> {
 				prom.complete();
 			}, throwable -> {
-				logger.error(String.join(ConsoleColors.RED, "Error creating database tables: ", throwable.getMessage(), ConsoleColors.RESET));
+				logger.error(String.join(ColorUtilConstants.RED, "Error creating database tables: ", throwable.getMessage(), ColorUtilConstants.RESET));
 				throwable.printStackTrace();
 			});
 			// generate all jooq sql only once.
@@ -158,15 +152,15 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 { // implements DodexDatabase 
 
 	private static boolean tableExist(Connection conn, String tableName) throws SQLException {
 		boolean exists = false;
-		Statement stat = conn.createStatement();
-		
-		try(ResultSet rs = stat.executeQuery("select 1 from " + tableName + " where 0 = 1")) {
-			exists = true;
-		} catch(Exception e) {
-			logger.info("{0}Creating table {1}{2}",
-					new Object[] { ConsoleColors.BLUE, tableName, ConsoleColors.RESET });
+		try(Statement stat = conn.createStatement()) {		
+			try(ResultSet rs = stat.executeQuery("select 1 from " + tableName + " where 0 = 1")) {
+				exists = true;
+			} catch(Exception e) {
+				logger.info("{0}Creating table {1}{2}",
+						new Object[] { ColorUtilConstants.BLUE, tableName, ColorUtilConstants.RESET });
+			}
 		}
-		stat.close();
+		
 		return exists;
 	}
 }

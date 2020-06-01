@@ -1,4 +1,4 @@
 #!/usr/bin/bash
 
-gradlew --no-build-cache cleanTest test
+gradlew --no-build-cache cleanTest $1 $2 test  
 

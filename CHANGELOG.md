@@ -1,5 +1,12 @@
 # Changelog
 
+## [v1.8.2](https://github.com/DaveO-Home/dodex-vertx/tree/v1.8.2) (2020-06-02)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.8.1...v1.8.2)
+
+* Detect old login in Browser Refresh (react component LoginC.jsx)
+* Upgraded gradle to 6.4.1 to allow Java14
+
 ## [v1.8.1](https://github.com/DaveO-Home/dodex-vertx/tree/v1.8.1) (2020-06-01)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.8.0...v1.8.1)

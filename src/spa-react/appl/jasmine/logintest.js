@@ -15,6 +15,8 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
         let form;
 
         beforeAll(done => {
+            // Making sure there's a clean starting point
+            sessionStorage.removeItem("credentials");
             ReactDOM.render(
                 <LoginC />,
                 document.getElementById("nav-login"),

@@ -1,5 +1,5 @@
 # Ignore Gradle project-specific cache directory
-tcommit
+deploy
 changes*
 lint-report*
 quickstart.xml

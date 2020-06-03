@@ -4,9 +4,12 @@ import { login } from "../js/login";
 
 class Login extends React.Component {
   render() {
+    const cred = sessionStorage.getItem("credentials");
+    const logDisplay = cred ? "Log Out" : "Log In";
+
     return (
       <small>
-        <a href="#" className="login" onClick={handleClick}>Log In</a>
+        <a href="#" className="login" onClick={handleClick}>{logDisplay}</a>
       </small>
     );
   }

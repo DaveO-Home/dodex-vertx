@@ -16,7 +16,7 @@ class Login extends React.Component {
 }
 
 function handleClick(e) {
-  if($(".login:first").html() === "Log Out") {
+  if ($(".login:first").html() === "Log Out") {
     login(null, true)(e);
   } else {
     start["div .login click"](e);

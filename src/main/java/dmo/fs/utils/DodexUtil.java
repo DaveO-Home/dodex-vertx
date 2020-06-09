@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -39,9 +40,9 @@ public class DodexUtil {
         Map<String, String> returnObject = new ConcurrentHashMap<>();
     
         try {
-            String message = ClientInfoUtilHelper.getMessage(clientData);
-            String command = ClientInfoUtilHelper.getCommand(clientData);
-            String data = ClientInfoUtilHelper.getData(clientData);
+            String message = ClientInfoUtilHelper.getMessage.apply(clientData);
+            String command = ClientInfoUtilHelper.getCommand.apply(clientData);
+            String data = ClientInfoUtilHelper.getData.apply(clientData);
             
             returnObject = processCommand(command, data);
             returnObject.put("message", message);
@@ -84,41 +85,40 @@ public class DodexUtil {
     public static String getEnv() {
         return env;
     }
-
     /*
         Split out command and data from client message.
     */
     public static class ClientInfoUtilHelper {
         private final static String[] commands = { REMOVEUSER, USERS };
 
-        private static String command(String  clientData) {
+        private static Function<String, String> command = (clientData) -> {
             for (String clientCommand : commands) {
                 if (clientData.contains(clientCommand)) {
                     return clientCommand;
                 }
             }
             return null;
-        }
+        };
 
-        public static String getCommand(String clientData) {
-            return command(clientData);
-        }
+        public static Function<String, String> getCommand = (clientData) -> {
+            return command.apply(clientData);
+        };
 
-        public static String getMessage(String clientData) {
-            if (getCommand(clientData) == null) {
+        public static Function<String, String> getMessage = (clientData) -> {
+            if (getCommand.apply(clientData) == null) {
                 return clientData;
             }
-            return clientData.substring(0, clientData.indexOf(getCommand(clientData)));
-        }
+            return clientData.substring(0, clientData.indexOf(getCommand.apply(clientData)));
+        };
 
-        public static String getData(String clientData) {
-            String command = getCommand(clientData);
+        public static Function<String, String> getData = (clientData) -> {
+            String command = getCommand.apply(clientData);
             Integer indexOf = command == null? -1: clientData.indexOf("!!");
             if (indexOf == -1) {
                 return null;
             }
             return clientData.substring(clientData.lastIndexOf("!!") + 2);
-        }
+        };
 
         private ClientInfoUtilHelper() {
         }

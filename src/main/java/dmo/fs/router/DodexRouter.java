@@ -92,11 +92,13 @@ public class DodexRouter {
             public void handle(ServerWebSocket ws) {
 
                 try {
-                    logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, URLDecoder
-                            .decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"), StandardCharsets.UTF_8.name()),
+                    logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+                            URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"),
+                                    StandardCharsets.UTF_8.name()),
                             ColorUtilConstants.RESET));
                 } catch (final UnsupportedEncodingException e) {
-                    logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET));
+                    logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
+                            ColorUtilConstants.RESET));
                     // e.printStackTrace();
                 }
 
@@ -117,8 +119,8 @@ public class DodexRouter {
                     clients.put(ws.textHandlerID(), ws);
 
                     ws.closeHandler(ch -> {
-                        logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Closing ws-connection to client: ",
-                                messageUser.getName(), ColorUtilConstants.RESET));
+                        logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+                                "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
                         wsChatSessions.remove(ws.textHandlerID());
                         clients.remove(ws.textHandlerID());
                     });
@@ -220,7 +222,7 @@ public class DodexRouter {
                                     }
                                 }
                             });
-                        }                       
+                        }
                     });
                     /*
                      * websocket.onConnection()
@@ -248,9 +250,13 @@ public class DodexRouter {
                                 userJson.onSuccess(json -> {
                                     ws.writeTextMessage("connected:" + json); // Users for private messages
                                     /*
-                                    * Send undelivered messages and remove user related messages.
-                                    */
-                                    dodexDatabase.processUserMessages(ws, db, mUser);
+                                     * Send undelivered messages and remove user related messages.
+                                     */
+                                    try {
+                                        dodexDatabase.processUserMessages(ws, db, mUser);
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 });
                             } catch (InterruptedException | SQLException e) {
                                 e.printStackTrace();

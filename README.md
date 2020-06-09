@@ -85,6 +85,10 @@
   2. Execute ```gradlew run``` to start development. Execute ```ctl-c``` && ```exit``` to shutdown.
   3. Execute ```centos/execontainer``` or ```centos\execontainer``` on subsequent startups.
 
+## ChangeLog
+
+<https://github.com/DaveO-Home/dodex-vertx/blob/master/CHANGELOG.md>
+
 ## Authors
 
 * *Initial work* - [DaveO-Home](https://github.com/DaveO-Home)

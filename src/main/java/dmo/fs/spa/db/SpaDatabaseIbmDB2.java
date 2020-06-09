@@ -1,4 +1,4 @@
-package dmo.fs.db;
+package dmo.fs.spa.db;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -16,6 +16,8 @@ import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
 import org.davidmoten.rx.jdbc.pool.Pools;
 
+import dmo.fs.spa.utils.SpaLogin;
+import dmo.fs.spa.utils.SpaLoginImpl;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
@@ -23,8 +25,8 @@ import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseIbmDB2.class.getName());
+public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
+	private final static Logger logger = LoggerFactory.getLogger(SpaDatabaseIbmDB2.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;
 	protected NonBlockingConnectionPool pool;
@@ -36,7 +38,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
 
-	public DodexDatabaseIbmDB2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+	public SpaDatabaseIbmDB2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
 			throws InterruptedException, IOException, SQLException {
 		super();
 
@@ -54,11 +56,11 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 			this.dbOverrideMap = dbOverrideMap;
 		}
 
-		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
+		SpaDbConfiguration.mapMerge(dbMap, dbOverrideMap);
 		databaseSetup();
 	}
 
-	public DodexDatabaseIbmDB2() throws InterruptedException, IOException, SQLException {
+	public SpaDatabaseIbmDB2() throws InterruptedException, IOException, SQLException {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
@@ -78,11 +80,11 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 		
 		if("dev".equals(webEnv)) {
 			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
-			DbConfiguration.configureTestDefaults(dbMap, dbProperties);
+			SpaDbConfiguration.configureTestDefaults(dbMap, dbProperties);
 		} else {
-			DbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
+			SpaDbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
 		}
-		cp = DbConfiguration.getIbmDb2ConnectionProvider();
+		cp = SpaDbConfiguration.getIbmDb2ConnectionProvider();
 
 		pool = Pools.nonBlocking()
 				.maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
@@ -94,28 +96,16 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 			db.member().doOnSuccess(c -> {
 				Statement stat = c.value().createStatement();
 				
-				// stat.executeUpdate("drop table undelivered");
-				// stat.executeUpdate("drop table users");
-				// stat.executeUpdate("drop table messages");
+				// stat.executeUpdate("drop table login");
 				
-				String sql = getCreateTable("USERS");
+				String sql = getCreateTable("LOGIN");
 				// Set defined user
-				if (!tableExist(c.value(), "users")) {
+				if (!tableExist(c.value(), "login")) {
 					stat.executeUpdate(sql);
-					sql = getUsersIndex("USERS");
+					sql = getLoginIndex("LOGIN");
 					stat.executeUpdate(sql);
 				}
 				
-				sql = getCreateTable("MESSAGES");
-				if (!tableExist(c.value(), "messages")) {
-					stat.executeUpdate(sql);
-				}
-
-				sql = getCreateTable("UNDELIVERED");
-				if (!tableExist(c.value(), "undelivered")) {
-					stat.executeUpdate(sql);
-				}
-
 				stat.close();
 				c.value().close();
 			}).subscribe(result -> {
@@ -146,8 +136,8 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 	}
 
 	@Override
-	public MessageUser createMessageUser() {
-		return new MessageUserImpl();
+	public SpaLogin createSpaLogin() {
+		return new SpaLoginImpl();
 	}
 
 	private static boolean tableExist(Connection conn, String tableName) throws SQLException {

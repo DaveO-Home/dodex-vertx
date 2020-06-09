@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.Rule;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.rules.Timeout;
@@ -33,11 +34,13 @@ public class TestMainVerticle {
   }
 
   @Test
+  @DisplayName("Verticle Deployed")
   void verticleDeployed(Vertx vertx, VertxTestContext testContext) throws Throwable {
     testContext.completeNow();
   }
 
   @Test
+  @DisplayName("Verticle Configured")
   void verticleConfigured(Vertx vertx, VertxTestContext testContext) throws Throwable {
     String deploymentId = server.deploymentID();
     

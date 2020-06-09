@@ -38,7 +38,7 @@ public interface DodexDatabase {
 
 	Future<Void> addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException;
 
-	int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser);
+	int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser) throws Exception;
 
 	Database getDatabase();
 

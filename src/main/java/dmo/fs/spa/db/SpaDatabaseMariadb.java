@@ -1,4 +1,4 @@
-package dmo.fs.db;
+package dmo.fs.spa.db;
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -16,6 +16,8 @@ import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
 import org.davidmoten.rx.jdbc.pool.Pools;
 
+import dmo.fs.spa.utils.SpaLogin;
+import dmo.fs.spa.utils.SpaLoginImpl;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
@@ -23,8 +25,8 @@ import io.vertx.core.Future;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseIbmDB2.class.getName());
+public class SpaDatabaseMariadb extends DbMariadb {
+	private final static Logger logger = LoggerFactory.getLogger(SpaDatabaseMariadb.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;
 	protected NonBlockingConnectionPool pool;
@@ -36,7 +38,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
 
-	public DodexDatabaseIbmDB2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+	public SpaDatabaseMariadb(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
 			throws InterruptedException, IOException, SQLException {
 		super();
 
@@ -47,18 +49,20 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
 		
-		if (dbOverrideProps != null) {
+		if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
 			this.dbProperties = dbOverrideProps;
 		}
 		if (dbOverrideMap != null) {
 			this.dbOverrideMap = dbOverrideMap;
 		}
 
-		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
+		dbProperties.setProperty("foreign_keys", "true");
+
+		SpaDbConfiguration.mapMerge(dbMap, dbOverrideMap);
 		databaseSetup();
 	}
 
-	public DodexDatabaseIbmDB2() throws InterruptedException, IOException, SQLException {
+	public SpaDatabaseMariadb() throws InterruptedException, IOException, SQLException {
 		super();
 
 		defaultNode = dodexUtil.getDefaultNode();
@@ -66,56 +70,36 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
+		
+		dbProperties.setProperty("foreign_keys", "true");
 
 		databaseSetup();
 	}
 
 	private void databaseSetup() throws InterruptedException, SQLException {
-		// Override default credentials
-		// dbProperties.setProperty("user", "myUser");
-		// dbProperties.setProperty("password", "myPassword");
-		// dbProperties.setProperty("ssl", "false");
-		
-		if("dev".equals(webEnv)) {
-			// dbMap.put("dbname", "/myDbname"); // this wiil be merged into the default map
-			DbConfiguration.configureTestDefaults(dbMap, dbProperties);
+		if ("dev".equals(webEnv)) {
+			SpaDbConfiguration.configureTestDefaults(dbMap, dbProperties);
 		} else {
-			DbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
+			SpaDbConfiguration.configureDefaults(dbMap, dbProperties); // Using prod (./dodex.db)
 		}
-		cp = DbConfiguration.getIbmDb2ConnectionProvider();
+		cp = SpaDbConfiguration.getMariadbConnectionProvider();
 
-		pool = Pools.nonBlocking()
-				.maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
+		pool = Pools.nonBlocking().maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
 				.build();
 		
 		db = Database.from(pool);
-				
+
 		Future.future(prom -> {
 			db.member().doOnSuccess(c -> {
 				Statement stat = c.value().createStatement();
-				
-				// stat.executeUpdate("drop table undelivered");
-				// stat.executeUpdate("drop table users");
-				// stat.executeUpdate("drop table messages");
-				
-				String sql = getCreateTable("USERS");
-				// Set defined user
-				if (!tableExist(c.value(), "users")) {
-					stat.executeUpdate(sql);
-					sql = getUsersIndex("USERS");
-					stat.executeUpdate(sql);
-				}
-				
-				sql = getCreateTable("MESSAGES");
-				if (!tableExist(c.value(), "messages")) {
-					stat.executeUpdate(sql);
-				}
 
-				sql = getCreateTable("UNDELIVERED");
-				if (!tableExist(c.value(), "undelivered")) {
+				// stat.executeUpdate("drop table LOGIN");
+
+				String sql = getCreateTable("LOGIN");
+				if (!tableExist(c.value(), "LOGIN")) {
 					stat.executeUpdate(sql);
 				}
-
+				
 				stat.close();
 				c.value().close();
 			}).subscribe(result -> {
@@ -134,32 +118,34 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 			});
 		});
 	}
-
+	
 	@Override
 	public Database getDatabase() {
 		return Database.from(pool);
 	}
-	
+
 	@Override
 	public NonBlockingConnectionPool getPool() {
 		return pool;
 	}
 
 	@Override
-	public MessageUser createMessageUser() {
-		return new MessageUserImpl();
+	public SpaLogin createSpaLogin() {
+		return new SpaLoginImpl();
 	}
 
+	// per stack overflow
 	private static boolean tableExist(Connection conn, String tableName) throws SQLException {
 		boolean exists = false;
-		try(Statement stat = conn.createStatement()) {		
-			try(ResultSet rs = stat.executeQuery("select 1 from " + tableName + " where 0 = 1")) {
-				exists = true;
-			} catch(Exception e) {
-				logger.info(String.join("", ColorUtilConstants.BLUE, "Creating table: ", tableName, ColorUtilConstants.RESET));
+		try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName, null)) {
+			while (rs.next()) {
+				String name = rs.getString("TABLE_NAME");
+				if (name != null && name.equalsIgnoreCase(tableName)) {
+					exists = true;
+					break;
+				}
 			}
 		}
-		
 		return exists;
 	}
 }

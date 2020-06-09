@@ -27,6 +27,7 @@ import dmo.fs.db.JavaRxDateDb.Undelivered;
 import dmo.fs.db.JavaRxDateDb.Users;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -617,38 +618,30 @@ public abstract class DbDefinitionBase {
 			this.userId = userId;
 		}
 	}
-
-	RemoveUndelivered removeUndelivered = new RemoveUndelivered();
-
+	
 	class RemoveMessage implements Action {
 		int count;
 		Database db;
+		List<Long> messageIds = new ArrayList<>();
 
 		@Override
 		public void run() throws Exception {
-			for (Long messageId : removeUndelivered.getMessageIds()) {
-				db.select(getUndeliveredMessage())
-					.parameter("USERID", removeUndelivered.getUserId())
+			for (Long messageId : messageIds) {
+				if(DbConfiguration.isUsingSqlite3()) {
+					try { // Sqlite3 needs a delay???
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						logger.error(String.join("", "Await: ", e.getMessage()));
+					}
+				}
+				db.update(getRemoveMessage())
 					.parameter("MESSAGEID", messageId)
-					.getAs(Undelivered.class)
-					.isEmpty()
-					.doOnSuccess(empty -> {
-						if (empty) {
-							db.update(getRemoveMessage())
-								.parameter("MESSAGEID", messageId)
-								.counts()
-								.doOnNext(c -> count += c)
-								.subscribe(result -> {
-									//
-								}, throwable -> {
-									logger.error(String.join(ColorUtilConstants.RED, "Error removing undelivered message: ", throwable.getMessage(), ColorUtilConstants.RESET));
-									throwable.printStackTrace();
-								});
-						}
-					}).subscribe(result -> {
+					.counts()
+					.doOnNext(c -> count += c)
+					.subscribe(result -> {
 						//
 					}, throwable -> {
-						logger.error(String.join(ColorUtilConstants.RED, "Error finding undelivered message: ", throwable.getMessage(), ColorUtilConstants.RESET));
+						logger.error(String.join(ColorUtilConstants.RED, "Error removing undelivered message: ", throwable.getMessage(), ColorUtilConstants.RESET));
 						throwable.printStackTrace();
 					});
 			}
@@ -665,11 +658,20 @@ public abstract class DbDefinitionBase {
 		public void setDatabase(Database db) {
 			this.db = db;
 		}
+
+		public List<Long> getMessageIds() {
+			return messageIds;
+		}
+
+		public void setMessageIds(List<Long> messageIds) {
+			this.messageIds = messageIds;
+		}
 	}
 
-	RemoveMessage removeMessage = new RemoveMessage();
-
-	public int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser) {
+	public int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser) 
+		throws Exception {
+		RemoveUndelivered removeUndelivered = new RemoveUndelivered();
+		RemoveMessage removeMessage = new RemoveMessage();
 		removeUndelivered.setUserId(messageUser.getId());
 		removeUndelivered.setCount(0);
 		removeUndelivered.setDatabase(db);
@@ -678,7 +680,7 @@ public abstract class DbDefinitionBase {
 		/*
 		 * Get all undelivered messages for current user
 		 */
-		db.select(Undelivered.class)
+		Disposable disposable = db.select(Undelivered.class)
 			.parameter("id", messageUser.getId())
 			.get()
 			.doOnNext(result -> {
@@ -688,15 +690,19 @@ public abstract class DbDefinitionBase {
 				// Send messages back to client
 				ws.writeTextMessage(handle + postDate + " " + message);
 				removeUndelivered.getMessageIds().add(result.messageId());
+				removeMessage.getMessageIds().add(result.messageId());
 			})
 			// Remove undelivered for user
 			.doOnComplete(removeUndelivered)
 			.doOnError(error -> logger.error(String.join(ColorUtilConstants.RED, "Remove Undelivered Error: ", error.getMessage(), ColorUtilConstants.RESET)))
-			// Remove message if no other users are attached
-			.doFinally(removeMessage)
-			.doOnError(error -> logger.error(String.join(ColorUtilConstants.RED, "Remove Message Error: ", error.getMessage(), ColorUtilConstants.RESET)))
 			.subscribe();
-
+		// We have to wait until all undelivered records for user are deleted
+		await(disposable);
+		// Remove messages if no other users are attached
+		removeMessage.run();
+		if (removeUndelivered.getCount() > 0) {
+			logger.info(String.join(ColorUtilConstants.BLUE_BOLD_BRIGHT, Integer.toString(removeUndelivered.getCount()), " Messages Delivered", " to ", messageUser.getName(), ColorUtilConstants.RESET));
+		}
 		return removeUndelivered.getCount();
 	}
 
@@ -716,4 +722,13 @@ public abstract class DbDefinitionBase {
 		this.vertx = vertx;
 	}
 	
+	private void await(Disposable disposable) {
+        while (!disposable.isDisposed()) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                logger.error(String.join("", "Await: ", e.getMessage()));
+            }
+        }
+    }
 }

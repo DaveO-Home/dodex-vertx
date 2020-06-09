@@ -61,38 +61,38 @@ class UtilTest {
     @Test
     void getMessageFromRequest() {
         String description = "should return correct message";
-        String message = DodexUtil.ClientInfoUtilHelper.getMessage(messageOnly);
+        String message = DodexUtil.ClientInfoUtilHelper.getMessage.apply(messageOnly);
         assertEquals(message, "This is a message.", description);
-        message = DodexUtil.ClientInfoUtilHelper.getMessage(messageWithCommand);
+        message = DodexUtil.ClientInfoUtilHelper.getMessage.apply(messageWithCommand);
         assertEquals(message, "This is a message.", description);
-        message = DodexUtil.ClientInfoUtilHelper.getMessage(messageWithCommandAndData);
+        message = DodexUtil.ClientInfoUtilHelper.getMessage.apply(messageWithCommandAndData);
         assertEquals(message, "This is a message.", description);
     }
 
     @Test
     void getCommandFromRequest() {
         String description = "should return a command";
-        String command = DodexUtil.ClientInfoUtilHelper.getCommand(messageOnly);
+        String command = DodexUtil.ClientInfoUtilHelper.getCommand.apply(messageOnly);
         assertEquals(command, null, "command should be nul");
-        command = DodexUtil.ClientInfoUtilHelper.getCommand(messageWithCommand);
+        command = DodexUtil.ClientInfoUtilHelper.getCommand.apply(messageWithCommand);
         assertEquals(command, ";removeuser", description);
-        command = DodexUtil.ClientInfoUtilHelper.getCommand(messageWithCommandAndData);
+        command = DodexUtil.ClientInfoUtilHelper.getCommand.apply(messageWithCommandAndData);
         assertEquals(command, ";removeuser", description);
     }
 
     @Test
     void getDataFromRequest() {
-        String data = DodexUtil.ClientInfoUtilHelper.getData(messageOnly);
+        String data = DodexUtil.ClientInfoUtilHelper.getData.apply(messageOnly);
         assertEquals(data, null, "should be null");
-        data = DodexUtil.ClientInfoUtilHelper.getData(messageWithCommand);
+        data = DodexUtil.ClientInfoUtilHelper.getData.apply(messageWithCommand);
         assertEquals(data, null, "should be null");
-        data = DodexUtil.ClientInfoUtilHelper.getData(messageWithCommandAndData);
+        data = DodexUtil.ClientInfoUtilHelper.getData.apply(messageWithCommandAndData);
         assertEquals(data, "{[\"name\",\"user1\"]}", "should return data");
     }
 
     @Test
     void testUsersCommand() {
-        String command = DodexUtil.ClientInfoUtilHelper.getCommand(";users!!{[\"name\",\"user1\"]}");
+        String command = DodexUtil.ClientInfoUtilHelper.getCommand.apply(";users!!{[\"name\",\"user1\"]}");
         assertEquals(command, ";users", "should return the users command");
     }
 }

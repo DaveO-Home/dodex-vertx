@@ -2,6 +2,7 @@ package dmo.fs.db;
 
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 import org.davidmoten.rx.jdbc.Database;
 import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
@@ -38,7 +39,7 @@ public interface DodexDatabase {
 
 	Future<Void> addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException;
 
-	int processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser) throws Exception;
+	Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser) throws Exception;
 
 	Database getDatabase();
 

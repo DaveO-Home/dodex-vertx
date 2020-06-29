@@ -58,7 +58,7 @@ dependencies {
     implementation "io.vertx:vertx-core:$version"
     implementation "io.vertx:vertx-web:$version"
     implementation "io.vertx:vertx-web-api-contract:$version"
-    implementation "io.vertx:vertx-rx-java:$version"
+    implementation "io.vertx:vertx-rx-java2:$version"
     implementation "com.github.davidmoten:rxjava2-jdbc:0.2.7"
     implementation "org.slf4j:slf4j-jcl:1.7.28"
     implementation "org.postgresql:postgresql:42.2.12"

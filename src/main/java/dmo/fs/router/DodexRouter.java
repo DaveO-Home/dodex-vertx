@@ -253,7 +253,14 @@ public class DodexRouter {
                                      * Send undelivered messages and remove user related messages.
                                      */
                                     try {
-                                        dodexDatabase.processUserMessages(ws, db, mUser);
+                                        dodexDatabase.processUserMessages(ws, db, mUser)
+                                            .onComplete(fut -> {
+                                                int messageCount = fut.result().get("messages");
+                                                if(messageCount > 0) {
+                                                    logger.info(String.format("%sMessages Delivered: %d to %s%s", 
+                                                        ColorUtilConstants.BLUE_BOLD_BRIGHT, messageCount, mUser.getName(), ColorUtilConstants.RESET));
+                                                }
+                                            });
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }

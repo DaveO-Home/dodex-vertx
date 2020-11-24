@@ -29,7 +29,6 @@ import dmo.fs.db.JavaRxDateDb.Undelivered;
 import dmo.fs.db.JavaRxDateDb.Users;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Action;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -613,7 +612,7 @@ public abstract class DbDefinitionBase {
 							promise2.complete(counts);
 						}
 					}, throwable -> {
-						logger.error(String.join(ColorUtilConstants.RED, "Error removing undelivered record: ", throwable.getMessage(), ColorUtilConstants.RESET));
+						logger.error(String.join(ColorUtilConstants.RED, "Error removing undelivered record: ", throwable.getCause().getMessage(), ColorUtilConstants.RESET));
 						throwable.printStackTrace();
 					});
 			}

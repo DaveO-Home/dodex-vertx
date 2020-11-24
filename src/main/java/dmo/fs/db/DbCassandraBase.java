@@ -1,0 +1,173 @@
+
+package dmo.fs.db;
+
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import org.modellwerkstatt.javaxbus.ConsumerHandler;
+import org.modellwerkstatt.javaxbus.EventBus;
+import org.modellwerkstatt.javaxbus.Message;
+
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.Vertx;
+import io.vertx.core.http.ServerWebSocket;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
+
+public abstract class DbCassandraBase {
+	private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
+	private Map<String, Promise<MessageUser>> mUserPromises = new ConcurrentHashMap<>();
+	private Map<String, Promise<mjson.Json>> mJsonPromises = new ConcurrentHashMap<>();
+	private static String vertxConsumer = "";
+
+	private Vertx vertx;
+
+	public Future<mjson.Json> deleteUser(ServerWebSocket ws, EventBus eb, MessageUser messageUser)
+			throws InterruptedException, SQLException {
+		Promise<mjson.Json> promise = Promise.promise();
+
+		mJsonPromises.put(ws.textHandlerID() + "deleteuser", promise);
+		mjson.Json mess = setMessage("deleteuser", messageUser, ws);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+
+		eb.send("akka", jsonPayLoad);
+
+		return promise.future();
+	}
+
+	public Future<mjson.Json> addMessage(ServerWebSocket ws, MessageUser messageUser, String message,
+			List<String> undelivered, EventBus eb) throws InterruptedException, SQLException {
+		Promise<mjson.Json> promise = Promise.promise();
+
+		mJsonPromises.put(ws.textHandlerID() + "addmessage", promise);
+		mjson.Json mess = setMessage("addmessage", messageUser, ws);
+		mess.set("users", undelivered).set("message", message);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+		eb.send("akka", jsonPayLoad);
+
+		return promise.future();
+	}
+
+	public abstract MessageUser createMessageUser();
+
+	public Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws, EventBus eb)
+			throws InterruptedException, SQLException {
+		Promise<MessageUser> promise = Promise.promise();
+		// This promise will be completed in the eb.consumer listener - see
+		// setEbConsumer
+		mUserPromises.put(ws.textHandlerID() + "selectuser", promise);
+
+		mjson.Json mess = setMessage("selectuser", messageUser, ws);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+		// Only one handler for all event bridge sends - see setEbConsumer
+		if (vertxConsumer.equals("")) {
+			eb.consumer("vertx", setEbConsumer(eb));
+			vertxConsumer = "vertx";
+		}
+		// Send database request to the Akka client micro-service -
+		// the response is passed back to the requester via the promise completed in the
+		// consumer handler
+		eb.send("akka", jsonPayLoad);
+		return promise.future();
+	}
+
+	public Future<mjson.Json> buildUsersJson(ServerWebSocket ws, EventBus eb, MessageUser messageUser)
+			throws InterruptedException, SQLException {
+		Promise<mjson.Json> promise = Promise.promise();
+
+		mJsonPromises.put(ws.textHandlerID() + "allusers", promise);
+		mjson.Json mess = setMessage("allusers", messageUser, ws);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+
+		eb.send("akka", jsonPayLoad);
+
+		// wait for user json before sending back to newly connected user
+		return promise.future();
+	}
+
+	public Future<mjson.Json> deleteDelivered(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
+		Promise<mjson.Json> promise = Promise.promise();
+
+		mJsonPromises.put(ws.textHandlerID() + "deletedelivered", promise);
+		mjson.Json mess = setMessage("deletedelivered", messageUser, ws);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+
+		eb.send("akka", jsonPayLoad);
+
+		// wait for user json before sending back to newly connected user
+		return promise.future();
+	}
+
+	public Future<mjson.Json> processUserMessages(ServerWebSocket ws, EventBus eb, MessageUser messageUser)
+			throws Exception {
+		Promise<mjson.Json> promise = Promise.promise();
+
+		mJsonPromises.put(ws.textHandlerID() + "delivermess", promise);
+		mjson.Json mess = setMessage("delivermess", messageUser, ws);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+
+		eb.send("akka", jsonPayLoad);
+
+		return promise.future();
+	}
+
+	private mjson.Json setMessage(String cmd, MessageUser messageUser, ServerWebSocket ws) {
+		mjson.Json mess = null;
+		try {
+			mess = mjson.Json.object().set("cmd", cmd).set("ip", messageUser.getIp())
+					.set("password", messageUser.getPassword()).set("name", messageUser.getName())
+					.set("ws", ws.textHandlerID() + cmd);
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		}
+		return mess;
+	}
+
+	public Vertx getVertx() {
+		return vertx;
+	}
+
+	public void setVertx(Vertx vertx) {
+		this.vertx = vertx;
+	}
+
+	public ConsumerHandler setEbConsumer(EventBus eb) {
+		return new ConsumerHandler() {
+			@Override
+			public void handle(Message msg) {
+				if (!msg.isErrorMsg()) {
+					mjson.Json json = msg.getBodyAsMJson();
+
+					switch (json.at("cmd").asString()) {
+						case "string":
+							System.err.println(json.at("msg").asString());
+							break;
+						case "selectuser":
+							mjson.Json cassJson = json.at("msg");
+							MessageUser resultUser = createMessageUser();
+							resultUser.setId(-1l);
+							resultUser.setIp(cassJson.at("ip").asString());
+							resultUser.setPassword(cassJson.at("password").asString());
+							resultUser.setName(cassJson.at("name").asString());
+							resultUser.setLastLogin(new Timestamp(cassJson.at("last_login").asLong()));
+
+							mUserPromises.get(json.at("ws").asString()).tryComplete(resultUser);
+							mUserPromises.remove(json.at("ws").asString());
+							break;
+						default:
+							// Passing Akka response back to the requester
+							mJsonPromises.get(json.at("ws").asString()).tryComplete(json.at("msg"));
+							mJsonPromises.remove(json.at("ws").asString());
+							break;
+					}
+				} else {
+					System.err.println("ERROR received " + msg.getErrMessage());
+				}
+			}
+		};
+	}
+}

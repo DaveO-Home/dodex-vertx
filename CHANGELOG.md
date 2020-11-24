@@ -1,12 +1,19 @@
 # Changelog
 
+## [v1.9.0](https://github.com/DaveO-Home/dodex-vertx/tree/v1.9.0) (2020-11-24)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.8.4...v1.9.0)
+
+* Added Cassandra database via an Akka micro-service as an Event-Bus client, see; <https://www.npmjs.com/package/dodex-akka>
+* Added turning off color in application-conf.json. Also with `ColorUtilConstants.colorOff()` and `colorOn()`
+  
 ## [v1.8.4](https://github.com/DaveO-Home/dodex-vertx/tree/v1.8.4) (2020-06-29)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.8.3...v1.8.4)
 
 * Fixed Exception when sending private message to multiple users
 * Made removing Undelivered/Messages non-blocking
-* Upgraded gradle 6.5 
+* Upgraded gradle 6.5
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.8.2...v1.8.3)
 

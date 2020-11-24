@@ -97,8 +97,20 @@ public class Routes {
 	}
 
 	public void setDodexRoute() throws InterruptedException, IOException, SQLException {
-		DodexRouter dodexRouter = new DodexRouter(vertx);
-		dodexRouter.setWebSocket(server);
+		DodexUtil du = new DodexUtil();
+		String defaultDbName = du.getDefaultDb();
+
+        if ("cassandra".equals(defaultDbName)) {
+			try {
+            CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+			cassandraRouter.setWebSocket(server);
+			} catch(Exception ex) {
+				ex.printStackTrace();
+			}
+        } else {
+            DodexRouter dodexRouter = new DodexRouter(vertx);
+			dodexRouter.setWebSocket(server);
+        }
 	}
 
 	public Router getRouter() throws InterruptedException {

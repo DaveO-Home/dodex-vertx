@@ -11,7 +11,7 @@ const exec = require("child_process").exec;
 const log = require("fancy-log");
 const path = require("path");
 const Server = require("karma").Server;
-const puppeteer = require("puppeteer");
+// const puppeteer = require("puppeteer");
 const fs = require("fs");
 
 let lintCount = 0;

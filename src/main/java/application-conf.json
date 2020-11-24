@@ -3,5 +3,7 @@
   "clean.run": false,
   "clean.delay": 0,
   "clean.period": 7,
-  "clean.age": 90
+  "clean.age": 90,
+  "bridge.port": 7032,
+  "color": true
 }

@@ -22,14 +22,14 @@
     "postgres": {
         "dev": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "daveo",
+                "password": "albatross",
                 "ssl": "false"
             },
             "config": {
                 "host": "//localhost",
                 "url": "jdbc:postgresql:",
-                "dbname": "/testdb"
+                "dbname": "/daveo"
             }
         },
         "prod": { 
@@ -49,7 +49,7 @@
         "dev": { 
             "credentials": {
                 "user": "dba",
-                "password": "password",
+                "password": "albatross",
                 "ssl": "false"
             },
             "config": {
@@ -74,8 +74,8 @@
     "mariadb": {
         "dev": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "daveo",
+                "password": "albatross",
                 "ssl": "false"
             },
             "config": {
@@ -100,14 +100,14 @@
     "ibmdb2": {
         "dev": { 
             "credentials": {
-                "user": "db2inst1",
-                "password": "password",
+                "user": "rlq77780",
+                "password": "9mjzjds@5ww3fl38",
                 "ssl": "false"
             },
             "config": {
-                "host": "//localhost:50000",
+                "host": "//dashdb-txn-sbox-yp-dal09-04.services.dal.bluemix.net:50000",
                 "url": "jdbc:db2:",
-                "dbname": "/testdb"
+                "dbname": "/BLUDB"
             }
         },
         "prod": { 
@@ -120,6 +120,24 @@
                 "host": "//localhost:50000",
                 "url": "jdbc:db2:",
                 "dbname": "/dodexdb"
+            }
+        }
+    },
+    "cassandra": {
+        "dev": { 
+            "credentials": {
+            },
+            "config": {
+                "filename": "target/cassandra-db",
+                "url": ""
+            }
+        },
+        "prod": { 
+            "credentials": {
+            },
+            "config": {
+                "filename": "",
+                "url": ""
             }
         }
     }

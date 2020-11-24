@@ -1,5 +1,7 @@
 # Ignore Gradle project-specific cache directory
-deploy*
+target
+.bloop
+deploy
 changes*
 lint-report*
 quickstart.xml

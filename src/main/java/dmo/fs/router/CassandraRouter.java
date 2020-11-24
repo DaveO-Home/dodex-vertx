@@ -5,8 +5,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,11 +16,11 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.davidmoten.rx.jdbc.Database;
+import org.modellwerkstatt.javaxbus.EventBus;
 
 import dmo.fs.admin.CleanOrphanedUsers;
 import dmo.fs.db.DbConfiguration;
-import dmo.fs.db.DodexDatabase;
+import dmo.fs.db.DodexCassandra;
 import dmo.fs.db.MessageUser;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
@@ -37,13 +39,15 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.core.shareddata.LocalMap;
 import io.vertx.core.shareddata.SharedData;
 
-public class DodexRouter {
-    private final static Logger logger = LoggerFactory.getLogger(DodexRouter.class.getName());
+public class CassandraRouter {
+    private final static Logger logger = LoggerFactory.getLogger(CassandraRouter.class.getName());
     protected final Vertx vertx;
     private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
-    DodexDatabase dodexDatabase;
+    DodexCassandra dodexCassandra;
+    EventBus eb;
+    JsonObject config;
 
-    public DodexRouter(final Vertx vertx) throws InterruptedException {
+    public CassandraRouter(final Vertx vertx) throws InterruptedException {
         this.vertx = vertx;
     }
 
@@ -54,8 +58,9 @@ public class DodexRouter {
          * new Properties(); set override or additional values... dodexDatabase =
          * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
          */
-        dodexDatabase = DbConfiguration.getDefaultDb();
-        dodexDatabase.setVertx(vertx);
+
+        dodexCassandra = DbConfiguration.getDefaultDb();
+        dodexCassandra.setVertx(vertx);
 
         /**
          * Optional auto user cleanup - config in "application-conf.json". When client
@@ -69,7 +74,7 @@ public class DodexRouter {
         if (context.isPresent()) {
             final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
             try {
-                final JsonObject config = jsonObject.isPresent() ? jsonObject.get() : new JsonObject();
+                config = jsonObject.isPresent() ? jsonObject.get() : new JsonObject();
                 final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
                 if (runClean.isPresent() && runClean.get()) {
                     final CleanOrphanedUsers clean = new CleanOrphanedUsers();
@@ -100,7 +105,6 @@ public class DodexRouter {
                 } catch (final UnsupportedEncodingException e) {
                     logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
                             ColorUtilConstants.RESET));
-                    // e.printStackTrace();
                 }
 
                 final DodexUtil dodexUtil = new DodexUtil();
@@ -109,8 +113,8 @@ public class DodexRouter {
                     ws.reject();
                 } else {
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
-                    final MessageUser messageUser = dodexDatabase.createMessageUser();
-                    final Database db = dodexDatabase.getDatabase();
+                    final MessageUser messageUser = dodexCassandra.createMessageUser();
+                    // final Database db = dodexCassandra.getDatabase();
                     try {
                         wsChatSessions.put(ws.textHandlerID(),
                                 URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
@@ -142,13 +146,13 @@ public class DodexRouter {
                             computedMessage[0] = returnObject.get("message");
                             command[0] = returnObject.get("command");
 
-                            Promise<Long> promise = Promise.promise();
-                            promise.complete(-1l);
-                            Future<Long> deleted = null;
+                            Promise<mjson.Json> promise = Promise.promise();
+                            promise.complete(null);
+                            Future<mjson.Json> deleted = null;
 
                             if (command[0].length() > 0 && command[0].equals(";removeuser")) {
                                 try {
-                                    deleted = dodexDatabase.deleteUser(ws, db, messageUser);
+                                    deleted = dodexCassandra.deleteUser(ws, eb, messageUser);
                                 } catch (InterruptedException | SQLException e) {
                                     e.printStackTrace();
                                     ws.writeTextMessage("Your Previous handle did not delete: " + e.getMessage());
@@ -157,7 +161,7 @@ public class DodexRouter {
                                 deleted = promise.future();
                             }
 
-                            deleted.onSuccess(handler -> {
+                            deleted.onSuccess(result -> {
                                 String selectedUsers = "";
                                 if (computedMessage[0].length() > 0) {
                                     // private users to send message
@@ -207,21 +211,21 @@ public class DodexRouter {
                                             .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
                                     // Save private message to send when to-user logs in
                                     if (disconnectedUsers.size() > 0) {
-                                        Future<Long> future = null;
+                                        Future<mjson.Json> future = null;
                                         try {
-                                            future = dodexDatabase.addMessage(ws, messageUser, computedMessage[0], db);
+                                            future = dodexCassandra.addMessage(ws, messageUser, computedMessage[0],
+                                                    disconnectedUsers, eb);
                                             future.onSuccess(key -> {
-                                                try {
-                                                    dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
-                                                } catch (SQLException e) {
-                                                    e.printStackTrace();
-                                                }
+                                                System.out.println("Message processes:" + key);
+                                            }).onFailure(exe -> {
+                                                exe.printStackTrace();
                                             });
                                         } catch (final SQLException | InterruptedException e) {
                                             e.printStackTrace();
                                         }
                                     }
                                 }
+
                             });
                         }
                     });
@@ -237,30 +241,48 @@ public class DodexRouter {
                     handle = query.get("handle");
                     id = query.get("id");
 
-                    // StringBuilder userJson = new StringBuilder();
                     messageUser.setName(handle);
                     messageUser.setPassword(id);
                     messageUser.setIp(ws.remoteAddress().toString());
 
                     try {
-                        Future<MessageUser> future = dodexDatabase.selectUser(messageUser, ws, db);
+                        setupEventBridge();
+
+                        Future<MessageUser> future = dodexCassandra.selectUser(messageUser, ws, eb);
                         future.onSuccess(mUser -> {
                             try {
-                                Future<StringBuilder> userJson = dodexDatabase.buildUsersJson(db, mUser);
+                                Future<mjson.Json> userJson = dodexCassandra.buildUsersJson(ws, eb, mUser);
 
                                 userJson.onSuccess(json -> {
-                                    ws.writeTextMessage("connected:" + json); // Users for private messages
+                                    ws.writeTextMessage("connected:" + json.toString()); // Users for private messages
                                     /*
                                      * Send undelivered messages and remove user related messages.
                                      */
                                     try {
-                                        dodexDatabase.processUserMessages(ws, db, mUser).onComplete(fut -> {
-                                            int messageCount = fut.result().get("messages");
-                                            if (messageCount > 0) {
-                                                logger.info(String.format("%sMessages Delivered: %d to %s%s",
-                                                        ColorUtilConstants.BLUE_BOLD_BRIGHT, messageCount,
-                                                        mUser.getName(), ColorUtilConstants.RESET));
+                                        dodexCassandra.processUserMessages(ws, eb, mUser).onComplete(fut -> {
+                                            mjson.Json undeliveredArray = fut.result();
+                                            Integer size = undeliveredArray.asList().size();
+
+                                            for (int i = 0; i < size; i++) {
+                                                mjson.Json msg = undeliveredArray.at(i);
+
+                                                String when = new SimpleDateFormat("MM/dd-HH:ss")
+                                                        .format(new Date(msg.at("postdate").asLong()));
+                                                ws.writeTextMessage(msg.at("fromhandle").toString() + ":" + when + " "
+                                                        + msg.at("message"));
                                             }
+                                            if (size > 0) {
+                                                logger.info(String.format("%sMessages Delivered: %d to %s%s",
+                                                        ColorUtilConstants.BLUE_BOLD_BRIGHT, size, mUser.getName(),
+                                                        ColorUtilConstants.RESET));
+                                            }
+                                            dodexCassandra.deleteDelivered(ws, eb, mUser).onComplete(result -> {
+                                                //
+                                            }).onFailure(handler -> {
+                                                handler.printStackTrace();
+                                            });
+                                        }).onFailure(handler -> {
+                                            handler.printStackTrace();
                                         });
                                     } catch (Exception e) {
                                         e.printStackTrace();
@@ -279,5 +301,14 @@ public class DodexRouter {
         };
 
         server.webSocketHandler(handler);
+    }
+
+    void setupEventBridge() {
+        if (eb == null) {
+            Integer port = config.getInteger("bridge.port");
+            eb = EventBus.create("localhost", port == null ? 7032 : port);
+            logger.info(String.format("%sDodex Connected to Event Bus Bridge%s", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+                    ColorUtilConstants.RESET));
+        }
     }
 }

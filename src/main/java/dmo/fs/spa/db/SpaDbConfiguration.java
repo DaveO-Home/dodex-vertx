@@ -17,7 +17,8 @@ public class SpaDbConfiguration extends DbConfiguration {
         SQLITE3("sqlite3"),
         CUBRID("cubrid"),
         MARIADB("mariadb"),
-        IBMDB2("ibmdb2");
+        IBMDB2("ibmdb2"),
+        CASSANDRA("cassandra");
 
         String db;
 
@@ -43,6 +44,8 @@ public class SpaDbConfiguration extends DbConfiguration {
                 spaDatabase = new SpaDatabaseMariadb();
             } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseIbmDB2();
+            }  else if(defaultDb.equals(DbTypes.CASSANDRA.db) && spaDatabase == null) {
+                spaDatabase = new SpaDatabaseCassandra();
             }
         } catch (Exception exception) { 
             throw exception;
@@ -65,6 +68,8 @@ public class SpaDbConfiguration extends DbConfiguration {
                 spaDatabase = new SpaDatabaseMariadb(overrideMap, overrideProps);
             } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseIbmDB2(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.CASSANDRA.db) && spaDatabase == null) {
+                spaDatabase = new SpaDatabaseCassandra(overrideMap, overrideProps);
             }
         } catch (Exception exception) { 
             throw exception;

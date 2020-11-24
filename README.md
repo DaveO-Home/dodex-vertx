@@ -14,6 +14,8 @@
 4. Execute url ```http://localhost:8087/test``` in a browser.
 5. You can also run ```http://localhost:8087/test/bootstrap.html``` for a bootstrap example.
 6. Follow instructions for dodex at <https://www.npmjs.com/package/dodex-mess> and <https://www.npmjs.com/package/dodex-input>.
+7. You can turn off colors by setting "color": to false in application-conf.json.
+8. The Cassandra database has been added via an `Akka` micro-sevvice. See; <https://www.npmjs.com/package/dodex-akka>.
 
 ### Operation
 
@@ -42,7 +44,7 @@
     }
 ```
 
-## Test
+## Test Dodex
 
 1. Make sure the demo Java-vertx server is running in development mode.
 2. Test Dodex-mess by entering the URL `localhost:3087/test/index.html` in a browser.

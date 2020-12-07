@@ -19,7 +19,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
 public abstract class DbCassandraBase {
-	private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
+	private final static Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
 	private Map<String, Promise<MessageUser>> mUserPromises = new ConcurrentHashMap<>();
 	private Map<String, Promise<mjson.Json>> mJsonPromises = new ConcurrentHashMap<>();
 	private static String vertxConsumer = "";
@@ -65,7 +65,7 @@ public abstract class DbCassandraBase {
 		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
 		// Only one handler for all event bridge sends - see setEbConsumer
 		if (vertxConsumer.equals("")) {
-			eb.consumer("vertx", setEbConsumer(eb));
+			eb.consumer("vertx", setEbConsumer());
 			vertxConsumer = "vertx";
 		}
 		// Send database request to the Akka client micro-service -
@@ -135,7 +135,7 @@ public abstract class DbCassandraBase {
 		this.vertx = vertx;
 	}
 
-	public ConsumerHandler setEbConsumer(EventBus eb) {
+	public ConsumerHandler setEbConsumer() {
 		return new ConsumerHandler() {
 			@Override
 			public void handle(Message msg) {
@@ -144,7 +144,7 @@ public abstract class DbCassandraBase {
 
 					switch (json.at("cmd").asString()) {
 						case "string":
-							System.err.println(json.at("msg").asString());
+							logger.warn(json.at("msg").asString());
 							break;
 						case "selectuser":
 							mjson.Json cassJson = json.at("msg");
@@ -158,14 +158,20 @@ public abstract class DbCassandraBase {
 							mUserPromises.get(json.at("ws").asString()).tryComplete(resultUser);
 							mUserPromises.remove(json.at("ws").asString());
 							break;
-						default:
+						case "allusers":
+						case "delivermess":
+						case "addmessage":
+						case "deletedelivered":
+						case "deleteuser":
 							// Passing Akka response back to the requester
 							mJsonPromises.get(json.at("ws").asString()).tryComplete(json.at("msg"));
 							mJsonPromises.remove(json.at("ws").asString());
 							break;
+						default:
+							break;
 					}
 				} else {
-					System.err.println("ERROR received " + msg.getErrMessage());
+					logger.error("ERROR received " + msg.getErrMessage());
 				}
 			}
 		};

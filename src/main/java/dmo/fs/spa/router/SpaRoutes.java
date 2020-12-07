@@ -6,11 +6,8 @@ import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.Optional;
 
-import org.davidmoten.rx.jdbc.Database;
-
 import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.db.SpaDatabase;
-import dmo.fs.spa.db.SpaDbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaUtil;
 import dmo.fs.utils.ColorUtilConstants;
@@ -41,7 +38,6 @@ public class SpaRoutes {
 	protected HttpServer server;
 	protected SessionStore sessionStore;
 	protected SpaDatabase spaDatabase;
-	protected Database db;
 
 	public SpaRoutes(Vertx vertx, HttpServer server, Router router)
 			throws InterruptedException, IOException, SQLException {
@@ -49,8 +45,6 @@ public class SpaRoutes {
 		this.router = router;
 		this.server = server;
 		sessionStore = LocalSessionStore.create(vertx);
-		spaDatabase = SpaDbConfiguration.getSpaDb();
-		db = spaDatabase.getDatabase();
 
 		setGetLoginRoute();
 		setPutLoginRoute();
@@ -146,7 +140,7 @@ public class SpaRoutes {
 
 			if (bodyData.isPresent()) {
 				try {
-					SpaLogin spaLogin = spaDatabase.createSpaLogin();
+					SpaLogin spaLogin = SpaUtil.createSpaLogin();
 					spaLogin = SpaUtil.parseBody(URLDecoder.decode(routingContext.getBodyAsString(), "UTF-8"),
 							spaLogin);
 

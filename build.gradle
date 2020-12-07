@@ -99,7 +99,7 @@ run {
     }
 
     environment "VERTXWEB_ENVIRONMENT", "dev"
-    args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/java/application-conf.json"]
+    args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json"]
     systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
 }
 /*

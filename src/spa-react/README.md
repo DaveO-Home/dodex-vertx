@@ -61,14 +61,13 @@ The basic idea is to build a single page(spa) production application ensuring co
 
   `localhost:8087/dist/react-fusebox/appl/testapp.html` or `localhost:8087/dist_test/react-fusebox/appl/testapp_dev.html`.
 
-
 ## Production Build
 
 [Top](#react-integration-testing-with-karma-jasmine-and-vertx)
 
 1. Start the Vertx test server `cd <install>` and execute `gradlew run`.
 2. `cd <install>/src/spa-react/devl`. This is the directory used for building the front-end and testing the application(both front-end and back-end).
-3. Execute `gulp prod` or `npx gulp prod` if you do not have Gulp installed globally. This should run all tests and if successful will produce the production bundle and static content in `src/main/resources/static/dist/react-fusebox`. 
+3. Execute `gulp prod` or `npx gulp prod` if you do not have Gulp installed globally. This should run all tests and if successful will produce the production bundle and static content in `src/main/resources/static/dist/react-fusebox`.
    __Note;__ the javascript linting uses `eslint:recommended` which forces double-quoted strings and semi-colon statement endings etc. This can be changed in `<install>/src/spa-react/devl/.eslintrc.js`.
 4. View the application using the production bundle at `localhost:8087/dist/react-fusebox/appl/testapp.html`.
 5. You can run `gulp prd` to bypass the testing.
@@ -85,6 +84,10 @@ The basic idea is to build a single page(spa) production application ensuring co
 [Top](#react-integration-testing-with-karma-jasmine-and-vertx)
 
 The javascript ***Gulp*** task runner is used to accomplish test execution, see `src/spa-react/devl/gulpfile.js`. These tasks will execute the ***Karma*** test runner with the ***Jasmine*** assertion library, see `src/spa-react/devl/karma.conf.js`.  Karma can run both unit and localized tests as well as integration testing across **HTTP**. The default is to run intergration testing, therefore the Dodex-Vertx server must be running. The integration testing runs best with only one browser, the default is ***Chrome***. Use the `USE_BROWSERS` environment variable to switch browsers, e.g. `export USE_BROWSERS=FirefoxHeadless`.
+
+## Using the Cassandra Database
+
+After setting the database to `cassandra`, co-ordination among `Akka`, `Vertx` and `React` builds is difficult to automate. Therefore using `gulp test` and `gulp prod` will not work. For a test build use `gulp rebuild` and once `Vertx` and `Akka` are restarted, tests can be executed with `gulp acceptance`. For the `React` production build, use `gulp prd`.
 
 ### Test Tasks
 

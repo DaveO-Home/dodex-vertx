@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.9.1](https://github.com/DaveO-Home/dodex-vertx/tree/v1.9.1) (2020-12-07)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.9.0...v1.9.1)
+
+* Added Cassandra database to the React SPA Demo to allow the `login` component.
+* Made the TCP bridge more global to allow multiple handlers. The complete setup now happens in `Server.java`.
+* Fixed the determination between `dev/test` and `prod`; See application-conf.json, also moved this file to the `CLASSPATH` so it can be loaded in production (Vertx always wants the command line `--conf` parameter).
+
 ## [v1.9.0](https://github.com/DaveO-Home/dodex-vertx/tree/v1.9.0) (2020-11-24)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.8.4...v1.9.0)

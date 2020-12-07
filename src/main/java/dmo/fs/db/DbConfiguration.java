@@ -117,8 +117,8 @@ public abstract class DbConfiguration {
                 dodexDatabase = new DodexDatabaseMariadb();
             } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseIbmDB2();
-            } else if(defaultDb.equals(DbTypes.CASSANDRA.db) && dodexCassandra == null) {
-                dodexCassandra = new DodexDatabaseCassandra();
+            } else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
+                dodexCassandra = dodexCassandra == null? new DodexDatabaseCassandra(): dodexCassandra;
                 return (T) dodexCassandra;
             }
         } catch (Exception exception) { 
@@ -127,6 +127,7 @@ public abstract class DbConfiguration {
         return (T) dodexDatabase;
     }
 
+    @SuppressWarnings("unchecked")
     public static <T> T getDefaultDb(Map<String, String> overrideMap, Properties overrideProps)
             throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb();
@@ -142,8 +143,8 @@ public abstract class DbConfiguration {
                 dodexDatabase = new DodexDatabaseMariadb(overrideMap, overrideProps);
             } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase == null) {
                 dodexDatabase = new DodexDatabaseIbmDB2(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.CASSANDRA.db) && dodexCassandra == null) {
-                dodexCassandra = new DodexDatabaseCassandra(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
+                dodexCassandra = dodexCassandra == null? new DodexDatabaseCassandra(overrideMap, overrideProps): dodexCassandra;
                 return (T) dodexCassandra;
             }
         } catch (Exception exception) { 

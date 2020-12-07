@@ -15,7 +15,8 @@
 5. You can also run ```http://localhost:8087/test/bootstrap.html``` for a bootstrap example.
 6. Follow instructions for dodex at <https://www.npmjs.com/package/dodex-mess> and <https://www.npmjs.com/package/dodex-input>.
 7. You can turn off colors by setting "color": to false in application-conf.json.
-8. The Cassandra database has been added via an `Akka` micro-sevvice. See; <https://www.npmjs.com/package/dodex-akka>.
+8. The Cassandra database has been added via an `Akka` micro-service. See; <https://www.npmjs.com/package/dodex-akka>.
+9. Added Cassandra database to the `React` demo allowing the `login` component to use Cassandra.
 
 ### Operation
 

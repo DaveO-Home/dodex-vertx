@@ -152,4 +152,8 @@ public class SpaUtil {
         
         return spaLogin;
       }
+
+      public static SpaLogin createSpaLogin() {
+		return new SpaLoginImpl();
+	}
 }

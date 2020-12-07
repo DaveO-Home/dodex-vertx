@@ -3,12 +3,20 @@ package dmo.fs.vertx;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.modellwerkstatt.javaxbus.EventBus;
+
+import dmo.fs.router.CassandraRouter;
 import dmo.fs.router.Routes;
+import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
@@ -55,6 +63,7 @@ public class Server extends AbstractVerticle {
   private static String OS = System.getProperty("os.name").toLowerCase();
   private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
   private HttpServer server;
+  JsonObject config;
 
   @Override
   public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException, IOException, SQLException {
@@ -65,10 +74,13 @@ public class Server extends AbstractVerticle {
     } else if ("test".equalsIgnoreCase(development)) {
       port = 8089;
     }
+    config = Vertx.currentContext().config();
+    if(config.getInteger("http.port") == null) {
+      config = getAlternateConfig();
+    }
 
-    JsonObject config = Vertx.currentContext().config();
-    Boolean color = config.getBoolean("color");
-    if (!color) {
+    Boolean color = "prod".equalsIgnoreCase(development)? config.getBoolean("prod.color"): config.getBoolean("color");
+    if (color != null && !color) {
       ColorUtilConstants.colorOff();
     }
 
@@ -90,9 +102,9 @@ public class Server extends AbstractVerticle {
     server.requestHandler(allRoutes.getRouter());
 
     try {
-      server.listen(config().getInteger("http.port", this.port == 0 ? 8080 : port), result -> {
+      server.listen(config.getInteger(development + ".http.port", this.port == 0 ? 8080 : port), result -> {
         if (result.succeeded()) {
-          Integer port = this.port != 0 ? this.port : config().getInteger("http.port", 8080);
+          Integer port = this.port != 0 ? this.port : config.getInteger(development + ".http.port", 8080);
           logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT, "HTTP Started on port: ", port.toString(),
               ColorUtilConstants.RESET));
           promise.complete();
@@ -122,18 +134,30 @@ public class Server extends AbstractVerticle {
               .addInboundPermitted(new PermittedOptions().setAddress("akka"))
               .addOutboundPermitted(new PermittedOptions().setAddress("vertx")));
 
-      eventBridgePort = config().getInteger("bridge.port");
+      eventBridgePort = config.getInteger(development + "bridge.port") == null? 7032: 
+            config.getInteger(development + "bridge.port");
 
       bridge.listen(eventBridgePort, res -> {
         if (res.succeeded()) {
           logger.info(String.format("%s%s%d%s", ColorUtilConstants.GREEN_BOLD_BRIGHT, "TCP Event Bus Bridge Started: ",
               eventBridgePort, ColorUtilConstants.RESET));
+          setupEventBridge();
         } else {
           logger.error(String.format("%s%s%s", ColorUtilConstants.RED_BOLD_BRIGHT, res.cause().getMessage(),
               ColorUtilConstants.RESET));
         }
       });
     }
+  }
+
+  private void setupEventBridge() {
+    // Note; development has the value of "prod" when in production
+    Integer port = config.getInteger(development + ".bridge.port");
+    EventBus eb = EventBus.create("localhost", port == null ? 7032 : port);
+    SpaApplication.setEb(eb);
+    CassandraRouter.setEb(eb);
+    logger.info(String.format("%sDodex Connected to Event Bus Bridge%s", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+        ColorUtilConstants.RESET));
   }
 
   private HttpServer configureLinuxOptions(Vertx vertx, boolean fastOpen, boolean cork, boolean quickAck,
@@ -167,5 +191,17 @@ public class Server extends AbstractVerticle {
 
   public static boolean isSolaris() {
     return OS.indexOf("sunos") >= 0;
+  }
+
+  public JsonObject getAlternateConfig() throws IOException {
+    ObjectMapper jsonMapper = new ObjectMapper();
+    JsonNode node;
+
+    try(InputStream in = getClass().getResourceAsStream("/application-conf.json")) {
+        node = jsonMapper.readTree(in);
+    }
+    
+    JsonObject config = new JsonObject(node.toString());
+    return config;
   }
 }

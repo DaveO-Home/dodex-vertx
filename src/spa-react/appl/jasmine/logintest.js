@@ -45,7 +45,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
                     pwrdObject = $("#inputPassword");
                     pwrdObject2 = $("#inputPassword2");
                     checkbox = $("#newLogin");
-                    observable.unsubscribe();
+                    observable.unsubscribe();             
                     done();
                 }
             });
@@ -98,7 +98,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
 
                 sessionStorage.removeItem("credentials");
                 sessionStorage.setItem("credentials", `{"name":"abcde", "password":"945973053"}`)
-
+            
                 login(loginButton, false)("DELETE", loginButton, "/userlogin/unregister").then(data => {
                         const credentials = sessionStorage.getItem("credentials");
                         expect(data.status > -1).toBe(true);
@@ -219,7 +219,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
                 sessionStorage.setItem("credentials", `{"name":"abcde", "password":"945973053"}`);
                 login(loginButton, false)("DELETE", loginButton, "/userlogin/unregister").then(data => {
                     const credentials = sessionStorage.getItem("credentials");
-                    expect(data.status > 0).toBe(true);
+                    expect(data.status > -1).toBe(true);
                     expect(credentials).toBe(null);
                     done();
                 });
@@ -230,7 +230,7 @@ export default function (Start, Helpers, ReactDOM, React, StartC, LoginC, timer)
             expect(modal[0]).toExist();
             
             closeButton = $(".close-modal");
-            closeButton.click();
+            closeButton.trigger("click");
             
             const numbers = timer(50, 50);
             const observable = numbers.subscribe(timer => {

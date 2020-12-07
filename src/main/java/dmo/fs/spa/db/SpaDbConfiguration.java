@@ -11,6 +11,7 @@ import dmo.fs.spa.utils.SpaUtil;
 public class SpaDbConfiguration extends DbConfiguration {
     private static String defaultDb = "sqlite3";
     private static SpaDatabase spaDatabase;
+    private static SpaCassandra spaCassandra;
     
     private enum DbTypes {
         POSTGRES("postgres"),
@@ -30,9 +31,11 @@ public class SpaDbConfiguration extends DbConfiguration {
     SpaDbConfiguration() {
         super();
     }
-
-    public static SpaDatabase getSpaDb() throws InterruptedException , IOException , SQLException {
+    
+    @SuppressWarnings("unchecked")
+    public static <T> T getSpaDb() throws InterruptedException , IOException , SQLException {
         defaultDb = SpaUtil.getDefaultDb().toLowerCase();
+
         try {
             if(defaultDb.equals(DbTypes.POSTGRES.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabasePostgres();
@@ -44,16 +47,18 @@ public class SpaDbConfiguration extends DbConfiguration {
                 spaDatabase = new SpaDatabaseMariadb();
             } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseIbmDB2();
-            }  else if(defaultDb.equals(DbTypes.CASSANDRA.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseCassandra();
+            }  else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
+                spaCassandra = spaCassandra == null? new SpaDatabaseCassandra(): spaCassandra;
+                return (T) spaCassandra;
             }
         } catch (Exception exception) { 
             throw exception;
         }
-        return spaDatabase;
+        return (T) spaDatabase;
     }
-
-    public static SpaDatabase getSpaDb(Map<String, String>overrideMap, Properties overrideProps) 
+    
+    @SuppressWarnings("unchecked")
+    public static <T> T getSpaDb(Map<String, String>overrideMap, Properties overrideProps) 
             throws InterruptedException, IOException, SQLException {
         defaultDb = SpaUtil.getDefaultDb().toLowerCase();
         
@@ -68,13 +73,14 @@ public class SpaDbConfiguration extends DbConfiguration {
                 spaDatabase = new SpaDatabaseMariadb(overrideMap, overrideProps);
             } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseIbmDB2(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.CASSANDRA.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseCassandra(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
+                spaCassandra = spaCassandra == null? new SpaDatabaseCassandra(overrideMap, overrideProps): spaCassandra;
+                return (T) spaCassandra;
             }
         } catch (Exception exception) { 
             throw exception;
         }
         
-        return spaDatabase;
+        return (T) spaDatabase;
     }
 }

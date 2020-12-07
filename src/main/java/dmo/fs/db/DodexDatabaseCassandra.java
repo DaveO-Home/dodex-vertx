@@ -17,7 +17,7 @@ import io.reactivex.disposables.Disposable;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-public class DodexDatabaseCassandra extends DbCassandra {
+public class DodexDatabaseCassandra extends DbCassandraBase implements DodexCassandra {
 	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseSqlite3.class.getName());
 	protected Disposable disposable;
 	protected ConnectionProvider cp;

@@ -43,9 +43,9 @@ public class CassandraRouter {
     private final static Logger logger = LoggerFactory.getLogger(CassandraRouter.class.getName());
     protected final Vertx vertx;
     private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
-    DodexCassandra dodexCassandra;
-    EventBus eb;
-    JsonObject config;
+    private DodexCassandra dodexCassandra;
+    private static EventBus eb;
+    private JsonObject config;
 
     public CassandraRouter(final Vertx vertx) throws InterruptedException {
         this.vertx = vertx;
@@ -216,7 +216,7 @@ public class CassandraRouter {
                                             future = dodexCassandra.addMessage(ws, messageUser, computedMessage[0],
                                                     disconnectedUsers, eb);
                                             future.onSuccess(key -> {
-                                                System.out.println("Message processes:" + key);
+                                                logger.info("Message processes:" + key);
                                             }).onFailure(exe -> {
                                                 exe.printStackTrace();
                                             });
@@ -246,8 +246,6 @@ public class CassandraRouter {
                     messageUser.setIp(ws.remoteAddress().toString());
 
                     try {
-                        setupEventBridge();
-
                         Future<MessageUser> future = dodexCassandra.selectUser(messageUser, ws, eb);
                         future.onSuccess(mUser -> {
                             try {
@@ -303,12 +301,11 @@ public class CassandraRouter {
         server.webSocketHandler(handler);
     }
 
-    void setupEventBridge() {
-        if (eb == null) {
-            Integer port = config.getInteger("bridge.port");
-            eb = EventBus.create("localhost", port == null ? 7032 : port);
-            logger.info(String.format("%sDodex Connected to Event Bus Bridge%s", ColorUtilConstants.BLUE_BOLD_BRIGHT,
-                    ColorUtilConstants.RESET));
-        }
+    public static EventBus getEb() {
+        return eb;
+    }
+
+    public static void setEb(EventBus eb) {
+        CassandraRouter.eb = eb;
     }
 }

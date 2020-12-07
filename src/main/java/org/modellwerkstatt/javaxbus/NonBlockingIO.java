@@ -13,7 +13,7 @@ import java.nio.channels.SocketChannel;
 import java.nio.charset.Charset;
 
 public class NonBlockingIO implements IOSocketService {
-    final static public int DEFAULT_READ_BUFFER_SIZE = 16000;
+    final static public int DEFAULT_READ_BUFFER_SIZE = 1024000;
     private SocketAddress address;
     private SocketChannel socketChannel;
     private Selector selector;

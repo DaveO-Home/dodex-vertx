@@ -8,23 +8,40 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.davidmoten.rx.jdbc.Database;
+import org.modellwerkstatt.javaxbus.EventBus;
 
+import dmo.fs.spa.db.DbCassandraBase;
+import dmo.fs.spa.db.SpaCassandra;
 import dmo.fs.spa.db.SpaDatabase;
 import dmo.fs.spa.db.SpaDbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
+import dmo.fs.spa.utils.SpaLoginImpl;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.logging.Logger;
+import io.vertx.core.logging.LoggerFactory;
 
-public class SpaApplication {
+public class SpaApplication extends DbCassandraBase {
+    private final static Logger logger = LoggerFactory.getLogger(SpaApplication.class.getName());
     private Database db;
     private SpaDatabase spaDatabase;
+    private SpaCassandra spaCassandra;
     private SpaLogin spaLogin;
+    // private JsonObject config;
+    private static EventBus eb;
+    private Boolean isCassandra = false;
 
     public SpaApplication() throws InterruptedException, IOException, SQLException {
-        spaDatabase = SpaDbConfiguration.getSpaDb();
-        db = spaDatabase.getDatabase();
-        spaLogin = spaDatabase.createSpaLogin();
+        if(SpaDbConfiguration.getSpaDb() instanceof SpaDatabase) {
+            spaDatabase = SpaDbConfiguration.getSpaDb();
+            db = spaDatabase.getDatabase();
+        } else {
+            spaCassandra = SpaDbConfiguration.getSpaDb();
+            isCassandra = true;
+        }
+
+        spaLogin = createSpaLogin();
     }
 
     public Future<SpaLogin> getLogin(String queryData) throws InterruptedException, SQLException {
@@ -43,6 +60,9 @@ public class SpaApplication {
         spaLogin.setName(name);
         spaLogin.setPassword(password);
         
+        if (isCassandra) {
+            return spaCassandra.getLogin(spaLogin, eb);
+        }
         return spaDatabase.getLogin(spaLogin, db);
     }
 
@@ -73,6 +93,9 @@ public class SpaApplication {
         spaLogin.setLastLogin(new Date());
         spaLogin.setStatus("0");
 
+        if (isCassandra) {
+            return spaCassandra.addLogin(spaLogin, eb);
+        }
         return spaDatabase.addLogin(spaLogin, db);
     }
 
@@ -84,11 +107,28 @@ public class SpaApplication {
 
         spaLogin.setName(name);
         spaLogin.setPassword(password);
+
+        if (isCassandra) {
+            return spaCassandra.removeLogin(spaLogin, eb);
+        }
         return spaDatabase.removeLogin(spaLogin, db);
     }
 
     public Map<String, String> mapQuery(String queryString) {
         return Arrays.stream(queryString.split("&")).map(s -> s.split("="))
                 .collect(Collectors.toMap(s -> s[0], s -> s[1]));
+    }
+
+    @Override
+	public SpaLogin createSpaLogin() {
+		return new SpaLoginImpl();
+	}
+
+    public static EventBus getEb() {
+        return eb;
+    }
+
+    public static void setEb(EventBus eb) {
+        SpaApplication.eb = eb;
     }
 }

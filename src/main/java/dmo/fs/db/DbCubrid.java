@@ -1,8 +1,10 @@
 
 package dmo.fs.db;
 
-public abstract class DbCubrid extends JavaRxTimestampDb {
-
+public abstract class DbCubrid extends DbDefinitionBase implements DodexDatabase {
+    public final static String CHECKUSERSQL = "SELECT class_name FROM _db_class WHERE class_name = 'users'";
+    protected final static String CHECKMESSAGESQL = "SELECT class_name FROM _db_class WHERE class_name = 'messages'";
+    protected final static String CHECKUNDELIVEREDSQL = "SELECT class_name FROM _db_class WHERE class_name = 'undelivered'";
 	private enum CreateTable {
 
 		CREATEUSERS(

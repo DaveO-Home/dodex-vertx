@@ -13,6 +13,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.modellwerkstatt.javaxbus.EventBus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.router.CassandraRouter;
 import dmo.fs.router.Routes;
@@ -20,19 +22,17 @@ import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.file.FileSystem;
-import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
-import io.vertx.ext.eventbus.bridge.tcp.TcpEventBusBridge;
-import io.vertx.ext.web.Route;
+import io.vertx.reactivex.core.AbstractVerticle;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.file.FileSystem;
+import io.vertx.reactivex.core.http.HttpServer;
+import io.vertx.reactivex.ext.eventbus.bridge.tcp.TcpEventBusBridge;
+import io.vertx.reactivex.ext.web.Route;
 
 public class Server extends AbstractVerticle {
   private static Logger logger;
@@ -63,7 +63,8 @@ public class Server extends AbstractVerticle {
   private static String OS = System.getProperty("os.name").toLowerCase();
   private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
   private HttpServer server;
-  JsonObject config;
+  private JsonObject config;
+  private Integer vertxVersion;
 
   @Override
   public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException, IOException, SQLException {
@@ -75,11 +76,14 @@ public class Server extends AbstractVerticle {
       port = 8089;
     }
     config = Vertx.currentContext().config();
-    if(config.getInteger("http.port") == null) {
+    if (config.getInteger("http.port") == null) {
       config = getAlternateConfig();
     }
+    /* From application-conf.json - Vertx version defaults to 4 */
+    vertxVersion = config.getInteger(development + ".vertx.version",
+        config.getInteger("vertx.version") == null ? 4 : config.getInteger("vertx.version"));
 
-    Boolean color = "prod".equalsIgnoreCase(development)? config.getBoolean("prod.color"): config.getBoolean("color");
+    Boolean color = "prod".equalsIgnoreCase(development) ? config.getBoolean("prod.color") : config.getBoolean("color");
     if (color != null && !color) {
       ColorUtilConstants.colorOff();
     }
@@ -90,7 +94,8 @@ public class Server extends AbstractVerticle {
       server = vertx.createHttpServer();
     }
 
-    Routes routes = new Routes(vertx, server);
+    Routes routes = new Routes(vertx, server, vertxVersion);
+
     SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter());
     FileSystem fs = vertx.fileSystem();
     List<Route> routesList = allRoutes.getRouter().getRoutes();
@@ -134,8 +139,8 @@ public class Server extends AbstractVerticle {
               .addInboundPermitted(new PermittedOptions().setAddress("akka"))
               .addOutboundPermitted(new PermittedOptions().setAddress("vertx")));
 
-      eventBridgePort = config.getInteger(development + "bridge.port") == null? 7032: 
-            config.getInteger(development + "bridge.port");
+      eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
+          : config.getInteger(development + "bridge.port");
 
       bridge.listen(eventBridgePort, res -> {
         if (res.succeeded()) {
@@ -197,11 +202,15 @@ public class Server extends AbstractVerticle {
     ObjectMapper jsonMapper = new ObjectMapper();
     JsonNode node;
 
-    try(InputStream in = getClass().getResourceAsStream("/application-conf.json")) {
-        node = jsonMapper.readTree(in);
+    try (InputStream in = getClass().getResourceAsStream("/application-conf.json")) {
+      node = jsonMapper.readTree(in);
     }
-    
+
     JsonObject config = new JsonObject(node.toString());
     return config;
+  }
+
+  public HttpServer getServer() {
+      return server;
   }
 }

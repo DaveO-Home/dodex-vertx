@@ -8,21 +8,16 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.davidmoten.rx.jdbc.ConnectionProvider;
-import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.disposables.Disposable;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+
 
 public class DodexDatabaseCassandra extends DbCassandraBase implements DodexCassandra {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseSqlite3.class.getName());
+	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseCassandra.class.getName());
 	protected Disposable disposable;
-	protected ConnectionProvider cp;
-	protected NonBlockingConnectionPool pool;
-	protected Database db;
 	protected Properties dbProperties = new Properties();
 	protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
 	protected Map<String, String> dbMap = new ConcurrentHashMap<>();

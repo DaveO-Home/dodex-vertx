@@ -1,159 +1,207 @@
 package dmo.fs.db;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.davidmoten.rx.jdbc.ConnectionProvider;
-import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
-import org.davidmoten.rx.jdbc.pool.Pools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
-import io.vertx.core.Future;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.mysqlclient.MySQLConnectOptions;
+import io.vertx.reactivex.mysqlclient.MySQLPool;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowIterator;
+import io.vertx.reactivex.sqlclient.RowSet;
+import io.vertx.sqlclient.PoolOptions;
 
 public class DodexDatabaseMariadb extends DbMariadb {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseMariadb.class.getName());
-	protected Disposable disposable;
-	protected ConnectionProvider cp;
-	protected NonBlockingConnectionPool pool;
-	protected Database db;
-	protected Properties dbProperties = new Properties();
-	protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
-	protected Map<String, String> dbMap = new ConcurrentHashMap<>();
-	protected JsonNode defaultNode;
-	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
-	protected DodexUtil dodexUtil = new DodexUtil();
+    private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseMariadb.class.getName());
+    protected Disposable disposable;
+    protected MySQLPool pool4;
+    protected Properties dbProperties = new Properties();
+    protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
+    protected Map<String, String> dbMap = new ConcurrentHashMap<>();
+    protected JsonNode defaultNode;
+    protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
+    protected DodexUtil dodexUtil = new DodexUtil();
 
-	public DodexDatabaseMariadb(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
-			throws InterruptedException, IOException, SQLException {
-		super();
+    public DodexDatabaseMariadb(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+            throws InterruptedException, IOException, SQLException {
+        super();
 
-		defaultNode = dodexUtil.getDefaultNode();
+        defaultNode = dodexUtil.getDefaultNode();
 
-		webEnv = webEnv == null || "prod".equals(webEnv)? "prod": "dev";
+        webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
-		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
-		dbProperties = dodexUtil.mapToProperties(dbMap);
-		
-		if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
-			this.dbProperties = dbOverrideProps;
-		}
-		if (dbOverrideMap != null) {
-			this.dbOverrideMap = dbOverrideMap;
-		}
+        dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
+        dbProperties = dodexUtil.mapToProperties(dbMap);
 
-		dbProperties.setProperty("foreign_keys", "true");
+        if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
+            this.dbProperties = dbOverrideProps;
+        }
+        if (dbOverrideMap != null) {
+            this.dbOverrideMap = dbOverrideMap;
+        }
 
-		DbConfiguration.mapMerge(dbMap, dbOverrideMap);
-		databaseSetup();
-	}
+        dbProperties.setProperty("foreign_keys", "true");
 
-	public DodexDatabaseMariadb() throws InterruptedException, IOException, SQLException {
-		super();
+        DbConfiguration.mapMerge(dbMap, dbOverrideMap);
+        databaseSetup();
+    }
 
-		defaultNode = dodexUtil.getDefaultNode();
-		webEnv = webEnv == null || "prod".equals(webEnv)? "prod": "dev";
+    public DodexDatabaseMariadb() throws InterruptedException, IOException, SQLException {
+        super();
 
-		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
-		dbProperties = dodexUtil.mapToProperties(dbMap);
-		
-		dbProperties.setProperty("foreign_keys", "true");
+        defaultNode = dodexUtil.getDefaultNode();
+        webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
-		databaseSetup();
-	}
+        dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
+        dbProperties = dodexUtil.mapToProperties(dbMap);
 
-	private void databaseSetup() throws InterruptedException, SQLException {
-		if ("dev".equals(webEnv)) {
-			DbConfiguration.configureTestDefaults(dbMap, dbProperties);
-		} else {
-			DbConfiguration.configureDefaults(dbMap, dbProperties); // Using prod (./dodex.db)
-		}
-		cp = DbConfiguration.getMariadbConnectionProvider();
+        dbProperties.setProperty("foreign_keys", "true");
 
-		pool = Pools.nonBlocking().maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
-				.build();
-		
-		db = Database.from(pool);
+        databaseSetup();
+    }
 
-		Future.future(prom -> {
-			db.member().doOnSuccess(c -> {
-				Statement stat = c.value().createStatement();
+    private void databaseSetup() throws InterruptedException, SQLException {
+        if ("dev".equals(webEnv)) {
+            DbConfiguration.configureTestDefaults(dbMap, dbProperties);
+        } else {
+            DbConfiguration.configureDefaults(dbMap, dbProperties);
+        }
 
-				// stat.executeUpdate("drop table UNDELIVERED");
-				// stat.executeUpdate("drop table USERS");
-				// stat.executeUpdate("drop table MESSAGES");
-				
+        MySQLConnectOptions connectOptions = new MySQLConnectOptions()
+            .setPort(Integer.valueOf(dbMap.get("port")))
+            .setHost(dbMap.get("host2"))
+            .setDatabase(dbMap.get("database"))
+            .setUser(dbProperties.getProperty("user").toString())
+            .setPassword(dbProperties.getProperty("password").toString())
+            .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
+            .setIdleTimeout(1)
+            .setCharset("utf8mb4");
 
-				String sql = getCreateTable("USERS");
-				if (!tableExist(c.value(), "USERS")) {
-					stat.executeUpdate(sql);
+        // Pool options
+        PoolOptions poolOptions = new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
+
+        // Create the client pool
+        pool4 = MySQLPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+        
+        Completable completable = pool4.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
+            .flatMapCompletable(
+            tx -> conn.query(CHECKUSERSQL)
+            .rxExecute().doOnSuccess(rows -> {
+                RowIterator<Row> ri = rows.iterator();
+                Long val = null;
+				while (ri.hasNext()) {
+                    val = ri.next().getLong(0);
 				}
-				sql = getCreateTable("MESSAGES");
-				if (!tableExist(c.value(), "MESSAGES")) {
-					stat.executeUpdate(sql);
-				}
-				sql = getCreateTable("UNDELIVERED");
-				if (!tableExist(c.value(), "UNDELIVERED")) {
-					stat.executeUpdate(sql);
-				}
-				stat.close();
-				c.value().close();
-			}).subscribe(result -> {
-				prom.complete();
-			}, throwable -> {
-				logger.error(String.join(ColorUtilConstants.RED, "Error creating database tables: ", throwable.getMessage(), ColorUtilConstants.RESET));
-				throwable.printStackTrace();
-			});
-			// generate all jooq sql only once.
-			prom.future().onSuccess(result -> {
-				try {
-					setupSql(db);
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			});
-		});
-	}
-	
-	@Override
-	public Database getDatabase() {
-		return Database.from(pool);
-	}
+                
+                if (val == null) {
+                    final String usersSql = getCreateTable("USERS");
 
-	@Override
-	public NonBlockingConnectionPool getPool() {
-		return pool;
-	}
+                    Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute()
+                        .doOnError(err -> {
+                            logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                        }).doOnSuccess(result -> {
+                            logger.info("Users Table Added.");
+                        });
 
-	@Override
-	public MessageUser createMessageUser() {
-		return new MessageUserImpl();
-	}
+                    crow.subscribe(result -> {
+                        //
+                    }, err -> {
+                        logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                    });
+                }
+			}).doOnError(err -> {
+				logger.info(String.format("Users Table Error: %s", err.getMessage()));
 
-	// per stack overflow
-	private static boolean tableExist(Connection conn, String tableName) throws SQLException {
-		boolean exists = false;
-		try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName, null)) {
-			while (rs.next()) {
-				String name = rs.getString("TABLE_NAME");
-				if (name != null && name.equalsIgnoreCase(tableName)) {
-					exists = true;
-					break;
-				}
+			}).flatMap(
+				result -> conn.query(CHECKMESSAGESSQL).rxExecute().doOnSuccess(rows -> {
+					RowIterator<Row> ri = rows.iterator();
+					Long val = null;
+					while (ri.hasNext()) {
+						val = ri.next().getLong(0);
+					}
+
+					if (val == null) {
+						final String sql = getCreateTable("MESSAGES");
+
+						Single<RowSet<Row>> crow = conn.query(sql).rxExecute()
+							.doOnError(err -> {
+								logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+							}).doOnSuccess(row2 -> {
+								logger.info("Messages Table Added.");
+							});
+
+						crow.subscribe(res -> {
+							//
+						}, err -> {
+							logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+						});
+					}
+				}).doOnError(err -> {
+					logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+
+				})).flatMap(result -> conn.query(CHECKUNDELIVEREDSQL).rxExecute()
+					.doOnSuccess(rows -> {
+                    RowIterator<Row> ri = rows.iterator();
+						Long val = null;
+						while (ri.hasNext()) {
+							val = ri.next().getLong(0);
+						}
+						if (val == null) {
+							final String sql = getCreateTable("UNDELIVERED");
+						
+								Single<RowSet<Row>> crow = conn.query(sql).rxExecute()
+									.doOnError(err -> {
+										logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));;
+									}).doOnSuccess(row2 -> {
+										logger.info("Undelivered Table Added.");
+									});
+
+							crow.subscribe(result2 -> {
+								//
+							}, err -> {
+								logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+							});
+						}
+					}).doOnError(err -> {
+						logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+					}))
+				.flatMapCompletable(res -> tx.rxCommit()).doOnSubscribe(sub -> {
+                    conn.rxClose();
+                })
+		));
+
+		completable.subscribe(() -> {
+			try {
+                pool4.rxClose();
+				setupSql(pool4);
+			} catch (SQLException e) {
+				e.printStackTrace();
 			}
-		}
-		return exists;
-	}
+		}, err -> {
+			logger.info(String.format("Tables Create Error: %s", err.getMessage()));
+		});
+    }
+
+    @Override
+    public MessageUser createMessageUser() {
+        return new MessageUserImpl();
+    }
+
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public <R> R getPool4() {
+        return (R) pool4;
+    }
 }

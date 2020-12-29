@@ -10,11 +10,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.davidmoten.rx.jdbc.Database;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.admin.CleanOrphanedUsers;
 import dmo.fs.db.DbConfiguration;
@@ -23,25 +25,23 @@ import dmo.fs.db.MessageUser;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.utils.ParseQueryUtilHelper;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.core.shareddata.LocalMap;
-import io.vertx.core.shareddata.SharedData;
+import io.vertx.reactivex.core.Context;
+import io.vertx.reactivex.core.Promise;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.buffer.Buffer;
+import io.vertx.reactivex.core.http.HttpServer;
+import io.vertx.reactivex.core.http.ServerWebSocket;
+import io.vertx.reactivex.core.shareddata.LocalMap;
+import io.vertx.reactivex.core.shareddata.SharedData;
 
 public class DodexRouter {
     private final static Logger logger = LoggerFactory.getLogger(DodexRouter.class.getName());
-    protected final Vertx vertx;
-    private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
-    DodexDatabase dodexDatabase;
+    protected Vertx vertx;
+    private final Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
+    private DodexDatabase dodexDatabase;
 
     public DodexRouter(final Vertx vertx) throws InterruptedException {
         this.vertx = vertx;
@@ -54,9 +54,11 @@ public class DodexRouter {
          * new Properties(); set override or additional values... dodexDatabase =
          * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
          */
+        
         dodexDatabase = DbConfiguration.getDefaultDb();
-        dodexDatabase.setVertx(vertx);
-
+        if (dodexDatabase != null) {
+            dodexDatabase.setVertx(vertx);
+        }
         /**
          * Optional auto user cleanup - config in "application-conf.json". When client
          * changes handle when server is down, old users and undelivered messages will
@@ -87,10 +89,9 @@ public class DodexRouter {
         startupMessage = DodexUtil.getEnv().equals("dev") ? "In Development" : startupMessage;
         logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, startupMessage, ColorUtilConstants.RESET));
 
-        Handler<ServerWebSocket> handler = new Handler<ServerWebSocket>() {
-
+        final Handler<ServerWebSocket> handler = new Handler<ServerWebSocket>() {
             @Override
-            public void handle(ServerWebSocket ws) {
+            public void handle(final ServerWebSocket ws) {
 
                 try {
                     logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
@@ -110,7 +111,7 @@ public class DodexRouter {
                 } else {
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                     final MessageUser messageUser = dodexDatabase.createMessageUser();
-                    final Database db = dodexDatabase.getDatabase();
+                    // final PgPool pgPool = dodexDatabase.getPool4();
                     try {
                         wsChatSessions.put(ws.textHandlerID(),
                                 URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
@@ -136,19 +137,19 @@ public class DodexRouter {
                             // Checking if message or command
                             final Map<String, String> returnObject = dodexUtil.commandMessage(message);
                             // message with command stripped out
-                            String[] computedMessage = { "" };
-                            String[] command = { "" };
+                            final String[] computedMessage = { "" };
+                            final String[] command = { "" };
 
                             computedMessage[0] = returnObject.get("message");
                             command[0] = returnObject.get("command");
 
-                            Promise<Long> promise = Promise.promise();
+                            final Promise<Long> promise = Promise.promise();
                             promise.complete(-1l);
                             Future<Long> deleted = null;
 
                             if (command[0].length() > 0 && command[0].equals(";removeuser")) {
                                 try {
-                                    deleted = dodexDatabase.deleteUser(ws, db, messageUser);
+                                    deleted = dodexDatabase.deleteUser(ws, messageUser);
                                 } catch (InterruptedException | SQLException e) {
                                     e.printStackTrace();
                                     ws.writeTextMessage("Your Previous handle did not delete: " + e.getMessage());
@@ -209,11 +210,11 @@ public class DodexRouter {
                                     if (disconnectedUsers.size() > 0) {
                                         Future<Long> future = null;
                                         try {
-                                            future = dodexDatabase.addMessage(ws, messageUser, computedMessage[0], db);
+                                            future = dodexDatabase.addMessage(ws, messageUser, computedMessage[0]);
                                             future.onSuccess(key -> {
                                                 try {
-                                                    dodexDatabase.addUndelivered(ws, disconnectedUsers, key, db);
-                                                } catch (SQLException e) {
+                                                    dodexDatabase.addUndelivered(ws, disconnectedUsers, key);
+                                                } catch (final SQLException e) {
                                                     e.printStackTrace();
                                                 }
                                             });
@@ -237,32 +238,31 @@ public class DodexRouter {
                     handle = query.get("handle");
                     id = query.get("id");
 
-                    // StringBuilder userJson = new StringBuilder();
                     messageUser.setName(handle);
                     messageUser.setPassword(id);
                     messageUser.setIp(ws.remoteAddress().toString());
 
                     try {
-                        Future<MessageUser> future = dodexDatabase.selectUser(messageUser, ws, db);
+                        final Future<MessageUser> future = dodexDatabase.selectUser(messageUser, ws);
+
                         future.onSuccess(mUser -> {
                             try {
-                                Future<StringBuilder> userJson = dodexDatabase.buildUsersJson(db, mUser);
-
+                                final Future<StringBuilder> userJson = dodexDatabase.buildUsersJson(mUser);
                                 userJson.onSuccess(json -> {
                                     ws.writeTextMessage("connected:" + json); // Users for private messages
                                     /*
                                      * Send undelivered messages and remove user related messages.
                                      */
                                     try {
-                                        dodexDatabase.processUserMessages(ws, db, mUser).onComplete(fut -> {
-                                            int messageCount = fut.result().get("messages");
+                                        dodexDatabase.processUserMessages(ws, mUser).onComplete(fut -> {
+                                            final int messageCount = fut.result().get("messages");
                                             if (messageCount > 0) {
                                                 logger.info(String.format("%sMessages Delivered: %d to %s%s",
                                                         ColorUtilConstants.BLUE_BOLD_BRIGHT, messageCount,
                                                         mUser.getName(), ColorUtilConstants.RESET));
                                             }
                                         });
-                                    } catch (Exception e) {
+                                    } catch (final Exception e) {
                                         e.printStackTrace();
                                     }
                                 });

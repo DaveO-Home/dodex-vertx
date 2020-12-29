@@ -17,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import org.modellwerkstatt.javaxbus.EventBus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.admin.CleanOrphanedUsers;
 import dmo.fs.db.DbConfiguration;
@@ -25,23 +27,21 @@ import dmo.fs.db.MessageUser;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.utils.ParseQueryUtilHelper;
-import io.vertx.core.Context;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.buffer.Buffer;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.core.shareddata.LocalMap;
-import io.vertx.core.shareddata.SharedData;
+import io.vertx.reactivex.core.Context;
+import io.vertx.reactivex.core.Promise;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.buffer.Buffer;
+import io.vertx.reactivex.core.http.HttpServer;
+import io.vertx.reactivex.core.http.ServerWebSocket;
+import io.vertx.reactivex.core.shareddata.LocalMap;
+import io.vertx.reactivex.core.shareddata.SharedData;
 
 public class CassandraRouter {
     private final static Logger logger = LoggerFactory.getLogger(CassandraRouter.class.getName());
-    protected final Vertx vertx;
+    protected Vertx vertx;
     private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
     private DodexCassandra dodexCassandra;
     private static EventBus eb;

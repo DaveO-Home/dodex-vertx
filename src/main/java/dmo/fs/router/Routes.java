@@ -4,18 +4,18 @@ import java.io.IOException;
 import java.sql.SQLException;
 
 import dmo.fs.utils.DodexUtil;
-import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.http.HttpServer;
-import io.vertx.core.http.HttpServerResponse;
-import io.vertx.ext.web.Route;
-import io.vertx.ext.web.Router;
-import io.vertx.ext.web.handler.CorsHandler;
-import io.vertx.ext.web.handler.FaviconHandler;
-import io.vertx.ext.web.handler.StaticHandler;
-import io.vertx.ext.web.handler.TimeoutHandler;
-import io.vertx.ext.web.sstore.LocalSessionStore;
-import io.vertx.ext.web.sstore.SessionStore;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.http.HttpServer;
+import io.vertx.reactivex.core.http.HttpServerResponse;
+import io.vertx.reactivex.ext.web.Route;
+import io.vertx.reactivex.ext.web.Router;
+import io.vertx.reactivex.ext.web.handler.CorsHandler;
+import io.vertx.reactivex.ext.web.handler.FaviconHandler;
+import io.vertx.reactivex.ext.web.handler.StaticHandler;
+import io.vertx.reactivex.ext.web.handler.TimeoutHandler;
+import io.vertx.reactivex.ext.web.sstore.LocalSessionStore;
+import io.vertx.reactivex.ext.web.sstore.SessionStore;
 
 public class Routes {
 	protected Vertx vertx;
@@ -24,7 +24,7 @@ public class Routes {
 	protected SessionStore sessionStore;
 	Integer counter = 0;
 
-	public Routes(Vertx vertx, HttpServer server) throws InterruptedException, IOException, SQLException {
+	public Routes(Vertx vertx, HttpServer server, Integer vertxVersion) throws InterruptedException, IOException, SQLException {
 		this.vertx = vertx;
 		router = Router.router(vertx);
 		sessionStore = LocalSessionStore.create(vertx);
@@ -36,8 +36,9 @@ public class Routes {
 		} else {
 			DodexUtil.setEnv("prod");
 		}
-
-		setFavRoute();
+		DodexUtil.setVertx(vertx);
+		
+		setFavRoute(vertxVersion);
 		setStaticRoute();
 		setDodexRoute();
 
@@ -60,7 +61,8 @@ public class Routes {
 			String path = routingContext.request().path();
 			String file = length < 7 ? "test/index.html" : path.substring(1);
 			
-			response.sendFile(file).end();
+			response.sendFile(file);
+			response.end();
 		});
 	}
 
@@ -75,7 +77,8 @@ public class Routes {
 			String path = routingContext.request().path();
 			String file = length < 8 ? "dodex/index.html" : path.substring(1);
 
-			response.sendFile(file).end();
+			response.sendFile(file);
+			response.end();
 		});
 	}
 
@@ -91,8 +94,15 @@ public class Routes {
 		staticRoute.handler(staticHandler);
 	}
 
-	public void setFavRoute() {
-		FaviconHandler faviconHandler = FaviconHandler.create();
+	public void setFavRoute(Integer vertxVersion) {
+		FaviconHandler faviconHandler = null;
+
+		if (vertxVersion == 4) {
+			faviconHandler = FaviconHandler.create(vertx);
+		}
+		// if (vertxVersion == 3) {
+		// 	faviconHandler = FaviconHandler.create();
+		// }
 		router.route().handler(faviconHandler);
 	}
 
@@ -102,15 +112,19 @@ public class Routes {
 
         if ("cassandra".equals(defaultDbName)) {
 			try {
-            CassandraRouter cassandraRouter = new CassandraRouter(vertx);
-			cassandraRouter.setWebSocket(server);
+				CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+				cassandraRouter.setWebSocket(server);
 			} catch(Exception ex) {
 				ex.printStackTrace();
 			}
         } else {
-            DodexRouter dodexRouter = new DodexRouter(vertx);
-			dodexRouter.setWebSocket(server);
-        }
+			try {
+				DodexRouter dodexRouter = new DodexRouter(vertx);
+				dodexRouter.setWebSocket(server);
+			} catch(Exception ex) {
+				ex.printStackTrace();
+			}
+		}
 	}
 
 	public Router getRouter() throws InterruptedException {

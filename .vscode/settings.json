@@ -5,5 +5,9 @@
 		"**/.project": true,
 		"**/.settings": true,
 		"**/.factorypath": true
-	}
+	},
+	"files.watcherExclude": {
+		"**/target": true
+	},
+	"java.format.settings.url": "preferences: Open user settings"
 }

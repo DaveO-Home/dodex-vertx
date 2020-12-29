@@ -14,9 +14,9 @@ import org.junit.rules.Timeout;
 
 import dmo.fs.router.Routes;
 import io.vertx.core.Vertx;
-import io.vertx.ext.web.Route;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
+import io.vertx.reactivex.ext.web.Route;
 
 
 @ExtendWith(VertxExtension.class)
@@ -24,7 +24,7 @@ public class TestMainVerticle {
   @Rule
   public Timeout globalTimeout = Timeout.seconds(3);
 
-  Server server = new Server(8087);
+  Server server = new Server(8085);
 
   @BeforeEach
   void deployVerticle(Vertx vertx, VertxTestContext testContext) {
@@ -43,8 +43,8 @@ public class TestMainVerticle {
   @DisplayName("Verticle Configured")
   void verticleConfigured(Vertx vertx, VertxTestContext testContext) throws Throwable {
     String deploymentId = server.deploymentID();
-    
-    Routes routes = new Routes(vertx, vertx.createHttpServer());
+    io.vertx.reactivex.core.Vertx vertx2 = io.vertx.reactivex.core.Vertx.vertx();
+    Routes routes = new Routes(vertx2, server.getServer(), 4);
     List<Route> routesList = routes.getRouter().getRoutes();
 
     boolean hasPathDodex = false;

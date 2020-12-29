@@ -1,7 +1,8 @@
 
 package dmo.fs.spa.db;
 
-public abstract class DbCubrid extends RxJavaTimestampDb {
+public abstract class DbCubrid extends SqlBuilder implements SpaDatabase {
+    protected final static String CHECKLOGINSQL = "SELECT class_name FROM _db_class WHERE class_name = 'login'";
 
 	private enum CreateTable {
 

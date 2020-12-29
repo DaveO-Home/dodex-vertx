@@ -7,8 +7,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.davidmoten.rx.jdbc.Database;
 import org.modellwerkstatt.javaxbus.EventBus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.spa.db.DbCassandraBase;
 import dmo.fs.spa.db.SpaCassandra;
@@ -19,29 +20,28 @@ import dmo.fs.spa.utils.SpaLoginImpl;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 
 public class SpaApplication extends DbCassandraBase {
     private final static Logger logger = LoggerFactory.getLogger(SpaApplication.class.getName());
-    private Database db;
     private SpaDatabase spaDatabase;
     private SpaCassandra spaCassandra;
     private SpaLogin spaLogin;
-    // private JsonObject config;
     private static EventBus eb;
     private Boolean isCassandra = false;
 
     public SpaApplication() throws InterruptedException, IOException, SQLException {
         if(SpaDbConfiguration.getSpaDb() instanceof SpaDatabase) {
             spaDatabase = SpaDbConfiguration.getSpaDb();
-            db = spaDatabase.getDatabase();
         } else {
             spaCassandra = SpaDbConfiguration.getSpaDb();
             isCassandra = true;
         }
 
         spaLogin = createSpaLogin();
+    }
+
+    public Future<Void> setupDatabase() throws InterruptedException, SQLException {
+        return spaDatabase.databaseSetup();
     }
 
     public Future<SpaLogin> getLogin(String queryData) throws InterruptedException, SQLException {
@@ -63,7 +63,7 @@ public class SpaApplication extends DbCassandraBase {
         if (isCassandra) {
             return spaCassandra.getLogin(spaLogin, eb);
         }
-        return spaDatabase.getLogin(spaLogin, db);
+        return spaDatabase.getLogin(spaLogin);
     }
 
     public Future<SpaLogin> addLogin(String bodyData) throws InterruptedException, SQLException {
@@ -96,7 +96,7 @@ public class SpaApplication extends DbCassandraBase {
         if (isCassandra) {
             return spaCassandra.addLogin(spaLogin, eb);
         }
-        return spaDatabase.addLogin(spaLogin, db);
+        return spaDatabase.addLogin(spaLogin);
     }
 
     public Future<SpaLogin> unregisterLogin(String queryData) throws InterruptedException, SQLException {
@@ -111,7 +111,7 @@ public class SpaApplication extends DbCassandraBase {
         if (isCassandra) {
             return spaCassandra.removeLogin(spaLogin, eb);
         }
-        return spaDatabase.removeLogin(spaLogin, db);
+        return spaDatabase.removeLogin(spaLogin);
     }
 
     public Map<String, String> mapQuery(String queryString) {

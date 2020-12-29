@@ -1,13 +1,17 @@
 
 package dmo.fs.db;
 
-public abstract class DbMariadb extends JavaRxDateDb {
+public abstract class DbMariadb extends DbDefinitionBase implements DodexDatabase {
+    protected final static String CHECKLOGINSQL = "select 1 from information_schema.tables where table_name='LOGIN';";
+    public final static String CHECKUSERSQL = "select 1 from information_schema.tables where table_name='USERS';";
+    protected final static String CHECKMESSAGESSQL = "select 1 from information_schema.tables where table_name='USERS';";
+    protected final static String CHECKUNDELIVEREDSQL = "select 1 from information_schema.tables where table_name='USERS';";
 
-	private enum CreateTable {
+    private enum CreateTable {
 		CREATEUSERS(
 			"CREATE TABLE USERS (" +
 				"id INT NOT NULL AUTO_INCREMENT," +
-				"name VARCHAR(255) CHARACTER SET  utf8mb4 collate  utf8mb4_bin NOT NULL COMMENT 'Dodex Users'," +
+				"name VARCHAR(255) CHARACTER SET utf8mb4 collate  utf8mb4_bin NOT NULL," +
 				"password VARCHAR(255) NOT NULL," +
 				"ip VARCHAR(255) NOT NULL," +
 				"last_login DATETIME NOT NULL," +
@@ -17,7 +21,7 @@ public abstract class DbMariadb extends JavaRxDateDb {
 			"CREATE TABLE MESSAGES (" +
 				"id INT NOT NULL AUTO_INCREMENT," +
 				"message MEDIUMTEXT NOT NULL," +
-				"from_handle VARCHAR(255) CHARACTER SET utf8mb4 NOT NULL," +
+				"from_handle VARCHAR(255) CHARACTER SET utf8mb4 collate  utf8mb4_bin NOT NULL," +
 				"post_date DATETIME NOT NULL," +
 				"PRIMARY KEY (id));"),
 		CREATEUNDELIVERED(

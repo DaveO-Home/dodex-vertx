@@ -8,13 +8,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.modellwerkstatt.javaxbus.ConsumerHandler;
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.modellwerkstatt.javaxbus.Message;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.spa.utils.SpaLogin;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.Vertx;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.reactivex.core.Vertx;
 
 public abstract class DbCassandraBase {
 	private final static Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());

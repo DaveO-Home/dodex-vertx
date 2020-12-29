@@ -3,20 +3,22 @@ package dmo.fs.admin;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.tuple.Tuple5;
+import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DbDefinitionBase;
 import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.MessageUser;
+import dmo.fs.db.MessageUserImpl;
 import dmo.fs.utils.ColorUtilConstants;
 import io.reactivex.Flowable;
 import io.reactivex.functions.Action;
@@ -24,23 +26,23 @@ import io.reactivex.schedulers.Schedulers;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.Row;
 
 /**
  * Optional auto user cleanup - config in "application-conf.json". When client
  * changes handle when server is down, old users and undelivered messages will
  * be orphaned.
  * 
- * Defaults: off - when turned on 
- * 1. execute on start up and every 7 days thereafter. 
- * 2. remove users who have not logged in for 90 days.
+ * Defaults: off - when turned on 1. execute on start up and every 7 days
+ * thereafter. 2. remove users who have not logged in for 90 days.
  */
 public class CleanOrphanedUsers extends DbDefinitionBase {
     private static Logger logger = LoggerFactory.getLogger(CleanOrphanedUsers.class.getName());
 
     private static DodexDatabase dodexDatabase;
-    private static Database db;
+    private DSLContext create;
+    private Pool pool;
     private static Integer age;
     private static final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private final Runnable clean = new Runnable() {
@@ -54,8 +56,11 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
         long delay = 0;
         long period = 0;
         dodexDatabase = DbConfiguration.getDefaultDb();
-        db = dodexDatabase.getDatabase();
-        setupSql(db);
+
+        pool = dodexDatabase.getPool4();
+        setupSql(dodexDatabase.getPool4());
+        create = DbDefinitionBase.getCreate();
+
         delay = config.getLong("clean.delay");
         period = config.getLong("clean.period");
         age = config.getInteger("clean.age");
@@ -63,61 +68,69 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
     }
 
     private void runClean() {
-        List<String> names = new ArrayList<>();
+        Set<String> names = new HashSet<>();
         Flowable.fromCallable(() -> {
-            Future<List<Tuple5<Integer, String, String, String, Object>>> users = getUsers(db);
+            Future<Set<MessageUser>> users = getUsers(pool);
             users.onSuccess(data -> {
-                List<Integer> possibleUsers = getPossibleOrphanedUsers(data);
+                Set<Long> possibleUsers = getPossibleOrphanedUsers(data);
 
-                cleanUsers(db, possibleUsers);
+                cleanUsers(pool, possibleUsers);
 
                 data.iterator().forEachRemaining(user -> {
-                    if (possibleUsers.contains(user.value1())) {
-                        names.add(user.value2());
+                    if (possibleUsers.contains(user.getId())) {
+                        names.add(user.getName());
                     }
                 });
 
-                logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Cleaned users: ", names.toString(), ColorUtilConstants.RESET));
+                logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Cleaned users: ", names.toString(),
+                        ColorUtilConstants.RESET));
             });
 
-            return String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Starting User/Undelivered/Message Clean: ", ColorUtilConstants.RESET);
-        
+            return String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Starting User/Undelivered/Message Clean: ",
+                    ColorUtilConstants.RESET);
+
         }).subscribeOn(Schedulers.io()).observeOn(Schedulers.single()).subscribe(logger::info,
                 Throwable::printStackTrace);
     }
 
-    private Future<List<Tuple5<Integer, String, String, String, Object>>> getUsers(Database db) throws SQLException {
-        List<Tuple5<Integer, String, String, String, Object>> listOfUsers = new ArrayList<>();
-        Promise<List<Tuple5<Integer, String, String, String, Object>>> promise = Promise.promise();
+    private Future<Set<MessageUser>> getUsers(Pool pool) throws SQLException {
+        Set<MessageUser> listOfUsers = new HashSet<>();
+        Promise<Set<MessageUser>> promise = Promise.promise();
         GotUsers gotUsers = new GotUsers();
-		
+
         gotUsers.setPromise(promise);
         gotUsers.setListOfUsers(listOfUsers);
-        
-        db.select(getAllUsers()).parameter("NAME", "DUMMY")
-            .getAs(Integer.class, String.class, String.class, String.class, Object.class)
-            .doOnNext(result -> {
-                listOfUsers.add(result);
-            })
-            .doOnComplete(gotUsers)
-            .subscribe(result -> {
-                //
-            }, throwable -> {
-                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error building registered user list",  ColorUtilConstants.RESET));
-                throwable.printStackTrace();
-            });
+
+        String query = create.query(getAllUsers().replaceAll("\\$\\d", "?"), "DUMMY").toString();
+
+        pool.query(query).rxExecute().doOnSuccess(rows -> {
+            for (Row row : rows) {
+                MessageUser messageUser = createMessageUser();
+                messageUser.setId(row.getLong(0));
+                messageUser.setName(row.getString(1));
+                messageUser.setPassword(row.getString(2));
+                messageUser.setIp(row.getString(3));
+                messageUser.setLastLogin(row.getValue(4));
+                listOfUsers.add(messageUser);
+            }
+        }).doFinally(gotUsers).subscribe(rows -> {
+           //
+        }, err -> {
+            logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error building registered user list",  ColorUtilConstants.RESET));
+            err.printStackTrace();
+        });
             
         return gotUsers.getPromise().future();
     }
 
-    private static List<Integer> getPossibleOrphanedUsers(List<Tuple5<Integer, String, String, String, Object>> users) {
-        List<Integer> orphaned = new ArrayList<>();
+    private static Set<Long> getPossibleOrphanedUsers(Set<MessageUser> users) {
+        Set<Long> orphaned = new HashSet<>();
 
         users.iterator().forEachRemaining(user -> {
-            Long days = getLastLogin(user.value5());
+            Long days = getLastLogin(user.getLastLogin());
 
             if (days >= age) {
-                orphaned.add(user.value1());
+                orphaned.add(user.getId());
             }
         });
 
@@ -141,112 +154,129 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
     }
 
     Object value;
-    private void cleanUsers(Database db, List<Integer> users) {
-        List<Integer> messageIds = new ArrayList<>();        
+    private void cleanUsers(Pool pool, Set<Long> users) {
+        Set<Long> messageIds = new HashSet<>();        
 
         users.iterator().forEachRemaining(userId -> {
             CleanObjects cleanObjects = new CleanObjects();
 
             Future.future(prom -> {
                 cleanObjects.setPromise(prom);
-                db.select(getUserUndelivered())
-                    .parameter("USERID", userId)
-                    .getAs(Integer.class, Integer.class)
-                    .doOnEach(result -> {
-                        if (result.isOnNext()) {
-                            Integer messageId = result.getValue().value2();
-                            messageIds.add(messageId);
-                        }
-                    })
-                    .doOnComplete(cleanObjects)
-                    .subscribe(result -> {
-                    }, throwable -> {
-                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error cleaning user list: ", throwable.getMessage(), ColorUtilConstants.RESET ));
-                    });
+                String query = create.query(getUserUndelivered().replaceAll("\\$\\d", "?"), userId).toString();
                 
+                pool.query(query).rxExecute().doOnSuccess(rows -> {
+                    for(Row row : rows) {
+                        messageIds.add(row.getLong(1));
+                    }
+                })
+                .doFinally(cleanObjects)
+                .subscribe(rows -> {
+                    //
+                }, err -> {
+                    logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error cleaning user list: ", err.getMessage(), ColorUtilConstants.RESET ));
+                    err.printStackTrace();
+                });
+
                 prom.future().onSuccess(result -> {
-                    cleanUndelivered(db, userId, messageIds, users);
+                    cleanUndelivered(pool, userId, messageIds, users);
                     value = result;
                 });
-                
+                if(value == null) {
+                    cleanRemainingUsers(pool, users);
+                }
             });
-            
         });
-        if(value == null) {
-            cleanRemainingUsers(db, users);
-        }
     }
 
-    private int cleanUndelivered(Database db, Integer userId, List<Integer> messageIds, List<Integer> users) {
+    private int cleanUndelivered(Pool pool, Long userId, Set<Long> messageIds, Set<Long> users) {
         int count[] = { 0 };
         messageIds.iterator().forEachRemaining(messageId -> {
-            CleanObjects cleanObjects = new CleanObjects();
-
             Future.future(prom -> {
+                CleanObjects cleanObjects = new CleanObjects();
                 cleanObjects.setPromise(prom);
-                db.update(getRemoveUndelivered())
-                    .parameter("USERID", userId)
-                    .parameter("MESSAGEID", messageId)
-                    .counts()
-                    .doOnNext(c -> { 
-                        count[0] += c;
-                    })
-                    .doOnComplete(cleanObjects)
-                    .subscribe(result -> {
-                        cleanObjects.setCount(count[0]);
+                String query = create.query(getRemoveUndelivered().replaceAll("\\$\\d", "?"), userId, messageId).toString();
+
+                pool.query(query).rxExecute()
+                    .doFinally(cleanObjects)
+                    .subscribe(rows -> {
+                        count[0] = count[0] += rows.rowCount();
+                        cleanObjects.setCount(rows.rowCount());
                     }, throwable -> {
                         logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error removing undelivered record: ", throwable.getMessage(), ColorUtilConstants.RESET ));
                     });
-                
+
                 prom.future().onSuccess(result -> {
                     if(result != null) {
                         count[0] += (Integer)result;
                     }
-                    cleanMessage(db, messageIds, users);
+                    cleanMessage(pool, messageIds, users);
                 });
             });
         });
+
         return count[0];
     }
 
-    private int cleanMessage(Database db, List<Integer> messageIds, List<Integer> users) {
+    private int cleanMessage(Pool pool, Set<Long> messageIds, Set<Long> users) {
         int count[] = { 0 };
         messageIds.iterator().forEachRemaining(messageId -> {
             CleanObjects cleanObjects = new CleanObjects();
 
             Future.future(prom -> {
                 cleanObjects.setPromise(prom);
-                db.update(getRemoveMessage())
-                    .parameter("MESSAGEID", messageId)
-                    .counts()
-                    .doOnNext(c -> count[0] += c)
-                    .doOnComplete(cleanObjects)
-                    .subscribe(result -> {
-                        cleanObjects.setCount(count[0]);
+                String sql = null;
+                if(DbConfiguration.isUsingIbmDB2() || 
+                        DbConfiguration.isUsingMariadb() ||
+                        DbConfiguration.isUsingSqlite3()) {
+                    sql = getCustomDeleteMessages();
+                } else {
+                    sql = getRemoveMessage();
+                }
+                String query = create.query(sql.replaceAll("\\$\\d", "?"), messageId, messageId).toString();
+
+                pool.query(query).rxExecute()
+                .doFinally(cleanObjects)
+                    .subscribe(rows -> {
+                        count[0] = count[0] += rows.rowCount();
+                        cleanObjects.setCount(rows.rowCount());
                     }, throwable -> {
-                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, " Error removing message:", throwable.getMessage(), ColorUtilConstants.RESET ));
+                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error removing message record: ", throwable.getMessage(), ColorUtilConstants.RESET ));
                     });
+
                 prom.future().onSuccess(result -> {
                     if(result != null) {
                         count[0] += (Integer)result;
                     }
-                    cleanRemainingUsers(db, users);
+                    cleanRemainingUsers(pool, users);
                 });
             });
+        
         });
+
         return count[0];
     }
 
-    private Future<Object> cleanUser(Database db, Integer userId) {
+    private Future<Object> cleanUser(Pool pool, Long userId) {
         CleanObjects cleanObjects = new CleanObjects();
 
         return Future.future(prom -> {
             cleanObjects.setPromise(prom);
-            db.update(getRemoveUsers())
-                .parameter("USERID", userId)
-                .counts()
-                .doOnNext(c -> cleanObjects.setCount(cleanObjects.getCount() + c))
-                .doOnComplete(cleanObjects)
+            String sql = null;
+            
+            if(DbConfiguration.isUsingIbmDB2() || 
+                    DbConfiguration.isUsingMariadb() ||
+                    DbConfiguration.isUsingSqlite3()) {
+                sql = getCustomDeleteUsers();
+            } else {
+                sql = getRemoveUsers();
+            }
+            String query = create.query(sql.replaceAll("\\$\\d", "?"), userId, userId).toString();
+
+            pool.query(query).rxExecute()
+                .doOnSuccess(rows -> {
+                    cleanObjects.setCount(cleanObjects.getCount() + rows.rowCount());
+                })
+                .doFinally(cleanObjects)
                 .subscribe(result -> {
                     //
                 }, throwable -> {
@@ -255,11 +285,11 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
         });
     }
 
-    private int cleanRemainingUsers(Database db, List<Integer> users) {
+    private int cleanRemainingUsers(Pool pool, Set<Long> users) {
         int count[] = { 0 };
 
         users.iterator().forEachRemaining(userId -> {
-            cleanUser(db, userId).onSuccess(result -> {
+            cleanUser(pool, userId).onSuccess(result -> {
                 if(result != null) {
                     count[0] += (Integer)result;
                 }
@@ -271,27 +301,27 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
 
     @Override
     public MessageUser createMessageUser() {
-        return null;
+        return new MessageUserImpl();
     }
 
     class GotUsers implements Action {
-		List<Tuple5<Integer, String, String, String, Object>> listOfUsers;
-		Promise<List<Tuple5<Integer, String, String, String, Object>>> promise;
+		Set<MessageUser> listOfUsers;
+		Promise<Set<MessageUser>> promise;
 
 		@Override
 		public void run() throws Exception {
             promise.complete(listOfUsers);
         }
         
-        public void setPromise(Promise<List<Tuple5<Integer, String, String, String, Object>>> promise) {
+        public void setPromise(Promise<Set<MessageUser>> promise) {
             this.promise = promise;
         }
 
-        public Promise<List<Tuple5<Integer, String, String, String, Object>>> getPromise() {
+        public Promise<Set<MessageUser>> getPromise() {
             return promise;
         }
 
-        public void setListOfUsers(List<Tuple5<Integer, String, String, String, Object>> listOfUsers) {
+        public void setListOfUsers(Set<MessageUser> listOfUsers) {
             this.listOfUsers = listOfUsers;
         }
     }

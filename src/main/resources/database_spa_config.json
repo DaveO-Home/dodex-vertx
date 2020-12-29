@@ -1,16 +1,18 @@
 {
-    "application": "spa",
+    "application": "Dodex",
     "defaultdb": "sqlite3",
     "sqlite3": {
-        "dev": {
-            "credentials": {},
+        "dev": { 
+            "credentials": {
+            },
             "config": {
                 "filename": "build/dodex_tests.db",
                 "url": "jdbc:sqlite:"
             }
         },
-        "prod": {
-            "credentials": {},
+        "prod": { 
+            "credentials": {
+            },
             "config": {
                 "filename": "dodex.db",
                 "url": "jdbc:sqlite:"
@@ -18,19 +20,7 @@
         }
     },
     "postgres": {
-        "dev": {
-            "credentials": {
-                "user": "daveo",
-                "password": "albatross",
-                "ssl": "false"
-            },
-            "config": {
-                "host": "//localhost",
-                "url": "jdbc:postgresql:",
-                "dbname": "/daveo"
-            }
-        },
-        "prod": {
+        "dev": { 
             "credentials": {
                 "user": "user",
                 "password": "password",
@@ -38,25 +28,44 @@
             },
             "config": {
                 "host": "//localhost",
+                "host2": "localhost",
+                "port": "5432",
                 "url": "jdbc:postgresql:",
-                "dbname": "/dodex"
+                "dbname": "/test",
+                "database": "test"
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost",
+                "host2": "localhost",
+                "port": "5432",
+                "url": "jdbc:postgresql:",
+                "dbname": "/dodex",
+                "database": "dodex"
             }
         }
     },
     "cubrid": {
-        "dev": {
+        "dev": { 
             "credentials": {
-                "user": "dba",
-                "password": "albatross",
+                "user": "user",
+                "password": "password",
                 "ssl": "false"
             },
             "config": {
                 "host": "localhost:33000:",
                 "url": "jdbc:cubrid:",
-                "dbname": "test:public::"
+                "dbname": "dodex:::",
+                "database": "dodex:::"
             }
         },
-        "prod": {
+        "prod": { 
             "credentials": {
                 "user": "user",
                 "password": "password",
@@ -65,24 +74,13 @@
             "config": {
                 "host": "localhost:33000",
                 "url": "jdbc:CUBRID:",
-                "dbname": "dodex:public::"
+                "dbname": "dodex:public::",
+                "database": "dodex:public::"
             }
         }
     },
     "mariadb": {
-        "dev": {
-            "credentials": {
-                "user": "daveo",
-                "password": "albatross",
-                "ssl": "false"
-            },
-            "config": {
-                "host": "//localhost:3306",
-                "url": "jdbc:mariadb:",
-                "dbname": "/test"
-            }
-        },
-        "prod": {
+        "dev": { 
             "credentials": {
                 "user": "user",
                 "password": "password",
@@ -90,25 +88,47 @@
             },
             "config": {
                 "host": "//localhost:3306",
+                "host2": "localhost",
                 "url": "jdbc:mariadb:",
-                "dbname": "/dodex"
+                "dbname": "/test",
+                "database": "test",
+                "port": "3306"
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "user": "user",
+                "password": "password",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:3306",
+                "host2": "localhost",
+                "url": "jdbc:mariadb:",
+                "dbname": "/dodex",
+                "database": "dodex",
+                "port": "3306"
             }
         }
     },
     "ibmdb2": {
-        "dev": {
+        "dev": { 
             "credentials": {
-                "user": "rlq77780",
-                "password": "9mjzjds@5ww3fl38",
+                "user": "db2inst1",
+                "password": "password",
                 "ssl": "false"
             },
             "config": {
-                "host": "//dashdb-txn-sbox-yp-dal09-04.services.dal.bluemix.net:50000",
+                "host": "//localhost:50000",
+                "host2": "localhost",
+                "port": "50000",
                 "url": "jdbc:db2:",
-                "dbname": "/BLUDB"
+                "dbname": "/testdb",
+                "database": "testdb",
+                "tabschema": "DB2INST1"
             }
         },
-        "prod": {
+        "prod": { 
             "credentials": {
                 "user": "user",
                 "password": "password",
@@ -116,8 +136,30 @@
             },
             "config": {
                 "host": "//localhost:50000",
+                "host2": "localhost",
+                "port": "50000",
                 "url": "jdbc:db2:",
-                "dbname": "/dodexdb"
+                "dbname": "/dodexdb",
+                "database": "testdb",
+                "tabschema": "DB2INST1"
+            }
+        }
+    },
+    "cassandra": {
+        "dev": { 
+            "credentials": {
+            },
+            "config": {
+                "filename": "target/cassandra-db",
+                "url": ""
+            }
+        },
+        "prod": { 
+            "credentials": {
+            },
+            "config": {
+                "filename": "",
+                "url": ""
             }
         }
     }

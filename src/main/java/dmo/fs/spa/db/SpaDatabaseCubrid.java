@@ -1,42 +1,42 @@
 package dmo.fs.spa.db;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.davidmoten.rx.jdbc.ConnectionProvider;
-import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
-import org.davidmoten.rx.jdbc.pool.Pools;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaLoginImpl;
-import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import io.reactivex.Completable;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.Future;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.jdbcclient.JDBCConnectOptions;
+import io.vertx.reactivex.core.Promise;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.jdbcclient.JDBCPool;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
+import io.vertx.sqlclient.PoolOptions;
 
 public class SpaDatabaseCubrid extends DbCubrid {
 	private final static Logger logger = LoggerFactory.getLogger(SpaDatabaseCubrid.class.getName());
 	protected Disposable disposable;
-	protected ConnectionProvider cp;
-	protected NonBlockingConnectionPool pool;
-	protected Database db;
 	protected Properties dbProperties = new Properties();
 	protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
 	protected Map<String, String> dbMap = new ConcurrentHashMap<>();
 	protected JsonNode defaultNode;
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
-	protected DodexUtil dodexUtil = new DodexUtil();
+    protected DodexUtil dodexUtil = new DodexUtil();
+    protected JDBCPool pool4;
+    private Vertx vertx;
 
 	public SpaDatabaseCubrid(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
 			throws InterruptedException, IOException, SQLException {
@@ -57,7 +57,6 @@ public class SpaDatabaseCubrid extends DbCubrid {
 		}
 
 		SpaDbConfiguration.mapMerge(dbMap, dbOverrideMap);
-		databaseSetup();
 	}
 
 	public SpaDatabaseCubrid() throws InterruptedException, IOException, SQLException {
@@ -68,11 +67,9 @@ public class SpaDatabaseCubrid extends DbCubrid {
 
 		dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
 		dbProperties = dodexUtil.mapToProperties(dbMap);
-
-		databaseSetup();
 	}
 
-	private void databaseSetup() throws InterruptedException, SQLException {
+	public Future<Void> databaseSetup() throws InterruptedException, SQLException {
 		// Override default credentials
 		// dbProperties.setProperty("user", "myUser");
 		// dbProperties.setProperty("password", "myPassword");
@@ -84,76 +81,79 @@ public class SpaDatabaseCubrid extends DbCubrid {
 		} else {
 			SpaDbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
 		}
-		cp = SpaDbConfiguration.getCubridConnectionProvider();
+        
+        PoolOptions poolOptions = new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
+       
+        JDBCConnectOptions connectOptions;
 
-		pool = Pools.nonBlocking()
-				.maxPoolSize(Runtime.getRuntime().availableProcessors() * 5).connectionProvider(cp)
-				.build();
-		
-		db = Database.from(pool);
-		
-		Future.future(prom -> {
-			db.member().doOnSuccess(c -> {
-				Statement stat = c.value().createStatement();
-				// try {
-				// 	stat.executeUpdate("drop table login");
-				// } catch(Exception e) {
-				// 	e.printStackTrace();
-				// }
+        connectOptions = new JDBCConnectOptions()
+            .setJdbcUrl(dbMap.get("url") + dbMap.get("host") + dbMap.get("dbname") + "?charSet=UTF-8")
+            .setUser(dbProperties.getProperty("user").toString())
+            .setIdleTimeout(1)
+			// .setCachePreparedStatements(true)
+            ;
 
-				String sql = getCreateTable("LOGIN");
-				// Set defined user
-				if (!tableExist(c.value(), "login")) {
-					stat.executeUpdate(sql);
-					stat.executeUpdate("CREATE UNIQUE INDEX u_login_name ON users ([name], [password]);");
-				}
-				
-				stat.close();
-				c.value().close();
-			}).subscribe(result -> {
-				prom.complete();
-			}, throwable -> {
-				logger.error(String.join(ColorUtilConstants.RED, "Error creating database tables: ", throwable.getMessage(), ColorUtilConstants.RESET));
-				throwable.printStackTrace();
-			});
-			// generate all jooq sql only once.
-			prom.future().onSuccess(result -> {
-				try {
-					setupSql(db);
-				} catch (SQLException e) {
-					e.printStackTrace();
-				}
-			});
-		});
-	}
 
-	@Override
-	public Database getDatabase() {
-		return Database.from(pool);
-	}
-	
-	@Override
-	public NonBlockingConnectionPool getPool() {
-		return pool;
+        vertx = DodexUtil.getVertx();
+
+        pool4 = JDBCPool.pool(vertx, connectOptions, poolOptions);
+
+        Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> 
+            conn.rxBegin().flatMapCompletable(
+			tx -> conn.query(CHECKLOGINSQL).rxExecute().doOnSuccess(rows -> {
+                if (rows.size() == 0) {
+                    final String usersSql = getCreateTable("LOGIN");
+
+                    Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute()
+                        .doOnError(err -> {
+                            logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                        }).doOnSuccess(result -> {
+                            logger.info("Login Table Added.");
+                        });
+
+                    crow.subscribe(result -> {
+                        //
+                    }, err -> {
+                        logger.info(String.format("Login Table Error: %s", err.getMessage()));
+                    });
+                }
+			}).doOnError(err -> {
+				logger.info(String.format("Login Table Error: %s", err.getMessage()));
+
+            }).flatMapCompletable(res -> tx.rxCommit())
+        ));
+        
+        Promise<Void> setupPromise = Promise.promise();
+        completable.subscribe(() -> {
+			try {
+                setupSql(pool4);
+                setupPromise.complete();
+			} catch (SQLException e) {
+				e.printStackTrace();
+			}
+		}, err -> {
+            logger.info(String.format("Tables Create Error: %s", err.getMessage()));
+        });
+
+        return setupPromise.future();
 	}
 
 	@Override
 	public SpaLogin createSpaLogin() {
 		return new SpaLoginImpl();
-	}
+    }
+    
+    @Override
+	@SuppressWarnings("unchecked")
+    public <T> T getPool4() {
+        return (T) pool4;
+    }
 
-	// per stack overflow
-	private static boolean tableExist(Connection conn, String tableName) throws SQLException {
-		boolean exists = false;
-		try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName, null)) {
-			while (rs.next()) {
-				String name = rs.getString("TABLE_NAME");
-				if (name != null && name.equalsIgnoreCase(tableName)) {
-					exists = true;
-					break;
-				}
-			}
-		}
-		return exists;
-	}
+    public Vertx getVertx() {
+        return vertx;
+    }
+
+    public void setVertx(Vertx vertx) {
+        this.vertx = vertx;
+    }
 }

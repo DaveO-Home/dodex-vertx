@@ -9,38 +9,35 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.davidmoten.rx.jdbc.ConnectionProvider;
-import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
-import org.davidmoten.rx.jdbc.pool.Pools;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import dmo.fs.db.DbConfiguration;
-import dmo.fs.db.DbDefinitionBase;
+import dmo.fs.db.DbCubrid;
+import dmo.fs.db.DbMariadb;
+import dmo.fs.db.DbPostgres;
+import dmo.fs.db.DbSqlite3;
 import dmo.fs.db.DodexDatabase;
-import dmo.fs.db.DodexDatabaseCubrid;
-import dmo.fs.db.DodexDatabaseMariadb;
-import dmo.fs.db.DodexDatabasePostgres;
 import dmo.fs.db.DodexDatabaseSqlite3;
-import dmo.fs.db.JavaRxDateDb.Users;
 import dmo.fs.db.MessageUser;
-import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
 import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.SqlConnection;
+import io.vertx.reactivex.sqlclient.Tuple;
 
 class AppTest {
     Logger logger = LoggerFactory.getLogger(AppTest.class.getName());
@@ -103,14 +100,14 @@ class DbTest /* extends DbDefinitionBase */ {
 
     MessageUser messageUser;
     MessageUser resultUser;
-    ConnectionProvider cp;
-    NonBlockingConnectionPool pool;
-    Database db;
     DodexDatabase dodexDatabase;
+    Pool pool;
+    String checkSql = DbSqlite3.CHECKUSERSQL;
 
     @BeforeAll
     void testDatabaseSetup() throws InterruptedException, IOException, SQLException {
         String whichDb = "sqlite3"; // postgres || sqlite3
+        DodexUtil.setVertx(Vertx.vertx());
 
         if (System.getenv("DEFAULT_DB") != null) {
             whichDb = System.getenv("DEFAULT_DB");
@@ -121,156 +118,159 @@ class DbTest /* extends DbDefinitionBase */ {
         props.setProperty("ssl", "false");
 
         if ("sqlite3".equals(whichDb)) {
-            dodexDatabase = new DodexDatabaseSqlite3();
-            cp = DbConfiguration.getSqlite3ConnectionProvider();
+            dodexDatabase = DbConfiguration.getDefaultDb();
+            pool = dodexDatabase.getPool4();
         } else if ("postgres".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
-            overrideMap.put("dbname", "/test"); // <------- should match test/dev db
-            try {
-                dodexDatabase = new DodexDatabasePostgres(overrideMap, props);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            cp = DbConfiguration.getPostgresConnectionProvider();
+            overrideMap.put("database", "database"); // <------- should match test/dev db
+            dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
+            pool = dodexDatabase.getPool4();
+            checkSql = DbPostgres.CHECKUSERSQL;
         } else if ("mariadb".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
-            overrideMap.put("dbname", "/test"); // <------- should match test/dev db
-            try {
-                dodexDatabase = new DodexDatabaseMariadb(overrideMap, props);
-                cp = DbConfiguration.getMariadbConnectionProvider();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            overrideMap.put("database", "database"); // <------- should match test/dev db
+            dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
+            pool = dodexDatabase.getPool4();
+            checkSql = DbMariadb.CHECKUSERSQL;
         } else if ("cubrid".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
-            overrideMap.put("dbname", "test:public::"); // <------- should match test/dev db
-            try {
-                dodexDatabase = new DodexDatabaseCubrid(overrideMap, props);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            cp = DbConfiguration.getCubridConnectionProvider();
+            overrideMap.put("database", "database"); // <------- should match test/dev db
+            dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
+            pool = dodexDatabase.getPool4();
+            checkSql = DbCubrid.CHECKUSERSQL;
         }
 
-        pool = Pools.nonBlocking().maxPoolSize(Runtime.getRuntime().availableProcessors() * 5)
-                .connectionProvider(cp).build();
-        
-        db = Database.from(pool);
-                
-        DbDefinitionBase.setupSql(db);
+        DodexDatabaseSqlite3.setupSql(pool);
 
-        assertNotEquals(dodexDatabase, null, "dodexDatabase should be created");
-        assertNotEquals(db.member(), null, "database should should exist");
         messageUser = dodexDatabase.createMessageUser();
         resultUser = dodexDatabase.createMessageUser();
 
         messageUser.setName("User1");
         messageUser.setPassword("Password");
+
+        // Make sure test user is removed from database
+        SqlConnection conn = pool.rxGetConnection().blockingGet();
+        Tuple parameters = Tuple.of(messageUser.getName(), messageUser.getPassword());
+        conn.preparedQuery(dodexDatabase.getDeleteUser()).rxExecute(parameters).subscribe(r -> {
+            conn.close();
+        }, err -> {
+            throw new Exception(err);
+        });
     }
 
     @Test
-    void doesUsersTableExist() {
-        boolean tableExists[] = { false };
-
-        Disposable disposable = db.member()
-            .doOnSuccess(c -> {
-                tableExists[0] = tableExist(c.value(), "USERS");
-                c.checkin();
-            })
-            .subscribe();
-
-        assertSame("verify that javaRx is asynchronous", tableExists[0], Boolean.FALSE);
-        await(disposable);
-        assertSame("table Users should exist", tableExists[0], Boolean.TRUE);
+    void databaseSetup() {
+        assertNotEquals(dodexDatabase, null, "dodexDatabase should be created");
+        assertEquals(pool.rxGetConnection().test().assertNoErrors().errorCount(), 0, "database pool should exist");
     }
 
     @Test
-    void testDatabaseAndJavaRx() throws InterruptedException {
-        messageUser.setIp("0");
-        boolean emptyTable[] = { false, false, false };
-        messageUser.setId(-1l);
-
-        Promise<MessageUser> promise = Promise.promise();
-
-        Disposable disposable = db.select(Users.class)
-            .parameter(messageUser.getPassword())
-            .get()
-            .doOnNext(result -> {
-                resultUser.setId(result.id());
-                resultUser.setName(result.name());
-                resultUser.setPassword(result.password());
-                resultUser.setIp(result.ip());
-                resultUser.setLastLogin(result.lastLogin());
-            })
-            .isEmpty()
-            .doOnSuccess(empty -> {
-                if (empty) {
-                    emptyTable[0] = empty;
-                    
-                    Future<MessageUser> future2 = dodexDatabase.addUser(null, db, messageUser);
-                    
-                    future2.onComplete(handler -> {
-                        emptyTable[1] = messageUser.getId() > 0l;
-                        MessageUser result = future2.result();
-                        resultUser.setId(result.getId());
-                        resultUser.setName(result.getName());
-                        resultUser.setPassword(result.getPassword());
-                        resultUser.setIp(result.getIp());
-                        resultUser.setLastLogin(result.getLastLogin());
-                        promise.complete(resultUser);
-                    });
-                } else {
-                    emptyTable[1] = empty == false;
-                    emptyTable[0] = empty == false;
+    void doesUsersTableExist() throws InterruptedException {
+        String table[] = { null };        
+        Disposable testDisposable[] = { null };
+        
+        Single<SqlConnection> con = pool.rxGetConnection();
+        testDisposable[0] = con.subscribe(c -> {
+            testDisposable[0] = c.query(checkSql).rxExecute().doOnSuccess(rows -> {
+                for (Row row : rows) {
+                    table[0] = row.getString(0).toLowerCase();
                 }
-            })
-            .subscribe(result -> {
-                emptyTable[2] = true;
-            }, throwable -> {
-                logger.error(String.join(ColorUtilConstants.RED, "Error adding user: ", messageUser.getName(),
-                        " : ", throwable.getMessage(), ColorUtilConstants.RESET));
-                throwable.printStackTrace();
+            }).subscribe(r -> {
+                c.close();
+            });
+        });
+
+        assertTrue("Query not yet complete",  !testDisposable[0].isDisposed());
+        await(testDisposable[0]);
+        assertTrue("Users Table Exists",  "users".equals(table[0]));
+    }
+
+    @Test
+    void testDatabaseAndReactiveVertx() throws InterruptedException, SQLException {
+        Disposable testDisposable[] = { null };
+        boolean emptyTable[] = { false, false, false };
+
+        messageUser.setIp("0");
+        messageUser.setId(-1l);
+        resultUser.setId(0L);
+        resultUser.setName(null);
+
+        Single<SqlConnection> conn = pool.rxGetConnection();
+
+        testDisposable[0] = conn.subscribe(c -> {
+            testDisposable[0] = c.preparedQuery(dodexDatabase.getUserById())
+                .rxExecute(Tuple.of(messageUser.getName(), messageUser.getPassword()))
+                .doOnSuccess(rows -> {
+                    if(rows.rowCount() == 0) {
+                        emptyTable[0] = true;
+                        
+                        Future<MessageUser> future2 = dodexDatabase.addUser(null, messageUser);
+
+                        future2.onComplete(handler -> {
+                            emptyTable[1] = messageUser.getId() > 0l;
+                            MessageUser result = future2.result();
+                            resultUser.setId(result.getId());
+                            resultUser.setName(result.getName());
+                            resultUser.setPassword(result.getPassword());
+                            resultUser.setIp(result.getIp());
+                            resultUser.setLastLogin(result.getLastLogin());
+                        });
+                    } else {
+                        emptyTable[1] = false;
+                        emptyTable[0] = false;
+                        for (Row row : rows) {
+                            resultUser.setId(row.getLong(0));
+                            resultUser.setName(row.getString(1));
+                            resultUser.setPassword(row.getString(2));
+                            resultUser.setIp(row.getString(3));
+                            resultUser.setLastLogin(row.getValue(4));
+                        }
+                    }
+                })
+                .subscribe(result -> {
+                    c.close();
+                    emptyTable[2] = true;
+                });
             });
         
-        assertSame("javaRx should be running asynchronously", emptyTable[0], false);
-        assertSame("javaRx should be running asynchronously", emptyTable[1], false);
-        promise.future().onSuccess(result -> {
-            assertSame("user should be not found", emptyTable[0], true);
-            assertSame("user should be added to table Users", emptyTable[0], true);
-            assertTrue("user id should be generated", result.getId() > 0);
-            assertEquals(result.getName(), "User1", "user should be retrieved");
-            assertTrue("subscribe should finish", emptyTable[2]);
-        });
-        // Making sure we don't execute the next test before finishing this test
-        await(disposable);
+        assertSame("reactive vertx should be running asynchronously", emptyTable[0], false);
+        
+        await(testDisposable[0]);
+       
+        assertSame("user should not be found & added to table", emptyTable[0], true);
+        assertTrue("user id should be generated", resultUser.getId() > 0);
+        assertEquals(resultUser.getName(), "User1", "user should be retrieved");
+        assertTrue("subscribe should finish", emptyTable[2]);
     }
 
     @Test
     void deleteUserFromDatabase() {
-        messageUser.setId(-1l);
-        Promise<Integer> promise = Promise.promise();
+        Disposable testDisposable[] = { null };
+        int deleted[] = { 0 };
+        Single<SqlConnection> conn = pool.rxGetConnection();
 
-        db.update(dodexDatabase.getDeleteUser())
-            .parameter("NAME", messageUser.getName())
-            .parameter("PASSWORD", messageUser.getPassword())
-            .counts()
-            .subscribe(result -> {
-                messageUser.setId(Long.parseLong(result.toString()));
-                promise.complete(result);
-            }, throwable -> {
-                logger.error(String.join(ColorUtilConstants.RED, "Error deleting user: ",
-                        messageUser.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET));
-                throwable.printStackTrace();
-            });
-            
-        assertSame("user deletion should not start yet", messageUser.getId() == -1l, Boolean.TRUE);
-        promise.future().onSuccess(result -> {
-            assertSame("user deleted or not in database", messageUser.getId() == 1, Boolean.TRUE);
-            assertSame("user deleted or not in database", result == 1, Boolean.TRUE);
+        testDisposable[0] = conn.subscribe(c -> {
+            testDisposable[0] = c.preparedQuery(dodexDatabase.getDeleteUser())
+            .rxExecute(Tuple.of(messageUser.getName(), messageUser.getPassword()))
+            .doOnSuccess(rows -> {
+                deleted[0] = 1;  // can't use rowCount because of execution order
+                c.close();
+            }).subscribe();
         });
+            
+        assertSame("user deletion should not start yet", deleted[0] == 0, Boolean.TRUE);
+
+        await(testDisposable[0]);
+        
+        assertSame("user deleted or not in database", deleted[0] == 1, Boolean.TRUE);
     }
 
     public void await(Disposable disposable) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         while (!disposable.isDisposed()) {
             try {
                 Thread.sleep(100);
@@ -278,19 +278,5 @@ class DbTest /* extends DbDefinitionBase */ {
                 e.printStackTrace();
             }
         }
-    }
-
-    public static boolean tableExist(Connection conn, String tableName) throws SQLException {
-        boolean exists = false;
-        try (ResultSet rs = conn.getMetaData().getTables(null, null, tableName.toLowerCase(), null)) {
-            while (rs.next()) {
-                String name = rs.getString("TABLE_NAME");
-                if (name != null && name.equalsIgnoreCase(tableName)) {
-                    exists = true;
-                    break;
-                }
-            }
-        }
-        return exists;
     }
 }

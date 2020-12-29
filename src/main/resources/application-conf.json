@@ -5,5 +5,10 @@
   "clean.period": 7,
   "clean.age": 90,
   "bridge.port": 7032,
-  "color": true
+  "color": true,
+  "vertx.version": 4,
+  "prod.color": true,
+  "prod.http.port" : 8082,
+  "prod.bridge.port": 7032,
+  "prod.vertx.version": 4
 }

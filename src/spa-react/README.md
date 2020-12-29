@@ -246,5 +246,5 @@ A test and development scenario for ***Dodex-Vertx***.
 
 A blazing fast js bundler/loader with a comprehensive API <https://github.com/fuse-box/fuse-box>
 
-* Using Fuse-Box V4 (@next), should be finalized in 2020
+* Using Fuse-Box V4
 * Configuration in `src/spa-react/devl/fuse.js` and `src/spa-react/devl/gulpfile.js` (functions runFusebox and fuseboxConfig)

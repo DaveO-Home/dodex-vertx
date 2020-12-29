@@ -1,6 +1,10 @@
 package dmo.fs.spa.utils;
 
 import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.Map;
 import java.util.Optional;
@@ -51,14 +55,42 @@ public class SpaLoginImpl implements SpaLogin {
     @Override
     public <T> void setLastLogin(T lastLogin) {
         Optional<?> login = Optional.of(lastLogin);
-        Optional<Timestamp> loginTimestamp = login.filter(Timestamp.class::isInstance).map(Timestamp.class::cast);
-        if (loginTimestamp.isPresent()) {
-            this.lastLogin = loginTimestamp.get();
-        } else {
-            Optional<Date> loginDate = login.filter(Date.class::isInstance).map(Date.class::cast);
-            if (loginDate.isPresent()) {
+        if(login.isPresent()) {
+            Optional<Timestamp> loginTimestamp = login
+                .filter(Timestamp.class::isInstance)
+                .map(Timestamp.class::cast);
+            Optional<Date> loginDate = login
+                .filter(Date.class::isInstance)
+                .map(Date.class::cast);
+            Optional<Long> loginLong = login
+                .filter(Long.class::isInstance)
+                .map(Long.class::cast);
+            Optional<OffsetDateTime> loginOffsetDateTime = login
+                .filter(OffsetDateTime.class::isInstance)
+                .map(OffsetDateTime.class::cast);
+            Optional<LocalDate> loginLocalDate = login
+                .filter(LocalDate.class::isInstance)
+                .map(LocalDate.class::cast);
+            Optional<LocalDateTime> loginLocalDateTime = login
+                .filter(LocalDateTime.class::isInstance)
+                .map(LocalDateTime.class::cast);
+
+
+            if(loginTimestamp.isPresent()) {
+                this.lastLogin = loginTimestamp.get();
+            } else if(loginDate.isPresent()) {
                 this.lastLogin = new Timestamp(loginDate.get().getTime());
-            }
+            } else if(loginLong.isPresent()) {
+                this.lastLogin = new Timestamp(loginLong.get());
+            } else if(loginOffsetDateTime.isPresent()) {
+                this.lastLogin = new Timestamp(loginOffsetDateTime.get().toInstant().toEpochMilli());
+            } else if(loginLocalDate.isPresent()) {
+                Date local = Date.from(loginLocalDate.get().atStartOfDay(ZoneId.systemDefault()).toInstant());
+                this.lastLogin = new Timestamp(local.getTime());
+            } else if(loginLocalDateTime.isPresent()) {
+                Date local = Date.from(loginLocalDateTime.get().atZone(ZoneId.systemDefault()).toInstant());
+                this.lastLogin = new Timestamp(local.getTime());
+            } 
         }
     }
 
@@ -87,5 +119,10 @@ public class SpaLoginImpl implements SpaLogin {
         map.put("status", getStatus());
 
         return map;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("ID: %s, NAME: %s, PASSWORD: %s, LAST_LOGIN: %s, STATUS: %s", getId(), getName(), getPassword(), getLastLogin() != null? getLastLogin().toString(): getLastLogin(), getStatus());
     }
 }

@@ -6,8 +6,8 @@ import java.util.List;
 import org.modellwerkstatt.javaxbus.EventBus;
 
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.ServerWebSocket;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.http.ServerWebSocket;
 
 public interface DodexCassandra {
 

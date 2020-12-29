@@ -1,7 +1,8 @@
 
 package dmo.fs.spa.db;
 
-public abstract class DbPostgres extends RxJavaTimestampDb {
+public abstract class DbPostgres extends SqlBuilder implements SpaDatabase {
+    protected final static String CHECKLOGINSQL = "SELECT to_regclass('public.login')";
 	
 	private enum CreateTable {
 		CREATELOGIN(

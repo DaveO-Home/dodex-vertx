@@ -10,7 +10,7 @@ import dmo.fs.spa.utils.SpaUtil;
 
 public class SpaDbConfiguration extends DbConfiguration {
     private static String defaultDb = "sqlite3";
-    private static SpaDatabase spaDatabase;
+    private static SpaDatabase spaDatabase4;
     private static SpaCassandra spaCassandra;
     
     private enum DbTypes {
@@ -37,16 +37,16 @@ public class SpaDbConfiguration extends DbConfiguration {
         defaultDb = SpaUtil.getDefaultDb().toLowerCase();
 
         try {
-            if(defaultDb.equals(DbTypes.POSTGRES.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabasePostgres();
-            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseSqlite3();
-            } else if(defaultDb.equals(DbTypes.CUBRID.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseCubrid();
-            } else if(defaultDb.equals(DbTypes.MARIADB.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseMariadb();
-            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseIbmDB2();
+            if(defaultDb.equals(DbTypes.POSTGRES.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabasePostgres();
+            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseSqlite3();
+            } else if(defaultDb.equals(DbTypes.CUBRID.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseCubrid();
+            } else if(defaultDb.equals(DbTypes.MARIADB.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseMariadb();
+            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseIbmDB2();
             }  else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
                 spaCassandra = spaCassandra == null? new SpaDatabaseCassandra(): spaCassandra;
                 return (T) spaCassandra;
@@ -54,7 +54,7 @@ public class SpaDbConfiguration extends DbConfiguration {
         } catch (Exception exception) { 
             throw exception;
         }
-        return (T) spaDatabase;
+        return (T) spaDatabase4;
     }
     
     @SuppressWarnings("unchecked")
@@ -63,16 +63,16 @@ public class SpaDbConfiguration extends DbConfiguration {
         defaultDb = SpaUtil.getDefaultDb().toLowerCase();
         
         try {
-            if(defaultDb.equals(DbTypes.POSTGRES.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabasePostgres(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseSqlite3(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.CUBRID.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseCubrid(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.MARIADB.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseMariadb(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase == null) {
-                spaDatabase = new SpaDatabaseIbmDB2(overrideMap, overrideProps);
+            if(defaultDb.equals(DbTypes.POSTGRES.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabasePostgres(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseSqlite3(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.CUBRID.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseCubrid(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.MARIADB.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseMariadb(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && spaDatabase4 == null) {
+                spaDatabase4 = new SpaDatabaseIbmDB2(overrideMap, overrideProps);
             } else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
                 spaCassandra = spaCassandra == null? new SpaDatabaseCassandra(overrideMap, overrideProps): spaCassandra;
                 return (T) spaCassandra;
@@ -81,6 +81,6 @@ public class SpaDbConfiguration extends DbConfiguration {
             throw exception;
         }
         
-        return (T) spaDatabase;
+        return (T) spaDatabase4;
     }
 }

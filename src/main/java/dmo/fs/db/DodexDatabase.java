@@ -4,18 +4,17 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 
-import org.davidmoten.rx.jdbc.Database;
-import org.davidmoten.rx.jdbc.pool.NonBlockingConnectionPool;
-
 import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.http.ServerWebSocket;
+import io.vertx.reactivex.core.Vertx;
+import io.vertx.reactivex.core.http.ServerWebSocket;
 
 public interface DodexDatabase {
 
 	String getAllUsers();
 
 	String getUserByName();
+    
+    String getUserById();
 
     String getInsertUser();
     
@@ -27,29 +26,27 @@ public interface DodexDatabase {
 	
 	String getDeleteUser();
 
-	Future<MessageUser> addUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
+	Future<MessageUser> addUser(ServerWebSocket ws, MessageUser messageUser) throws SQLException, InterruptedException;
 
-	Future<Long> deleteUser(ServerWebSocket ws, Database db, MessageUser messageUser) throws SQLException, InterruptedException;
+	Future<Long> deleteUser(ServerWebSocket ws, MessageUser messageUser) throws SQLException, InterruptedException;
 
-	Future<Long> addMessage(ServerWebSocket ws, MessageUser messageUser, String message, Database db) throws SQLException, InterruptedException;
+	Future<Long> addMessage(ServerWebSocket ws, MessageUser messageUser, String message) throws SQLException, InterruptedException;
 
-	Future<Void> addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId, Database db) throws SQLException;
+	Future<Void> addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId) throws SQLException;
 
-	Future<Long> getUserIdByName(String name, Database db) throws InterruptedException, SQLException;
+	Future<Long> getUserIdByName(String name) throws InterruptedException, SQLException;
 
-	Future<Void> addUndelivered(Long userId, Long messageId, Database db) throws SQLException, InterruptedException;
+	Future<Void> addUndelivered(Long userId, Long messageId) throws SQLException, InterruptedException;
 
-	Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws, Database db, MessageUser messageUser) throws Exception;
+	Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws, MessageUser messageUser) throws Exception;
 
-	Database getDatabase();
-
-	NonBlockingConnectionPool getPool();
+	<T> T getPool4();
 
 	MessageUser createMessageUser();
 
-	Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws, Database db) throws InterruptedException, SQLException;
+	Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws) throws InterruptedException, SQLException;
 
-	Future<StringBuilder> buildUsersJson(Database db, MessageUser messageUser) throws InterruptedException, SQLException;
+	Future<StringBuilder> buildUsersJson(MessageUser messageUser) throws InterruptedException, SQLException;
 
 	void setVertx(Vertx vertx);
 

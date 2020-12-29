@@ -1,8 +1,11 @@
 
 package dmo.fs.db;
 
-public abstract class DbPostgres extends JavaRxTimestampDb {
-	
+public abstract class DbPostgres extends DbDefinitionBase implements DodexDatabase {
+	public final static String CHECKUSERSQL = "SELECT to_regclass('public.users')";
+    protected final static String CHECKMESSAGESSQL = "SELECT to_regclass('public.messages')";
+    protected final static String CHECKUNDELIVEREDSQL = "SELECT to_regclass('public.undelivered')";
+
 	private enum CreateTable {
 		CREATEUSERS(
 			"CREATE SEQUENCE public.users_id_seq INCREMENT 1 START 19 MINVALUE 1 MAXVALUE 2147483647 CACHE 1; " +	

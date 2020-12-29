@@ -4,252 +4,372 @@ package dmo.fs.spa.db;
 import static org.jooq.impl.DSL.deleteFrom;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.insertInto;
-import static org.jooq.impl.DSL.mergeInto;
-import static org.jooq.impl.DSL.param;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
+import static org.jooq.impl.DSL.update;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.Date;
 
-import org.davidmoten.rx.jdbc.Database;
 import org.jooq.DSLContext;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import dmo.fs.spa.db.RxJavaDateDb.Login;
+import dmo.fs.db.DbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.reactivex.db2client.DB2Pool;
+import io.vertx.reactivex.jdbcclient.JDBCPool;
+import io.vertx.reactivex.mysqlclient.MySQLPool;
+import io.vertx.reactivex.pgclient.PgPool;
+import io.vertx.reactivex.sqlclient.Pool;
+import io.vertx.reactivex.sqlclient.Row;
+import io.vertx.reactivex.sqlclient.RowSet;
+import io.vertx.reactivex.sqlclient.SqlConnection;
+import io.vertx.reactivex.sqlclient.Tuple;
 
 public abstract class SqlBuilder {
-	private final static Logger logger = LoggerFactory.getLogger(SqlBuilder.class.getName());
-	protected final static String QUERYLOGIN = "select * from LOGIN where name=?";
+    private final static Logger logger = LoggerFactory.getLogger(SqlBuilder.class.getName());
+    protected final static String QUERYLOGIN = "select * from LOGIN where name=?";
 
-	private static DSLContext create;
+    private static DSLContext create;
 
-	private static String GETLOGINBYNP;
-	private static String GETLOGINBYNAME;
-	private static String GETINSERTLOGIN;
-	private static String GETREMOVELOGIN;
-	private static String GETUPDATELOGIN;
-	private static String GETLOGINBYID;
-	private static String GETSQLITEUPDATELOGIN;
-	private Boolean isTimestamp;
+    private static String GETLOGINBYNP;
+    private static String GETLOGINBYNAME;
+    private static String GETINSERTLOGIN;
+    private static String GETREMOVELOGIN;
+    private static String GETUPDATELOGIN;
+    private static String GETLOGINBYID;
+    private static String GETSQLITEUPDATELOGIN;
+    private Boolean isTimestamp;
+    private static Pool pool;
+    private static Boolean qmark = true;
 
-	public static void setupSql(Database db) throws SQLException {
-		try(Connection conn = db.connection().blockingGet()) {
-			create = DSL.using(conn, DodexUtil.getSqlDialect());
+    public static <T> void setupSql(T pool4) throws SQLException {
+        // Non-Blocking Drivers
+        if (pool4 instanceof PgPool) {
+            pool = (PgPool) pool4;
+            qmark = false;
+        } else if (pool4 instanceof MySQLPool) {
+            pool = (MySQLPool) pool4;
+        } else if (pool4 instanceof DB2Pool) {
+            pool = (DB2Pool) pool4;
+        } else if (pool4 instanceof JDBCPool) {
+            pool = (JDBCPool) pool4;
+        }
 
-			GETLOGINBYNP = setupLoginByNamePassword();
-			GETLOGINBYNAME = setupLoginByName();
-			GETINSERTLOGIN = setupInsertLogin();
-			GETREMOVELOGIN = setupRemoveLogin();
-			GETLOGINBYID = setupLoginById();
-			GETUPDATELOGIN = setupUpdateLogin();
-			GETSQLITEUPDATELOGIN = setupSqliteUpdateLogin();
-		}
-	}
+        Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx4/Postgres
 
-	private static String setupLoginByNamePassword() {
-		return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-				.from(table("LOGIN")).where(field("NAME").eq(param("NAME", ":name")))
-				.and(field("PASSWORD").eq(param("PASSWARD", ":password"))));
-	}
+        create = DSL.using(DodexUtil.getSqlDialect(), settings);
+        // qmark? setupAllUsers().replaceAll("\\$\\d", "?"): setupAllUsers();
+        GETLOGINBYNP = setupLoginByNamePassword().replaceAll("\\$\\d", "?");
+        GETLOGINBYNAME = qmark ? setupLoginByName().replaceAll("\\$\\d", "?") : setupLoginByName();
+        GETINSERTLOGIN = qmark ? setupInsertLogin().replaceAll("\\$\\d", "?") : setupInsertLogin();
+        GETREMOVELOGIN = setupRemoveLogin().replaceAll("\\$\\d", "?");
+        GETLOGINBYID = qmark ? setupLoginById().replaceAll("\\$\\d", "?") : setupLoginById();
+        GETUPDATELOGIN = qmark ? setupUpdateLogin().replaceAll("\\$\\d*", "?") : setupUpdateLogin();
+        GETSQLITEUPDATELOGIN = qmark ? setupSqliteUpdateLogin().replaceAll("\\$\\d*", "?") : setupSqliteUpdateLogin();
+    }
 
-	public String getLoginByNamePassword() {
-		return GETLOGINBYNP;
-	}
+    private static String setupLoginByNamePassword() {
+        return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                .from(table("LOGIN")).where(field("NAME").eq("$")).and(field("PASSWORD").eq("$")));
+    }
 
-	private static String setupLoginByName() {
-		return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-				.from(table("LOGIN")).where(field("NAME").eq(param("NAME", ":name"))));
-	}
+    public String getLoginByNamePassword() {
+        return GETLOGINBYNP;
+    }
 
-	public String getUserByName() {
-		return GETLOGINBYNAME;
-	}
+    private static String setupLoginByName() {
+        return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                .from(table("LOGIN")).where(field("NAME").eq("$")));
+    }
 
-	private static String setupLoginById() {
-		return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-				.from(table("LOGIN")).where(field("NAME").eq(param("NAME", ":name"))));
-	}
+    public String getUserByName() {
+        return GETLOGINBYNAME;
+    }
 
-	public String getUserById() {
-		return GETLOGINBYID;
-	}
+    private static String setupLoginById() {
+        return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                .from(table("LOGIN")).where(field("NAME").eq("$")));
+    }
 
-	private static String setupInsertLogin() {
-		return create.renderNamedParams(
-				insertInto(table("LOGIN")).columns(field("NAME"), field("PASSWORD"), field("LAST_LOGIN")).values(
-						param("NAME", ":name"), param("PASSWORD", ":password"), param("LASTLOGIN", ":lastlogin")));
-	}
+    public String getUserById() {
+        return GETLOGINBYID;
+    }
 
-	public String getInsertLogin() {
-		return GETINSERTLOGIN;
-	}
+    private static String setupInsertLogin() {
+        return create.renderNamedParams(
+                insertInto(table("LOGIN")).columns(field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                        .values("$", "$", "$").returning(field("ID")));
+    }
 
-	private static String setupUpdateLogin() {
-		return create.renderNamedParams(
-				mergeInto(table("LOGIN")).columns(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-						.key(field("ID")).values(param("ID", ":id"), param("NAME", ":name"),
-								param("PASSWORD", ":password"), param("LASTLOGIN", ":lastlogin")));
-	}
+    public String getInsertLogin() {
+        return GETINSERTLOGIN;
+    }
 
-	public String getUpdateLogin() {
-		return GETUPDATELOGIN;
-	}
+    private static String setupUpdateLogin() {
+        return create.renderNamedParams(update(table("LOGIN")).set(field("LAST_LOGIN"), "$")
+            .where(field("ID").eq("$")).returning());
+    }
 
-	public static String setupSqliteUpdateLogin() {
-		return "update LOGIN set last_login = :LASTLOGIN where id = :LOGINID";
-	}
+    public String getUpdateLogin() {
+        return GETUPDATELOGIN;
+    }
 
-	public String getSqliteUpdateLogin() {
-		return GETSQLITEUPDATELOGIN;
-	}
+    public static String setupSqliteUpdateLogin() {
+        return "update LOGIN set last_login = $ where id = $";
+    }
 
-	public abstract SpaLogin createSpaLogin();
+    public String getSqliteUpdateLogin() {
+        return GETSQLITEUPDATELOGIN;
+    }
 
-	public Future<SpaLogin> getLogin(SpaLogin spaLogin, Database db)
-			throws InterruptedException, SQLException {
-		Promise<SpaLogin> promise = Promise.promise();
-		
-		SpaLogin resultLogin = createSpaLogin();
-		db.select(Login.class)
-			.parameter(spaLogin.getName())
-			.parameters(spaLogin.getPassword())
-			.get()
-			.doOnNext(result -> {
-				resultLogin.setId(result.id());
-				resultLogin.setName(result.name());
-				resultLogin.setPassword(result.password());
-				resultLogin.setLastLogin(result.lastLogin());
-			}).isEmpty().doOnSuccess(empty -> {
-				if (empty || !(resultLogin.getPassword().equals(spaLogin.getPassword()))) {
-					resultLogin.setStatus("-1");
-					resultLogin.setId(0l);
-					resultLogin.setName(spaLogin.getName());
-					resultLogin.setPassword(spaLogin.getPassword());
-					resultLogin.setLastLogin(new Date());
-				} else {
-					resultLogin.setStatus("0");
-				}
-			}).subscribe(result -> {
-				if("0".equals(resultLogin.getStatus())) {
-					if(SpaDbConfiguration.isUsingSqlite3()) {
-						Future<Integer> future = updateCustomLogin(db, resultLogin, "date");
-						future.onSuccess(result2 -> {
-							promise.complete(resultLogin);
-						});
+    private static String setupRemoveLogin() {
+        return create
+                .renderNamedParams(deleteFrom(table("LOGIN")).where(field("NAME").eq("$"), field("PASSWORD").eq("$")));
+    }
 
-						future.onFailure(failed -> {
-							logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Add Login Update failed...: ", failed.getMessage(), ColorUtilConstants.RESET ));
-							resultLogin.setStatus("-99");
-							promise.complete(resultLogin);
-						});
-					} 
-				}
-				else {
-					promise.complete(resultLogin);
-				}
-			}, throwable -> {
-				resultLogin.setStatus("-99");
-				promise.complete(resultLogin);
-				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error retrieving user: ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
-				throwable.printStackTrace();
-			});
+    public String getRemoveLogin() {
+        return GETREMOVELOGIN;
+    }
 
-		return promise.future();
-	}
+    public abstract SpaLogin createSpaLogin();
 
-	public Future<SpaLogin> addLogin(SpaLogin spaLogin, Database db)
-			throws InterruptedException, SQLException {
-		Promise<SpaLogin> promise = Promise.promise();
-	
-		spaLogin.setStatus("0");
-		db.update(getInsertLogin()).parameter("NAME", spaLogin.getName())
-			.parameter("PASSWORD", spaLogin.getPassword())
-			.parameter("LASTLOGIN", new Timestamp(new Date().getTime()))
-			.returnGeneratedKeys()
-			.getAs(Long.class)
-			.doOnNext(k -> spaLogin.setId(k))
-			.subscribe(result -> {
-				promise.complete(spaLogin);
-			},throwable -> {
-				spaLogin.setStatus("-4");
-				promise.complete(spaLogin);
-				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error adding user -  ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
-				throwable.printStackTrace();
-			});
-		
-		return promise.future();
-	}
+    public Future<SpaLogin> getLogin(SpaLogin spaLogin) throws InterruptedException, SQLException {
+        Promise<SpaLogin> promise = Promise.promise();
 
-	private static String setupRemoveLogin() {
-		return create.renderNamedParams(deleteFrom(table("LOGIN")).where(field("NAME").eq(param("NAME", ":name")),
-				field("PASSWORD").eq(param("PASSWORD", ":password"))));
-	}
+        SpaLogin resultLogin = createSpaLogin();
+        resultLogin.setStatus("0");
 
-	public String getRemoveLogin() {
-		return GETREMOVELOGIN;
-	}
+        pool.getConnection(c -> {
+            SqlConnection conn = c.result();
 
-	public Future<SpaLogin> removeLogin(SpaLogin spaLogin, Database db)
-			throws InterruptedException, SQLException {
-		Promise<SpaLogin> promise = Promise.promise();
-		
-		db.update(getRemoveLogin()).parameter("NAME", spaLogin.getName())
-			.parameter("PASSWORD", spaLogin.getPassword())
-			.counts()
-			.subscribe(result -> {
-				spaLogin.setStatus(result.toString()); // result = records deleted
-				if(spaLogin.getId() == null) {
-					spaLogin.setId(-1l);
-				}
-				if(spaLogin.getLastLogin() == null) {
-					spaLogin.setLastLogin(new Date());
-				}
-				promise.complete(spaLogin);
-			}, throwable -> {
-				spaLogin.setStatus("-4");
-				promise.complete(spaLogin);
-				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error deleting user: ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
-				throwable.printStackTrace();
-			});
+            conn.query(create.query(getLoginByNamePassword(), spaLogin.getName(), spaLogin.getPassword()).toString())
+                .execute(ar -> {
+                    if (ar.succeeded()) {
+                        RowSet<Row> rows = ar.result();
 
-		return promise.future();
-	}
+                        if (rows.size() == 0) {
+                            if (!(spaLogin.getPassword().equals(resultLogin.getPassword()))) {
+                                resultLogin.setStatus("-1");
+                                resultLogin.setId(0l);
+                                resultLogin.setName(spaLogin.getName());
+                                resultLogin.setPassword(spaLogin.getPassword());
+                                resultLogin.setLastLogin(new Date());
+                            } else {
+                                resultLogin.setStatus("0");
+                            }
+                        } else {
+                            for (Row row : rows) {
+                                try {
+                                    resultLogin.setId(row.getLong(0));
+                                    resultLogin.setName(row.getString(1));
+                                    resultLogin.setPassword(row.getString(2));
+                                    resultLogin.setLastLogin(row.getValue(3));
+                                } catch(Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        if (rows.size() > 0 && "0".equals(resultLogin.getStatus())) {
+                            conn.close();
+                            Future<Integer> future = null;
+                            try {
+                                future = updateCustomLogin(resultLogin, "date");
+                            } catch (/*InterruptedException | SQLException*/ Exception e) {
+                                e.printStackTrace();
+                            }
+                            future.onSuccess(result2 -> {
+                                resultLogin.setStatus("0");
+                                promise.complete(resultLogin);
+                            });
 
-	public Future<Integer> updateCustomLogin(Database db, SpaLogin spaLogin, String type)
-			throws InterruptedException, SQLException {
-		Promise<Integer> promise = Promise.promise();
+                            future.onFailure(failed -> {
+                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                        "Add Login Update failed...: ", failed.getMessage(),
+                                        ColorUtilConstants.RESET));
+                                resultLogin.setStatus("-99");
+                                promise.complete(resultLogin);
+                            });
+                        } else {
+                            conn.close();
+                            promise.complete(resultLogin);
+                        }
+                    } else {
+                        conn.close();
+                        resultLogin.setStatus("-99");
+                        promise.complete(resultLogin);
+                        logger.error(String.format("%sError retrieving user: %s -- %s%s", ColorUtilConstants.RED,
+                                spaLogin.getName(), ar.cause().getMessage(), ColorUtilConstants.RESET));
+                    }
+                });
+        });
+        
+        return promise.future();
+    }
 
-		int count[] = { 0 };
-		db.update(getSqliteUpdateLogin()).parameter("LOGINID", spaLogin.getId())
-			.parameter("LASTLOGIN", "date".equals(type)? new Date().getTime(): new Timestamp(new Date().getTime()))
-			.counts()
-			.doOnNext(c -> count[0] += c)
-			.subscribe(result -> {
-				promise.complete(count[0]);
-			}, throwable -> {
-				promise.complete(-99);
-				logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Error Updating user: ", spaLogin.getName(), " : ", throwable.getMessage(), ColorUtilConstants.RESET ));
-				throwable.printStackTrace();
-			});
+    public Future<SpaLogin> addLogin(SpaLogin spaLogin) throws InterruptedException, SQLException {
+        Promise<SpaLogin> promise = Promise.promise();
+        Timestamp current = new Timestamp(new Date().getTime());
+        OffsetDateTime time = OffsetDateTime.now();
 
-		return promise.future();
-	}
+        Object lastLogin = DbConfiguration.isUsingPostgres() ? time : current;
 
-	public void setIsTimestamp(Boolean isTimestamp) {
-		this.isTimestamp = isTimestamp;
-	}
+        spaLogin.setStatus("0");
 
-	public Boolean getIsTimestamp() {
-		return isTimestamp;
-	}
+        pool.getConnection(c -> {
+            Tuple parameters = Tuple.of(spaLogin.getName(), spaLogin.getPassword(), lastLogin);
+            SqlConnection conn = c.result();
+
+            conn.preparedQuery(getInsertLogin()).rxExecute(parameters).doOnSuccess(rows -> {
+                for (Row row : rows) {
+                    spaLogin.setId(row.getLong(0));
+                    spaLogin.setLastLogin(current);
+                }
+
+                conn.close();
+                promise.complete(spaLogin);
+            }).doOnError(err -> {
+                conn.close();
+                spaLogin.setStatus("-4");
+                logger.error(String.format("%sError adding login: %s%s", ColorUtilConstants.RED, err,
+                        ColorUtilConstants.RESET));
+            }).subscribe(rows -> {
+                //
+            }, err -> {
+                conn.close();
+                spaLogin.setStatus("-4");
+                promise.complete(spaLogin);
+                logger.error(String.format("%sError adding login: %s%s", ColorUtilConstants.RED, err,
+                        ColorUtilConstants.RESET));
+            });
+        });
+
+        return promise.future();
+    }
+
+    public Future<SpaLogin> removeLogin(SpaLogin spaLogin) throws InterruptedException, SQLException {
+        Promise<SpaLogin> promise = Promise.promise();
+
+        
+        pool.getConnection(c-> {
+            SqlConnection conn = c.result();
+            String query = create.query(getRemoveLogin(), spaLogin.getName(), spaLogin.getPassword()).toString();
+
+            conn.query(query).rxExecute()
+                .doOnSuccess(rows -> {
+                    for(Row row : rows) {
+                        spaLogin.setId(row.getLong(0));
+                    }
+                    Integer count = Integer.valueOf(rows.rowCount());
+
+                    spaLogin.setStatus(count.toString());
+                    if (spaLogin.getId() == null) {
+                        spaLogin.setId(-1l);
+                    }
+                    if (spaLogin.getLastLogin() == null) {
+                        spaLogin.setLastLogin(new Date());
+                    }
+                    promise.complete(spaLogin);
+
+                    conn.close();
+                }).doOnError(err -> {
+                    logger.error(String.format("%sError deleting login: %s%s", ColorUtilConstants.RED,
+                            err, ColorUtilConstants.RESET));
+                    spaLogin.setStatus("-4");
+                    promise.complete(spaLogin);
+                }).subscribe(rows -> {
+
+                }, err -> {
+                    spaLogin.setStatus("-4");
+                    promise.complete(spaLogin);
+                    err.printStackTrace();
+                });
+        });
+        
+        return promise.future();
+    }
+
+    public Future<Integer> updateCustomLogin(SpaLogin spaLogin, String type) 
+            throws InterruptedException, SQLException {
+        Promise<Integer> promise = Promise.promise();
+
+        pool.getConnection(c -> {
+            SqlConnection conn = c.result();
+            Timestamp timeStamp = new Timestamp(new Date().getTime());
+            OffsetDateTime time = OffsetDateTime.now();
+            Long date = new Date().getTime();
+            String sql = getUpdateLogin();
+            LocalDateTime lTime = LocalDateTime.now();
+
+            Object dateTime = DbConfiguration.isUsingIbmDB2()? lTime: 
+                DbConfiguration.isUsingSqlite3()? date: DbConfiguration.isUsingCubrid()? timeStamp: time;
+
+            spaLogin.setLastLogin(timeStamp);
+
+            if (DbConfiguration.isUsingCubrid()) {
+                // Cubrid fails with NullPointer using "preparedQuery"
+                String query = create.query(getSqliteUpdateLogin(), dateTime, spaLogin.getId()).toString();
+
+                conn.query(query)
+                    .rxExecute()
+                    .doOnSuccess(rows -> {
+                        conn.close();
+                        promise.complete(rows.rowCount());
+                    }).doOnError(err -> {
+                        logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
+                                    err, ColorUtilConstants.RESET));
+                    }).subscribe(rows -> {
+                        //
+                    }, err -> {
+                        logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
+                                    err, ColorUtilConstants.RESET));
+                        err.printStackTrace();
+                        conn.close();
+                        promise.complete(-99);
+                        err.printStackTrace();
+                    });
+            } else {
+                conn.preparedQuery(sql)
+                    .rxExecute(Tuple.of(dateTime, spaLogin.getId()))
+                    .doOnSuccess(rows -> {
+                        conn.close();
+                        promise.complete(rows.rowCount());
+            
+                }).doOnError(err -> {
+                    logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
+                                err, ColorUtilConstants.RESET));
+                    // conn.close();
+                }).subscribe(rows -> {
+                    //
+                }, err -> {
+                    logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
+                                err, ColorUtilConstants.RESET));
+                    err.printStackTrace();
+                    conn.close();
+                    promise.complete(-99);
+                    err.printStackTrace();
+                });
+            }
+        });
+
+        return promise.future();
+    }
+
+    public void setIsTimestamp(Boolean isTimestamp) {
+        this.isTimestamp = isTimestamp;
+    }
+
+    public Boolean getIsTimestamp() {
+        return isTimestamp;
+    }
 }

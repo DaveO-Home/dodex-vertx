@@ -1,14 +1,10 @@
 package dmo.fs.db;
 
 import java.io.IOException;
-import java.sql.Driver;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.davidmoten.rx.jdbc.ConnectionProvider;
 
 import dmo.fs.utils.DodexUtil;
 
@@ -25,8 +21,8 @@ public abstract class DbConfiguration {
     private static Boolean isUsingCassandra = false;
     private static String defaultDb = "sqlite3";
     private static DodexUtil dodexUtil = new DodexUtil();
-    private static DodexDatabase dodexDatabase;
-    private static DodexCassandra dodexCassandra;
+    private static DodexDatabase dodexDatabase4;
+    private static DodexCassandra dodexCassandra4;
 
     private enum DbTypes {
         POSTGRES("postgres"),
@@ -42,43 +38,6 @@ public abstract class DbConfiguration {
             this.db = db;
         }
     };
-
-    public static ConnectionProvider getSqlite3ConnectionProvider() {
-        isUsingSqlite3 = true;
-        return ConnectionProvider.from(map.get("url") + map.get("filename"), properties);
-    }
-
-    public static ConnectionProvider getPostgresConnectionProvider() {
-        isUsingPostgres = true;
-        return ConnectionProvider.from(map.get("url") + map.get("host") + map.get("dbname"), properties);
-    }
-
-    public static ConnectionProvider getCubridConnectionProvider() throws SQLException {
-        isUsingCubrid = true;
-        
-        Driver driver = new cubrid.jdbc.driver.CUBRIDDriver();
-        DriverManager.registerDriver(driver);
-
-        return ConnectionProvider.from(map.get("url") + map.get("host") + map.get("dbname") + "?charSet=utf8",
-                properties.get("user").toString(), properties.get("password").toString());
-    }
-
-    public static ConnectionProvider getMariadbConnectionProvider() throws SQLException {
-        isUsingMariadb = true;
-
-        return ConnectionProvider.from(map.get("url") + map.get("host") + map.get("dbname") + "?charSet=utf8",
-                properties.get("user").toString(), properties.get("password").toString());
-    }
-
-    public static ConnectionProvider getIbmDb2ConnectionProvider() {
-        isUsingIbmDB2 = true;
-        return ConnectionProvider.from(map.get("url") + map.get("host") + map.get("dbname"), properties);
-    }
-
-    public static ConnectionProvider getCassandraConnectionProvider() {
-        isUsingCassandra = true;
-        return ConnectionProvider.from(map.get("url") + map.get("filename"), properties);
-    }
 
     public static boolean isUsingSqlite3() {
         return isUsingSqlite3;
@@ -103,54 +62,68 @@ public abstract class DbConfiguration {
     public static boolean isUsingCassandra() {
         return isUsingCassandra;
     }
+
     @SuppressWarnings("unchecked")
-    public static <T> T getDefaultDb() throws InterruptedException, IOException, SQLException {
+    public static <R> R getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
         try {
-            if(defaultDb.equals(DbTypes.POSTGRES.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabasePostgres();
-            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseSqlite3();
-            } else if(defaultDb.equals(DbTypes.CUBRID.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseCubrid();
-            } else if(defaultDb.equals(DbTypes.MARIADB.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseMariadb();
-            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseIbmDB2();
+            if(defaultDb.equals(DbTypes.POSTGRES.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabasePostgres();
+                isUsingPostgres = true;
+            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseSqlite3();
+                isUsingSqlite3 = true;
+            } else if(defaultDb.equals(DbTypes.CUBRID.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseCubrid();
+                isUsingCubrid = true;
+            } else if(defaultDb.equals(DbTypes.MARIADB.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseMariadb();
+                isUsingMariadb = true;
+            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseIbmDB2();
+                isUsingIbmDB2 = true;
             } else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
-                dodexCassandra = dodexCassandra == null? new DodexDatabaseCassandra(): dodexCassandra;
-                return (T) dodexCassandra;
+                dodexCassandra4 = dodexCassandra4 == null? new DodexDatabaseCassandra(): dodexCassandra4;
+                isUsingCassandra = true;
+                return (R) dodexCassandra4;
             }
         } catch (Exception exception) { 
             throw exception;
         }
-        return (T) dodexDatabase;
+        return (R) dodexDatabase4;
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T getDefaultDb(Map<String, String> overrideMap, Properties overrideProps)
+    public static <R> R getDefaultDb(Map<String, String> overrideMap, Properties overrideProps)
             throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb();
         
         try {
-            if(defaultDb.equals(DbTypes.POSTGRES.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabasePostgres(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseSqlite3(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.CUBRID.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseCubrid(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.MARIADB.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseMariadb(overrideMap, overrideProps);
-            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase == null) {
-                dodexDatabase = new DodexDatabaseIbmDB2(overrideMap, overrideProps);
+            if(defaultDb.equals(DbTypes.POSTGRES.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabasePostgres(overrideMap, overrideProps);
+                isUsingPostgres = true;
+            } else if(defaultDb.equals(DbTypes.SQLITE3.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseSqlite3(overrideMap, overrideProps);
+                isUsingSqlite3 = true;
+            } else if(defaultDb.equals(DbTypes.CUBRID.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseCubrid(overrideMap, overrideProps);
+                isUsingCubrid = true;
+            } else if(defaultDb.equals(DbTypes.MARIADB.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseMariadb(overrideMap, overrideProps);
+                isUsingMariadb = true;
+            } else if(defaultDb.equals(DbTypes.IBMDB2.db) && dodexDatabase4 == null) {
+                dodexDatabase4 = new DodexDatabaseIbmDB2(overrideMap, overrideProps);
+                isUsingIbmDB2 = true;
             } else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
-                dodexCassandra = dodexCassandra == null? new DodexDatabaseCassandra(overrideMap, overrideProps): dodexCassandra;
-                return (T) dodexCassandra;
+                dodexCassandra4 = dodexCassandra4 == null? 
+                    new DodexDatabaseCassandra(overrideMap, overrideProps): dodexCassandra4;
+                    isUsingCassandra = true;
+                return (R) dodexCassandra4;
             }
         } catch (Exception exception) { 
             throw exception;
         }
-        return (T) dodexDatabase;
+        return (R) dodexDatabase4;
     }
 
     public static void configureDefaults(Map<String, String>overrideMap, Properties overrideProps) {

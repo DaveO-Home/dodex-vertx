@@ -18,6 +18,8 @@ plugins {
     id "nu.studer.jooq" version "3.0.3"
 
     id 'pmd'
+
+    // id 'org.sonatype.gradle.plugins.scan' version '1.0.0'
 }
 
 repositories {
@@ -29,20 +31,21 @@ repositories {
          url "https://plugins.gradle.org/m2/"
          url "http://maven.cubrid.org/"
     }
+
     mavenCentral()
     mavenLocal()
 }
 
-version = "3.9.3"
+version = "4.0.0"
 ext {
-    vertxVersion = "3.9.3"
+    vertxVersion = "4.0.0"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.13.2"
 }
 sourceCompatibility = "1.8"
 
 jooq {
-  version = "3.13.2"
+  version = "3.14.4"
   edition = "OSS"
 }
 
@@ -52,21 +55,35 @@ pmd {
     ignoreFailures = true
     toolVersion = "6.24.0"
 }
+// per Stack Overflow - ony way to test the Vertx SNAPSHOTS
+// def urlFile = { url, name ->
+//     File file = new File("$buildDir/download/${name}.jar")
+//     file.parentFile.mkdirs()
+//     if (!file.exists()) {
+//         new URL(url).withInputStream { downloadStream ->
+//             file.withOutputStream { fileOut ->
+//                 fileOut << downloadStream
+//             }
+//         }
+//     }
+//     files(file.absolutePath)
+// }
 
 dependencies {
     implementation group:"io.vertx", name:"vertx-core", version:"$version"
     implementation "io.vertx:vertx-web:$version"
     implementation "io.vertx:vertx-web-api-contract:$version"
+    implementation group: "io.agroal", name: "agroal-pool", version: "1.9"
+    implementation "io.vertx:vertx-pg-client:$vertxVersion"
+    implementation "io.vertx:vertx-mysql-client:$vertxVersion"
+    implementation "io.vertx:vertx-jdbc-client:$vertxVersion"
+    implementation "io.vertx:vertx-db2-client:$vertxVersion"
+    // implementation urlFile("https://oss.sonatype.org/content/repositories/snapshots/io/vertx/vertx-jdbc-client/4.0.1-SNAPSHOT/vertx-jdbc-client-4.0.1-20201216.040500-8.jar?raw=true", "vertx-jdbc-SNAPSHOT")
     implementation "io.vertx:vertx-rx-java2:$version"
-    implementation "com.github.davidmoten:rxjava2-jdbc:0.2.7"
     implementation "org.slf4j:slf4j-jcl:1.7.28"
-    implementation "org.postgresql:postgresql:42.2.12"
-    implementation group:"org.xerial", name:"sqlite-jdbc", version:"3.31.1"
-    implementation "org.jooq:jooq"
+    implementation group: "org.xerial", name: "sqlite-jdbc", version: "3.31.1"
     implementation group: "cubrid", name: "cubrid-jdbc", version: "10.2.1.8849"
-    implementation "org.mariadb.jdbc:mariadb-java-client:2.6.0"
-    implementation "io.vertx:vertx-mongo-client:3.8.3"
-    implementation group: "com.ibm.db2.jcc", name: "db2jcc", version: "db2jcc4"
+    implementation "org.jooq:jooq"
     implementation "io.vertx:vertx-tcp-eventbus-bridge:$version"
 
     // This dependency is used by the application.u
@@ -76,6 +93,8 @@ dependencies {
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterEngineVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
     testImplementation "junit:junit:4.12"
+    // testImplementation "io.vertx:vertx-unit:$vertxVersion"
+    // testImplementation group: "io.vertx", name: "vertx-junit5-rx-java", version: "$vertxVersion"
 
 }
 
@@ -92,6 +111,7 @@ def debug = ""
 def OS = System.getProperty("os.name").toLowerCase();
 
 apply plugin: "nu.studer.jooq"
+// apply plugin: "org.sonatype.gradle.plugins.scan"
 
 run {
      if (System.getProperty("DEBUG", "false") == "true") {

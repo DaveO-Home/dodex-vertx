@@ -10,20 +10,25 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.jooq.SQLDialect;
 
 import io.reactivex.disposables.Disposable;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
+import io.vertx.reactivex.core.Vertx;
 
 public class DodexUtil {
     private final static Logger logger = LoggerFactory.getLogger(DodexUtil.class.getName());
     private final static String REMOVEUSER = ";removeuser";
     private final static String USERS = ";users";
     private static String env = "dev";
+    private static Vertx vertx = null;
+    private static io.vertx.core.Vertx vertx2 = null;
+
     String defaultDb = "sqlite3";
 
     public void await(Disposable disposable) {
@@ -204,4 +209,20 @@ public class DodexUtil {
 
         return SQLDialect.DEFAULT;
       }
+
+      public static Vertx getVertx() {
+          return vertx;
+      }
+
+      public static void setVertx(Vertx vertx) {
+          DodexUtil.vertx = vertx;
+      }
+
+      public static io.vertx.core.Vertx getVertx2() {
+        return vertx2;
+    }
+
+    public static void setVertx2(io.vertx.core.Vertx vertx2) {
+        DodexUtil.vertx2 = vertx2;
+    }
 }

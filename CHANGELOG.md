@@ -1,5 +1,11 @@
 # Changelog
 
+## [v2.0.1](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.1) (2020-12-30)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.0...v2.0.1)
+
+* Fixed Spa-React "login" component for Akka/Cassandra
+
 ## [v2.0.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.0) (2020-12-28)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.9.1...v2.0.0)
@@ -8,7 +14,7 @@
 * Converted 'davidmoten:rxjava2-jdbc' library to 'io.vertx.reactivex.*'
 * Using Vertx4 PostgreSQL, MySQL, DB2 and JDBC clients
 
-__Just a note:__ 😞 Wondering if anyone trys this code out. __No Issues!!__ not even a 👍.
+__Just a note:__ 😞 Wondering if anyone tries this code out. __No Issues!!__ not even a 👍.
 
 ## [v1.9.1](https://github.com/DaveO-Home/dodex-vertx/tree/v1.9.1) (2020-12-07)
 

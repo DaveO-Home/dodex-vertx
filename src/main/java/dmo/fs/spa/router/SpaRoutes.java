@@ -65,51 +65,44 @@ public class SpaRoutes {
                 SpaApplication spaApplication = new SpaApplication();
 
                 spaApplication.setVertx(vertx);
-                spaApplication.setupDatabase().onSuccess(v -> {
-                    Session session = routingContext.session();
+                Session session = routingContext.session();
 
-                    routingContext.put("name", "getlogin");
-                    if (session.get("login") != null) {
-                        session.remove("login");
+                routingContext.put("name", "getlogin");
+                if (session.get("login") != null) {
+                    session.remove("login");
+                }
+
+                HttpServerResponse response = routingContext.response();
+
+                final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
+                
+                if (queryData.isPresent()) {
+                    try {
+                        Future<SpaLogin> future = spaApplication
+                                .getLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
+
+                        future.onSuccess(result -> {
+                            if (result.getId() == null) {
+                                result.setId(0l);
+                            }
+                            session.put("login", new JsonObject(result.getMap()));
+                            response.end(new JsonObject(result.getMap()).encode());
+                        });
+
+                        future.onFailure(failed -> {
+                            logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Add Login Failed: ",
+                                    failed.getMessage(), ColorUtilConstants.RESET));
+                            response.end(FAILURE);
+                        });
+
+                    } catch (UnsupportedEncodingException | InterruptedException | SQLException e) {
+                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
                     }
-
-                    HttpServerResponse response = routingContext.response();
-
-                    final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
-
-                    if (queryData.isPresent()) {
-                        try {
-                            Future<SpaLogin> future = spaApplication
-                                    .getLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
-
-                            future.onSuccess(result -> {
-                                if (result.getId() == null) {
-                                    result.setId(0l);
-                                }
-                                session.put("login", new JsonObject(result.getMap()));
-                                response.end(new JsonObject(result.getMap()).encode());
-                            });
-
-                            future.onFailure(failed -> {
-                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Add Login Failed: ",
-                                        failed.getMessage(), ColorUtilConstants.RESET));
-                                response.end(FAILURE);
-                            });
-
-                        } catch (UnsupportedEncodingException | InterruptedException | SQLException e) {
-                            logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                    "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
-
-                        } catch (Exception exception) {
-                            exception.printStackTrace();
-                        }
-                    }
-                }).onFailure(err -> {
-                    logger.error(String.format("%sError Setting up Database: %s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
-                            err.getCause().getMessage(), ColorUtilConstants.RESET));
-                    err.printStackTrace();
-                });
-
+                }
             } catch (/* InterruptedException | IOException | SQLException | */ Exception e1) {
                 e1.printStackTrace();
             }
@@ -131,69 +124,67 @@ public class SpaRoutes {
                 SpaApplication spaApplication = new SpaApplication();
 
                 spaApplication.setVertx(vertx);
-                spaApplication.setupDatabase().onSuccess(v -> {
-                    Session session = routingContext.session();
+                Session session = routingContext.session();
 
-                    routingContext.put("name", "putlogin");
-                    if (session.get("login") != null) {
-                        session.remove("login");
-                    }
+                routingContext.put("name", "putlogin");
+                if (session.get("login") != null) {
+                    session.remove("login");
+                }
 
-                    HttpServerResponse response = routingContext.response();
+                HttpServerResponse response = routingContext.response();
 
-                    final Optional<String> bodyData = Optional.ofNullable(routingContext.getBodyAsString());
+                final Optional<String> bodyData = Optional.ofNullable(routingContext.getBodyAsString());
 
-                    if (bodyData.isPresent()) {
-                        try {
-                            SpaLogin spaLogin = SpaUtil.createSpaLogin();
-                            spaLogin = SpaUtil.parseBody(URLDecoder.decode(routingContext.getBodyAsString(), "UTF-8"),
-                                    spaLogin);
+                if (bodyData.isPresent()) {
+                    try {
+                        SpaLogin spaLogin = SpaUtil.createSpaLogin();
+                        spaLogin = SpaUtil.parseBody(URLDecoder.decode(routingContext.getBodyAsString(), "UTF-8"),
+                                spaLogin);
 
-                            JsonObject jsonObject = new JsonObject(spaLogin.getMap());
-                            Future<SpaLogin> futureLogin = spaApplication.getLogin(jsonObject.encode());
+                        JsonObject jsonObject = new JsonObject(spaLogin.getMap());
+                        Future<SpaLogin> futureLogin = spaApplication.getLogin(jsonObject.encode());
 
-                            futureLogin.onSuccess(result -> {
-                                if (result.getStatus().equals("0")) {
-                                    result.setStatus("-2");
-                                    response.end(new JsonObject(result.getMap()).encode());
-                                } else {
-                                    Future<SpaLogin> future = null;
-                                    try {
-                                        future = new SpaApplication().addLogin(routingContext.getBodyAsString());
-                                    } catch (InterruptedException | SQLException | IOException e) {
-                                        e.printStackTrace();
-                                    }
-
-                                    future.onSuccess(result2 -> {
-                                        session.put("login", new JsonObject(result2.getMap()));
-                                        response.end(new JsonObject(result2.getMap()).encode());
-                                    });
-
-                                    future.onFailure(failed -> {
-                                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                                "Add Login failed...: ", failed.getMessage(),
-                                                ColorUtilConstants.RESET));
-                                        response.end(FAILURE);
-                                    });
+                        futureLogin.onSuccess(result -> {
+                            if (result.getStatus().equals("0")) {
+                                result.setStatus("-2");
+                                response.end(new JsonObject(result.getMap()).encode());
+                            } else {
+                                Future<SpaLogin> future = null;
+                                try {
+                                    future = new SpaApplication().addLogin(routingContext.getBodyAsString());
+                                } catch (InterruptedException | SQLException | IOException e) {
+                                    e.printStackTrace();
                                 }
 
-                            });
+                                future.onSuccess(result2 -> {
+                                    session.put("login", new JsonObject(result2.getMap()));
+                                    response.end(new JsonObject(result2.getMap()).encode());
+                                });
 
-                            futureLogin.onFailure(failed -> {
-                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                        "Add Login failed...: ", failed.getMessage(), ColorUtilConstants.RESET));
-                                response.end(FAILURE);
-                            });
+                                future.onFailure(failed -> {
+                                    logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                            "Add Login failed...: ", failed.getMessage(),
+                                            ColorUtilConstants.RESET));
+                                    response.end(FAILURE);
+                                });
+                            }
 
-                        } catch (InterruptedException | SQLException e) {
+                        });
+
+                        futureLogin.onFailure(failed -> {
                             logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                    "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+                                    "Add Login failed...: ", failed.getMessage(), ColorUtilConstants.RESET));
+                            response.end(FAILURE);
+                        });
 
-                        } catch (Exception exception) {
-                            exception.printStackTrace();
-                        }
+                    } catch (InterruptedException | SQLException e) {
+                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
                     }
-                });
+                }
             } catch (InterruptedException | IOException | SQLException e1) {
                 e1.printStackTrace();
             }
@@ -248,46 +239,41 @@ public class SpaRoutes {
 
         route.handler(routingContext -> {
             try {
-
                 SpaApplication spaApplication = new SpaApplication();
 
                 spaApplication.setVertx(vertx);
-                spaApplication.setupDatabase().onSuccess(v -> {
-                    Session session = routingContext.session();
+                Session session = routingContext.session();
 
-                    routingContext.put("name", "unregisterlogin");
+                routingContext.put("name", "unregisterlogin");
 
-                    if (!session.isEmpty()) {
-                        session.destroy();
+                if (!session.isEmpty()) {
+                    session.destroy();
+                }
+
+                HttpServerResponse response = routingContext.response();
+
+                final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
+                if (queryData.isPresent()) {
+                    try {
+                        Future<SpaLogin> future = spaApplication
+                                .unregisterLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
+
+                        future.onSuccess(result -> {
+                            session.destroy();
+                            response.end(new JsonObject(result.getMap()).encode());
+                        });
+
+                        future.onFailure(failed -> {
+                            logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Unregister Login failed...: ",
+                                    failed.getMessage(), ColorUtilConstants.RESET));
+                            response.end(FAILURE);
+                        });
+                    } catch (Exception e) {
+                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+                        e.printStackTrace();
                     }
-
-                    HttpServerResponse response = routingContext.response();
-
-                    final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
-                    if (queryData.isPresent()) {
-                        try {
-
-                            Future<SpaLogin> future = spaApplication
-                                    .unregisterLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
-
-                            future.onSuccess(result -> {
-                                session.destroy();
-                                response.end(new JsonObject(result.getMap()).encode());
-                            });
-
-                            future.onFailure(failed -> {
-                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Unregister Login failed...: ",
-                                        failed.getMessage(), ColorUtilConstants.RESET));
-                                response.end(FAILURE);
-                            });
-
-                        } catch (Exception e) {
-                            logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                    "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
-                            e.printStackTrace();
-                        }
-                    }
-                });
+                }
             } catch (InterruptedException | IOException | SQLException e1) {
                 e1.printStackTrace();
             }

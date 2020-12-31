@@ -15,7 +15,6 @@ import dmo.fs.utils.DodexUtil;
 import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.disposables.Disposable;
-import io.vertx.core.net.NetClientOptions;
 import io.vertx.db2client.DB2ConnectOptions;
 import io.vertx.reactivex.db2client.DB2Pool;
 import io.vertx.reactivex.sqlclient.Row;

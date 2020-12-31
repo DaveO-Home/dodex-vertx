@@ -4,7 +4,6 @@ package dmo.fs.db;
 import static org.jooq.impl.DSL.deleteFrom;
 import static org.jooq.impl.DSL.field;
 import static org.jooq.impl.DSL.insertInto;
-import static org.jooq.impl.DSL.mergeInto;
 import static org.jooq.impl.DSL.notExists;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
@@ -19,7 +18,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Stream;
 
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
@@ -174,9 +172,10 @@ public abstract class DbDefinitionBase {
     }
     
     private static String setupUpdateUser() {
-        return create.renderNamedParams(mergeInto(table("USERS"))
-                .columns(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
-                .key(field("ID")).values("$1", "$2", "$3", "$4", "$5"));
+        return create.renderNamedParams(insertInto(table("USERS"))
+            .columns(field("ID"), field("NAME"), field("PASSWORD"), field("IP"), field("LAST_LOGIN"))
+            .values("$1", "$2", "$3", "$4", "$5").onConflict(field("PASSWORD")).doUpdate()
+            .set(field("LAST_LOGIN"), "$5").returning(field("ID")));
     }
 
     public String getUpdateUser() {
@@ -474,10 +473,10 @@ public abstract class DbDefinitionBase {
             messageUser.getName(), 
             messageUser.getPassword(), 
             messageUser.getIp(),
-            time };
-        // The update statement is a "merge"(insert/update) so need a double set of parameters
-        array = Stream.of(array, array).flatMap(Stream::of).toArray(Object[]::new);
-
+            time,
+            time
+        };
+        
         return array;
     }
 

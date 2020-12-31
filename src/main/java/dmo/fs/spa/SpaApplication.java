@@ -11,6 +11,7 @@ import org.modellwerkstatt.javaxbus.EventBus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dmo.fs.db.DbConfiguration;
 import dmo.fs.spa.db.DbCassandraBase;
 import dmo.fs.spa.db.SpaCassandra;
 import dmo.fs.spa.db.SpaDatabase;
@@ -20,6 +21,7 @@ import dmo.fs.spa.utils.SpaLoginImpl;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.reactivex.core.Promise;
 
 public class SpaApplication extends DbCassandraBase {
     private final static Logger logger = LoggerFactory.getLogger(SpaApplication.class.getName());
@@ -41,6 +43,11 @@ public class SpaApplication extends DbCassandraBase {
     }
 
     public Future<Void> setupDatabase() throws InterruptedException, SQLException {
+        if (DbConfiguration.isUsingCassandra()) {
+            Promise<Void> setupPromise = Promise.promise();
+            setupPromise.complete();
+            return setupPromise.future();
+        }
         return spaDatabase.databaseSetup();
     }
 

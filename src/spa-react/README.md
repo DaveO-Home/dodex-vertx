@@ -51,7 +51,7 @@ The basic idea is to build a single page(spa) production application ensuring co
 
   To install all required dependencies.
   
-  __Note__ Npm will produce vulnerability warnings, these are mostly from the testing tools, specifically `jasmine-jquery` which is no longer actively maintained.
+  __Note__ Npm will produce vulnerability warnings, they must be dealt with manually.
   
   The test build will generate the spa application in `src/main/resources/static/dist_test/react-fusebox` and production in `src/main/resources/static/dist/react-fusebox`. The application is accessible after rebuilding the Vertx test server. The rebuild is usually automatic, however restarting the server or touching a `*.java` file with the Vertx server running will redeploy the application.
 

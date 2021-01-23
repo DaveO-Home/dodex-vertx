@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.0.3](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.3) (2020-01-23)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.2...v2.0.3)
+
+* Upgraded the react spa app to remove many vulnerablities.
+* Made jsoneditor default to z-index -1 to allow table pager
+
 ## [v2.0.2](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.2) (2020-12-31)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.1...v2.0.2)

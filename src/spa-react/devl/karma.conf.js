@@ -37,7 +37,7 @@ module.exports = function (config) {
         basePath: "../../",
         // frameworks to use
         // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-        frameworks: ["jasmine-jquery", "jasmine"],
+        frameworks: ["jasmine-jquery"],
         proxies: {
             /* Integration testing with backend Java Vertx server */
             "/views/": base + "/appl/views/",
@@ -71,13 +71,8 @@ module.exports = function (config) {
         bowerPackages: [
         ],
         plugins: [
-            "karma-chrome-launcher",
-            "karma-firefox-launcher",
-            "karma-opera-launcher",
-            "karma-jasmine",
-            "karma-jasmine-jquery",
-            "karma-mocha-reporter",
-            "karma-allure-reporter"
+            "karma-*",
+            "@metahub/karma-jasmine-jquery",
         ],
         /* Karma uses <link href="/base/appl/testapp_dev.html" rel="import"> -- you will need webcomponents polyfill to use browsers other than Chrome.
          * This test demo will work with Chrome/ChromeHeadless by default - Webcomponents included above, so FirefoxHeadless should work also. 

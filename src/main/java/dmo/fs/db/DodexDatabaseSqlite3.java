@@ -182,6 +182,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 			}
 		}, err -> {
 			logger.info(String.format("Tables Create Error: %s", err.getMessage()));
+            err.printStackTrace();
 		});
     }
 

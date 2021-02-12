@@ -27,18 +27,21 @@ repositories {
     // You can declare any Maven/Ivy/file repository here.
     jcenter()
     maven {
-         url "https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc"
-         url "https://plugins.gradle.org/m2/"
-         url "http://maven.cubrid.org/"
+        url "https://plugins.gradle.org/m2/"
     }
-
+    maven {
+        url "https://oss.sonatype.org/content/repositories/snapshots/"
+    }
     mavenCentral()
     mavenLocal()
+    maven {
+        url "http://maven.cubrid.org/"
+    }
 }
 
-version = "4.0.0"
+version = "4.0.2"
 ext {
-    vertxVersion = "4.0.0"
+    vertxVersion = "4.0.2"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.13.2"
 }
@@ -55,19 +58,6 @@ pmd {
     ignoreFailures = true
     toolVersion = "6.24.0"
 }
-// per Stack Overflow - ony way to test the Vertx SNAPSHOTS
-// def urlFile = { url, name ->
-//     File file = new File("$buildDir/download/${name}.jar")
-//     file.parentFile.mkdirs()
-//     if (!file.exists()) {
-//         new URL(url).withInputStream { downloadStream ->
-//             file.withOutputStream { fileOut ->
-//                 fileOut << downloadStream
-//             }
-//         }
-//     }
-//     files(file.absolutePath)
-// }
 
 dependencies {
     implementation group:"io.vertx", name:"vertx-core", version:"$version"
@@ -78,11 +68,10 @@ dependencies {
     implementation "io.vertx:vertx-mysql-client:$vertxVersion"
     implementation "io.vertx:vertx-jdbc-client:$vertxVersion"
     implementation "io.vertx:vertx-db2-client:$vertxVersion"
-    // implementation urlFile("https://oss.sonatype.org/content/repositories/snapshots/io/vertx/vertx-jdbc-client/4.0.1-SNAPSHOT/vertx-jdbc-client-4.0.1-20201216.040500-8.jar?raw=true", "vertx-jdbc-SNAPSHOT")
     implementation "io.vertx:vertx-rx-java2:$version"
     implementation "org.slf4j:slf4j-jcl:1.7.28"
     implementation group: "org.xerial", name: "sqlite-jdbc", version: "3.31.1"
-    implementation group: "cubrid", name: "cubrid-jdbc", version: "10.2.1.8849"
+    implementation group: "cubrid", name: "cubrid-jdbc", version: "10.2.2.8874"
     implementation "org.jooq:jooq"
     implementation "io.vertx:vertx-tcp-eventbus-bridge:$version"
 

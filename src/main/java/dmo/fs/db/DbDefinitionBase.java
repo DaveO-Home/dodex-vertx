@@ -370,7 +370,13 @@ public abstract class DbDefinitionBase {
             }).doOnError(err -> {
                 logger.error(String.format("%sError adding user: %s%s", 
                         ColorUtilConstants.RED, err, ColorUtilConstants.RESET));
-            }).subscribe();
+            }).subscribe(rows -> {
+                //
+            }, err -> {
+                logger.error(String.format("%sError Adding user: %s%s", ColorUtilConstants.RED,
+                            err, ColorUtilConstants.RESET));
+                err.printStackTrace();
+            });
         });
 
         return promise.future();
@@ -416,7 +422,7 @@ public abstract class DbDefinitionBase {
                 Object[] array = getArray(messageUser);
 
                 String sql = DbConfiguration.isUsingIbmDB2() ||
-                    DbConfiguration.isUsingSqlite3() || 
+                    DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingMariadb() ||
                     DbConfiguration.isUsingCubrid()? getSqliteUpdateUser(): getUpdateUser();
 
                     conn.preparedQuery(sql)
@@ -461,9 +467,12 @@ public abstract class DbDefinitionBase {
         Long date = new Date().getTime();
         OffsetDateTime time = OffsetDateTime.now();
         
-        if (DbConfiguration.isUsingIbmDB2() || DbConfiguration.isUsingSqlite3()) {
+        if (DbConfiguration.isUsingIbmDB2() 
+            || DbConfiguration.isUsingSqlite3()
+            || DbConfiguration.isUsingMariadb()) {
             Object[] array = {
-                DbConfiguration.isUsingIbmDB2()? timeStamp: date, messageUser.getId()
+                DbConfiguration.isUsingIbmDB2() || DbConfiguration.isUsingMariadb()?
+                    timeStamp: date, messageUser.getId()
             };
             return array;
         }

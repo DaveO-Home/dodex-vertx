@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.0.4](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.4) (2020-02-12)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.3...v2.0.4)
+
+* Upgraded to Vertx 4.0.2
+* Upgraded to Gradle 6.8.1
+* Fixed repository defines in build.gradle
+
 ## [v2.0.3](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.3) (2020-01-23)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.2...v2.0.3)

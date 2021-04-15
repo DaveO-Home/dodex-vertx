@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.0.5](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.5) (2020-04-14)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.4...v2.0.5)
+
+* Upgraded to Vertx 4.0.3
+* Upgraded Cubrid jdbc driver to v11, did not fix null exception
+* Upgraded javascript React app (removed potentially dangerous vulnerabilities)
+* Fixed deprecated karma server configuration
+* Added keystore to easily test ssl(commented out by default), see Server.java
+
 ## [v2.0.4](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.4) (2020-02-12)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.3...v2.0.4)

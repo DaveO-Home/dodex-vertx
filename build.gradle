@@ -39,9 +39,9 @@ repositories {
     }
 }
 
-version = "4.0.2"
+version = "4.0.3"
 ext {
-    vertxVersion = "4.0.2"
+    vertxVersion = "4.0.3"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.13.2"
 }
@@ -71,7 +71,8 @@ dependencies {
     implementation "io.vertx:vertx-rx-java2:$version"
     implementation "org.slf4j:slf4j-jcl:1.7.28"
     implementation group: "org.xerial", name: "sqlite-jdbc", version: "3.31.1"
-    implementation group: "cubrid", name: "cubrid-jdbc", version: "10.2.2.8874"
+    implementation group: 'cubrid', name: 'cubrid-jdbc', version: '11.0.0.0248'
+
     implementation "org.jooq:jooq"
     implementation "io.vertx:vertx-tcp-eventbus-bridge:$version"
 

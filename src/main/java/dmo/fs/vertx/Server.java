@@ -2,9 +2,15 @@
 package dmo.fs.vertx;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
+import java.security.PublicKey;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +31,7 @@ import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -173,12 +180,12 @@ public class Server extends AbstractVerticle {
     // https - generate and get signed your certificate
     // Self signed for testing, per;
     // sslshopper.com/article-most-common-java-keytool-keystore-commands.html
-    // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks
+    // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks 
     // -storepass password -validity 360 -keysize 2048
-    // .setKeyStoreOptions(new JksOptions()
-    // .setPath("server-keystore.jks")
-    // .setPassword("password"))
-    // .setSsl(true)
+        // .setKeyStoreOptions(new JksOptions()
+        //     .setPath("keystore.jks") // good until April 9, 2022
+        //     .setPassword("apassword"))
+        //     .setSsl(true)
     );
   }
 

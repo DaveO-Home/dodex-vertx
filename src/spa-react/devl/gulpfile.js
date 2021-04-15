@@ -10,7 +10,7 @@ const eslint = require("gulp-eslint");
 const exec = require("child_process").exec;
 const log = require("fancy-log");
 const path = require("path");
-const Server = require("karma").Server;
+const karma = require("karma");
 // const puppeteer = require("puppeteer");
 const fs = require("fs");
 
@@ -23,7 +23,7 @@ let isWatch = false;
 
 process.argv.forEach(function (val, index, array) {
     useFtl = val === "--noftl" && useFtl ? false : useFtl;
-    if(index > 2 && process.argv[index].indexOf("-") === -1) {
+    if (index > 2 && process.argv[index].indexOf("-") === -1) {
         process.argv[index] = "";
     }
 });
@@ -62,24 +62,15 @@ const pat = function (done) {
 
     new Promise((resolve, reject) => {
         process.stdout.write("Waiting on Vertx to Rebuild.");
-        const id = setInterval(function() {
+        const id = setInterval(function () {
             process.stdout.write(".");
-            if (fs.existsSync(devFile) || local){
+            if (fs.existsSync(devFile) || local) {
                 clearInterval(id);
                 resolve(true);
             }
         }, 1000);
     }).then(result => {
-        new Server({
-            configFile: __dirname + "/karma.conf.js",
-            singleRun: true
-        }, function (result) {
-            var exitCode = !result ? 0 : result;
-            done();
-            if (exitCode > 0) {
-                process.exit(exitCode);
-            } 
-        }).start();
+        karmaServer(done, true, false);
     });
 };
 /*
@@ -185,7 +176,7 @@ const watch = function (cb) {
 };
 
 const touch = function (cb) {
-    if(local || disableTouch) {
+    if (local || disableTouch) {
         cb();
         return;
     }
@@ -213,7 +204,7 @@ const touch = function (cb) {
     const bundleFile = path.join(__dirname, `../../main/resources/static/${watchDir}/react-fusebox/`);
     const nodeWatch = require("node-watch");
 
-    if (!fs.existsSync(distDir)){
+    if (!fs.existsSync(distDir)) {
         fs.mkdirSync(distDir);
         fs.mkdirSync(`${distDir}/react-fusebox/`)
     }
@@ -235,7 +226,7 @@ const touch = function (cb) {
         console.log("READY:", bundleFile);
     });
     cb();
- }
+}
 /*
  * Build the application to the production distribution 
  */
@@ -257,7 +248,7 @@ const build = function (cb) {
     isProduction = true;
     const debug = true;
     try {
-       return runFusebox(mode, fuseboxConfig(mode, props), debug, cb);
+        return runFusebox(mode, fuseboxConfig(mode, props), debug, cb);
     } catch (e) {
         log("Error", e);
     }
@@ -362,16 +353,7 @@ const fuseboxAcceptance = function (done) {
     if (!browsers) {
         global.whichBrowser = ["ChromeHeadless"/*, "FirefoxHeadless"*/];
     }
-    new Server({
-        configFile: __dirname + "/karma.conf.js",
-        singleRun: true
-    }, function (result) {
-        var exitCode = !result ? 0 : result;
-        done();
-        if (exitCode > 0) {
-            process.exit(exitCode);
-        }
-    }).start();
+    karmaServer(done, true, false);
 };
 /**
  * Continuous testing - test driven development.  
@@ -381,9 +363,7 @@ const fuseboxTdd = function (done) {
         global.whichBrowser = ["Chrome"/*, "Firefox"*/];
     }
 
-    new Server({
-        configFile: __dirname + "/karma.conf.js",
-    }, done).start();
+    karmaServer(done, false, true);
 };
 /**
  * Continuous testing - test driven development.  
@@ -393,10 +373,8 @@ const fuseboxTddWait = function (done) {
         global.whichBrowser = ["Chrome"/*, "Firefox"*/];
     }
     console.log("Waiting for Vertx to Rebuild...");
-    setTimeout(function() {
-        new Server({
-            configFile: __dirname + "/karma.conf.js",
-        }, done).start();
+    setTimeout(function () {
+        karmaServer(done, false, true);
     }, 10000);
 };
 /**
@@ -406,16 +384,14 @@ const tddo = function (done) {
     if (!browsers) {
         global.whichBrowser = ["Opera"];
     }
-    new Server({
-        configFile: __dirname + "/karma.conf.js",
-    }, done).start();
+    karmaServer(done, false, true);
 };
 /*
 *   Make sure gulp terminates.
 */
 const final = (done) => {
     done();
-    setTimeout(function() {process.exit(0);}, 10);
+    setTimeout(function () { process.exit(0); }, 10);
 }
 
 const runProd = series(testBuild, touch, pat, parallel(esLint, cssLint, bootLint), build, touch, final);
@@ -449,12 +425,12 @@ function fuseboxConfig(mode, props) {
     let toDist = "";
     let isProduction = mode !== "test" && mode !== "copy";
     let distDir = null;
-    
+
     // local means the test applications will not be in the vertx classpath and is only used for local javascript frontend development/testing
-    if(local) {
+    if (local) {
         distDir = mode === "prod" ? path.join(__dirname, "../../dist/react-fusebox") :
             mode === "preview" ? path.join(__dirname, "../../dist/react-fusebox") : path.join(__dirname, "../../dist_test/react-fusebox");
-    } 
+    }
     // remote(default) puts the application in the vertx classpath and can be accessed in the resulting vertx verticle.
     else {
         distDir = mode === "prod" ? path.join(__dirname, "../../main/resources/static/dist/react-fusebox") :
@@ -469,10 +445,10 @@ function fuseboxConfig(mode, props) {
             open: false,
         },
         hmrServer: {
-			enabled: props.isHmr && !isProduction,
-			useCurrentURL: false,
-			connectionURL: "ws://localhost:3087"
-		}
+            enabled: props.isHmr && !isProduction,
+            useCurrentURL: false,
+            connectionURL: "ws://localhost:3087"
+        }
     };
     const configure = {
         root: path.join(__dirname, "../.."),
@@ -487,8 +463,8 @@ function fuseboxConfig(mode, props) {
         },
         sourceMap: !isProduction,
         webIndex: {
-            distFileName: distDir + 
-                (isProduction && mode === "prod" ? "/appl/testapp.html" : 
+            distFileName: distDir +
+                (isProduction && mode === "prod" ? "/appl/testapp.html" :
                     mode === "preview" ? "/appl/testapp.html" : "/appl/testapp_dev.html"),
             publicPath: "../",
             template: !isProduction ? path.join(__dirname, "../appl/testapp_dev.html") : path.join(__dirname, "../appl/testapp.html")
@@ -512,6 +488,33 @@ function fuseboxConfig(mode, props) {
     return configure;
 }
 
+function karmaServer(done, singleRun = false, watch = true) {
+    const parseConfig = karma.config.parseConfig;
+    const Server = karma.Server;
+
+    parseConfig(
+        path.resolve("./karma.conf.js"),
+        { port: 9876, singleRun: singleRun, watch: watch },
+        { promiseConfig: true, throwErrors: true },
+    ).then(
+        (karmaConfig) => {
+            if (!singleRun) {
+                done();
+            }
+            new Server(karmaConfig, function doneCallback(exitCode) {
+                console.log("Karma has exited with " + exitCode);
+                if (singleRun) {
+                    done();
+                }
+                if (exitCode > 0) {
+                    process.exit(exitCode);
+                }
+            }).start();
+        },
+        (rejectReason) => { console.err(rejectReason); }
+    );
+}
+
 /*
  * Taking a snapshot example
  */
@@ -519,29 +522,47 @@ function karmaServerSnap(done) {
     if (!browsers) {
         global.whichBrowser = ["ChromeHeadless"/*, "FirefoxHeadless"*/];
     }
-
+    const singleRun = true;
+    const watch = false;
     takeSnapShot(["", "start"], true, done);
     // takeSnapShot(["contact", "contact"], true, done);
     // takeSnapShot(["welcome", "react"], true, done);
     // takeSnapShot(["table/tools", "tools"], true, done);
     // takeSnapShot(["pdf/test", "pdf"], true, done);
-            
-    // new Server({
-    //     configFile: __dirname + "/karma.conf.js",
-    //     singleRun: true,
-    //     watch: false
-    // }, function (result) {
-    //     var exitCode = !result ? 0 : result;
-    //     done();
-    //     if (exitCode > 0) {
-    //         takeSnapShot(["", "start"]);
-    //         takeSnapShot(["contact", "contact"]);
-    //         takeSnapShot(["welcome", "react"]);
-    //         takeSnapShot(["table/tools", "tools"]);
-    //         takeSnapShot(['pdf/test', 'pdf'])       
-    //         process.exit(exitCode);
-    //     }
-    // }).start();
+
+    /* 
+        Or you can run the stapshots as a seperate karma run
+    */
+    // const parseConfig = karma.config.parseConfig;
+    // const Server = karma.Server;
+
+    // parseConfig(
+    //     path.resolve("./karma.conf.js"),
+    //     { port: 9876, singleRun: singleRun, watch: watch },
+    //     { promiseConfig: true, throwErrors: true },
+    // ).then(
+    //     (karmaConfig) => {
+    //         if (!singleRun) {
+    //             done();
+    //         }
+    //         new Server(karmaConfig, function doneCallback(exitCode) {
+    //             console.log("Karma has exited with " + exitCode);
+    //             if (singleRun) {
+    //                 done();
+    //             }
+    //             var exitCode = !result ? 0 : result;
+    //             if (exitCode > 0) {
+    //                 takeSnapShot(["", "start"]);
+    //                 takeSnapShot(["contact", "contact"]);
+    //                 takeSnapShot(["welcome", "react"]);
+    //                 takeSnapShot(["table/tools", "tools"]);
+    //                 takeSnapShot(['pdf/test', 'pdf'])
+    //                 process.exit(exitCode);
+    //             }
+    //         }).start();
+    //     },
+    //     (rejectReason) => { console.err(rejectReason); }
+    // );
 }
 
 function snap(url, puppeteer, snapshot, close, done) {
@@ -551,7 +572,7 @@ function snap(url, puppeteer, snapshot, close, done) {
         let page = browser.newPage().then((page) => {
             page.goto(`${url}${snapshot[0]}`).then(() => {
                 page.screenshot({ path: `./snapshots/${name}Acceptance.png` }).then(() => {
-                    if(close) {
+                    if (close) {
                         browser.close();
                         done();
                     }

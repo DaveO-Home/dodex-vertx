@@ -2,15 +2,9 @@
 package dmo.fs.vertx;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
-import java.security.PublicKey;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
@@ -31,7 +25,6 @@ import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
@@ -108,7 +101,8 @@ public class Server extends AbstractVerticle {
     List<Route> routesList = allRoutes.getRouter().getRoutes();
 
     for (Route r : routesList) {
-      logger.info(String.join("", ColorUtilConstants.CYAN_BOLD_BRIGHT, r.getPath(), ColorUtilConstants.RESET));
+      String path = parsePath(r);
+      logger.info(String.join("", ColorUtilConstants.CYAN_BOLD_BRIGHT, path, ColorUtilConstants.RESET));
     }
 
     server.requestHandler(allRoutes.getRouter());
@@ -139,6 +133,8 @@ public class Server extends AbstractVerticle {
     }
 
     String defaultDb = new DodexUtil().getDefaultDb();
+    logger.info(String.format("%sUsing %s database.%s", ColorUtilConstants.PURPLE_BOLD_BRIGHT, defaultDb, ColorUtilConstants.RESET));
+    
     if ("cassandra".equals(defaultDb)) {
       TcpEventBusBridge bridge = TcpEventBusBridge.create(vertx,
           new BridgeOptions().addInboundPermitted(new PermittedOptions().setAddress("vertx"))
@@ -187,6 +183,17 @@ public class Server extends AbstractVerticle {
         //     .setPassword("apassword"))
         //     .setSsl(true)
     );
+  }
+
+  private String parsePath(Route route) {
+    if(!route.isRegexPath()) {
+        return route.getPath();
+    }
+
+    String info = route.toString();
+    String pattern = info.substring(info.indexOf("pattern=") + 8, info.indexOf(',', info.indexOf("pattern=")));
+
+    return pattern;
   }
 
   public static boolean isWindows() {

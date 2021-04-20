@@ -90,7 +90,7 @@ public class DodexDatabaseCubrid extends DbCubrid {
         connectOptions = new JDBCConnectOptions()
             .setJdbcUrl(dbMap.get("url") + dbMap.get("host") + dbMap.get("dbname") + "?charSet=UTF-8")
             .setUser(dbProperties.getProperty("user").toString())
-			// .setPassword(dbProperties.getProperty("password").toString())
+			.setPassword(dbProperties.getProperty("password").toString())
             // .setDatabase(dbMap.get("dbname")+"?charSet=utf8")
             // .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
             .setIdleTimeout(1)

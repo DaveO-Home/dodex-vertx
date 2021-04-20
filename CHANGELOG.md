@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.0.6](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.6) (2020-04-20)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.5...v2.0.6)
+
+* Display current database
+* Display regex route patterns
+* Changed sql "Update" to "Insert" form for Cubrid, Update,Select,Delete are still problematic
+
 ## [v2.0.5](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.5) (2020-04-14)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.4...v2.0.5)

@@ -74,6 +74,7 @@ public class SpaRoutes {
                     }
 
                     HttpServerResponse response = routingContext.response();
+                    response.putHeader("content-type", "application/json");
 
                     final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
 
@@ -140,6 +141,7 @@ public class SpaRoutes {
                     }
 
                     HttpServerResponse response = routingContext.response();
+                    response.putHeader("content-type", "application/json");
 
                     final Optional<String> bodyData = Optional.ofNullable(routingContext.getBodyAsString());
 
@@ -220,6 +222,7 @@ public class SpaRoutes {
             }
 
             HttpServerResponse response = routingContext.response();
+            response.putHeader("content-type", "application/json");
 
             final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
             if (queryData.isPresent()) {
@@ -262,7 +265,8 @@ public class SpaRoutes {
                     }
 
                     HttpServerResponse response = routingContext.response();
-
+                    response.putHeader("content-type", "application/json");
+                    
                     final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
                     if (queryData.isPresent()) {
                         try {

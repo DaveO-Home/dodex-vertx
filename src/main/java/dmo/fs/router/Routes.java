@@ -3,6 +3,7 @@ package dmo.fs.router;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import dmo.fs.db.DbConfiguration;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.reactivex.core.Vertx;
@@ -86,7 +87,22 @@ public class Routes {
 		StaticHandler staticHandler = StaticHandler.create();
 		staticHandler.setWebRoot("static");
 		staticHandler.setCachingEnabled(false);
-		
+
+		String mode = "/dist_test";
+        if("prod".equals(DodexUtil.getEnv())) {
+            mode = "/dist";
+        }
+
+        router.routeWithRegex(mode + "/README.md|" + mode + "/react-fusebox/appl/templates/stache/tools.stache")
+            .produces("text/plain")
+            .produces("text/markdown")
+            .handler(ctx -> {
+                HttpServerResponse response = ctx.response();
+                String acceptableContentType = ctx.getAcceptableContentType();
+                response.putHeader("content-type", acceptableContentType);
+                response.sendFile("static" + ctx.normalizedPath());
+            });
+
 		Route staticRoute = router.route("/*").handler(TimeoutHandler.create(2000));
 		if (DodexUtil.getEnv().equals("dev")) {
 			staticRoute.handler(CorsHandler.create("*"/*Need ports 8087 & 9876*/).allowedMethod(HttpMethod.GET));

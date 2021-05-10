@@ -1,6 +1,6 @@
 
 {
-    "name": "daveo",
+    "name": "fusebox",
     "compilerOptions": {
         "target": "es6",
         "module": "commonjs",

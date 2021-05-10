@@ -1,0 +1,6 @@
+#!/usr/bin/bash
+
+# export HOSTING_EMULATOR_HOST=localhost:5000
+export FIREBASE_EMULATOR_HUB=localhost:4400
+export FIRESTORE_AUTHENTICATION_HOST=localhost:9099
+export FIRESTORE_EMULATOR_HOST=localhost:6080

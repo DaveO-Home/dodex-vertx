@@ -31,8 +31,8 @@
                 "host2": "localhost",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
-                "dbname": "/test",
-                "database": "test"
+                "dbname": "/database",
+                "database": "database"
             }
         },
         "prod": { 
@@ -54,8 +54,8 @@
     "cubrid": {
         "dev": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "dba",
+                "password": "",
                 "ssl": "false"
             },
             "config": {
@@ -113,7 +113,7 @@
         "dev": { 
             "credentials": {
                 "user": "db2inst1",
-                "password": "password",
+                "password": "stuffit4me2",
                 "ssl": "false"
             },
             "config": {
@@ -157,6 +157,26 @@
             },
             "config": {
                 "filename": "",
+                "url": ""
+            }
+        }
+    },
+    "firebase": {
+        "dev": { 
+            "credentials": {
+                "file": "/home/user/auth/service-account-key.json"
+            },
+            "config": {
+                "project": "dodex-firebase",
+                "url": ""
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "file": "/home/user/auth/service-account-key.json"
+            },
+            "config": {
+                "project": "dodex-firebase",
                 "url": ""
             }
         }

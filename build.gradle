@@ -71,7 +71,8 @@ dependencies {
     implementation "io.vertx:vertx-rx-java2:$version"
     implementation "org.slf4j:slf4j-jcl:1.7.28"
     implementation group: "org.xerial", name: "sqlite-jdbc", version: "3.31.1"
-    implementation group: 'cubrid', name: 'cubrid-jdbc', version: '11.0.0.0248'
+    implementation group: "cubrid", name: "cubrid-jdbc", version: "11.0.0.0248"
+    implementation "com.google.firebase:firebase-admin:7.2.0"
 
     implementation "org.jooq:jooq"
     implementation "io.vertx:vertx-tcp-eventbus-bridge:$version"
@@ -109,6 +110,10 @@ run {
     }
 
     environment "VERTXWEB_ENVIRONMENT", "dev"
+    if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
+      environment "GOOGLE_APPLICATION_CREDENTIALS", "/home/<user>/auth/<service-account-key.json>"
+    }
+
     args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json"]
     systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
 }

@@ -102,7 +102,7 @@ public class Server extends AbstractVerticle {
 
     for (Route r : routesList) {
       String path = parsePath(r);
-      logger.info(String.join("", ColorUtilConstants.CYAN_BOLD_BRIGHT, path, ColorUtilConstants.RESET));
+      logger.info(String.join("", ColorUtilConstants.CYAN_BOLD_BRIGHT, path + (r.methods() == null ? "" : r.methods()), ColorUtilConstants.RESET));
     }
 
     server.requestHandler(allRoutes.getRouter());

@@ -3,7 +3,6 @@ package dmo.fs.router;
 import java.io.IOException;
 import java.sql.SQLException;
 
-import dmo.fs.db.DbConfiguration;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.reactivex.core.Vertx;
@@ -87,13 +86,8 @@ public class Routes {
 		StaticHandler staticHandler = StaticHandler.create();
 		staticHandler.setWebRoot("static");
 		staticHandler.setCachingEnabled(false);
-
-		String mode = "/dist_test";
-        if("prod".equals(DodexUtil.getEnv())) {
-            mode = "/dist";
-        }
-
-        router.routeWithRegex(mode + "/README.md|" + mode + "/react-fusebox/appl/templates/stache/tools.stache")
+        
+        router.routeWithRegex("/.*\\.md|" + "/.*/templates/.*")
             .produces("text/plain")
             .produces("text/markdown")
             .handler(ctx -> {
@@ -101,11 +95,12 @@ public class Routes {
                 String acceptableContentType = ctx.getAcceptableContentType();
                 response.putHeader("content-type", acceptableContentType);
                 response.sendFile("static" + ctx.normalizedPath());
+                staticHandler.handle(ctx);
             });
-
+            
 		Route staticRoute = router.route("/*").handler(TimeoutHandler.create(2000));
 		if (DodexUtil.getEnv().equals("dev")) {
-			staticRoute.handler(CorsHandler.create("*"/*Need ports 8087 & 9876*/).allowedMethod(HttpMethod.GET));
+			staticRoute.handler(CorsHandler.create("*" /* Need ports 8087 & 9876 */ ).allowedMethod(HttpMethod.GET));
 		}
 		staticRoute.handler(staticHandler);
 	}
@@ -126,7 +121,14 @@ public class Routes {
 		DodexUtil du = new DodexUtil();
 		String defaultDbName = du.getDefaultDb();
 
-        if ("cassandra".equals(defaultDbName)) {
+        if ("firebase".equals(defaultDbName)) {
+			try {
+				FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
+				firebaseRouter.setWebSocket(server);
+			} catch(Exception ex) {
+				ex.printStackTrace();
+			}
+        } else if ("cassandra".equals(defaultDbName)) {
 			try {
 				CassandraRouter cassandraRouter = new CassandraRouter(vertx);
 				cassandraRouter.setWebSocket(server);

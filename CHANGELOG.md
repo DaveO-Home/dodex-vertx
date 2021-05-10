@@ -1,5 +1,13 @@
 # Changelog
 
+## [v2.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.1.0) (2020-05-10)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.6...v2.1.0)
+
+* Added Firebase/Firestore as a backend.
+* Cleaned up some code.
+* Fixed startup messages.
+
 ## [v2.0.6](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.6) (2020-04-20)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.5...v2.0.6)

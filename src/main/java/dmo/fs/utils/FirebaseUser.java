@@ -21,7 +21,7 @@ public class FirebaseUser {
     }
 
     public String getId() {
-        return id.toString();
+        return id;
     }
 
     public void setId(final String id) {

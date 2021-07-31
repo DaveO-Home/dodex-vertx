@@ -76,6 +76,7 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 		// databaseSetup();
 	}
 
+	@Override
 	public Future<Void> databaseSetup() throws InterruptedException, SQLException {
 		if ("dev".equals(webEnv)) {
 			SpaDbConfiguration.configureTestDefaults(dbMap, dbProperties);
@@ -147,10 +148,12 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
         return (T) pool4;
     }
 
+	@Override
     public Vertx getVertx() {
         return vertx;
     }
 
+	@Override
     public void setVertx(Vertx vertx) {
         this.vertx = vertx;
     }

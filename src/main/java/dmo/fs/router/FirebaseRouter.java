@@ -26,7 +26,6 @@ import dmo.fs.db.DodexFirebase;
 import dmo.fs.db.MessageUser;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import dmo.fs.utils.FirebaseMessage;
 import dmo.fs.utils.FirebaseUser;
 import dmo.fs.utils.ParseQueryUtilHelper;
 import io.vertx.core.Future;
@@ -40,13 +39,14 @@ import io.vertx.reactivex.core.shareddata.LocalMap;
 import io.vertx.reactivex.core.shareddata.SharedData;
 
 public class FirebaseRouter {
-    private final static Logger logger = LoggerFactory.getLogger(FirebaseRouter.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(FirebaseRouter.class.getName());
     protected Vertx vertx;
     private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
     private DodexFirebase dodexFirebase;
-    private final static String DODEX_PROJECT_ID = "dodex-firebase";
+    private static final String DODEX_PROJECT_ID = "dodex-firebase";
     Firestore dbf;
     static FirestoreOptions firestoreOptions;
+    private static final String LOGFORMAT = "{}{}{}";
     static {
         try {
             firestoreOptions =
@@ -80,8 +80,8 @@ public class FirebaseRouter {
         final SharedData sd = vertx.sharedData();
         String startupMessage = "In Production";
 
-        startupMessage = DodexUtil.getEnv().equals("dev") ? "In Development" : startupMessage;
-        logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT, startupMessage, ColorUtilConstants.RESET));
+        startupMessage = "dev".equals(DodexUtil.getEnv()) ? "In Development" : startupMessage;
+        logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, startupMessage, ColorUtilConstants.RESET);
 
         Handler<ServerWebSocket> handler = new Handler<ServerWebSocket>() {
 
@@ -89,10 +89,9 @@ public class FirebaseRouter {
             public void handle(ServerWebSocket ws) {
 
                 try {
-                    logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
-                            URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"),
-                                    StandardCharsets.UTF_8.name()),
-                            ColorUtilConstants.RESET));
+                    String handle = URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query())
+                        .get("handle"), StandardCharsets.UTF_8.name());
+                    logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle, ColorUtilConstants.RESET);
                 } catch (final UnsupportedEncodingException e) {
                     logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
                             ColorUtilConstants.RESET));
@@ -100,12 +99,11 @@ public class FirebaseRouter {
 
                 final DodexUtil dodexUtil = new DodexUtil();
 
-                if (!ws.path().equals("/dodex")) {
+                if (!"/dodex".equals(ws.path())) {
                     ws.reject();
                 } else {
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                     final MessageUser messageUser = dodexFirebase.createMessageUser();
-                    // final Database db = dodexCassandra.getDatabase();
                     try {
                         wsChatSessions.put(ws.textHandlerID(),
                                 URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
@@ -151,69 +149,69 @@ public class FirebaseRouter {
                             } else {
                                 continued = promise.future();
                             }
+                            if(continued != null) {
+                                continued.onSuccess(result -> {
+                                    String selectedUsers = "";
+                                    if (computedMessage[0].length() > 0) {
+                                        // private users to send message
+                                        selectedUsers = returnObject.get("selectedUsers");
+                                        final Set<String> websockets = clients.keySet();
+                                        Map<String, String> query = null;
 
-                            continued.onSuccess(result -> {
-                                String selectedUsers = "";
-                                if (computedMessage[0].length() > 0) {
-                                    // private users to send message
-                                    selectedUsers = returnObject.get("selectedUsers");
-                                    final Set<String> websockets = clients.keySet();
-                                    Map<String, String> query = null;
-
-                                    for (final String websocket : websockets) {
-                                        final ServerWebSocket webSocket = clients.get(websocket);
-                                        if (!webSocket.isClosed()) {
-                                            if (!websocket.equals(ws.textHandlerID())) {
-                                                // broadcast message
-                                                query = ParseQueryUtilHelper
-                                                        .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
-                                                final String handle = query.get("handle");
-                                                if (selectedUsers.length() == 0 && command[0].length() == 0) {
-                                                    webSocket.writeTextMessage(
-                                                            messageUser.getName() + ": " + computedMessage[0]);
-                                                    // private message
-                                                } else if (Arrays.stream(selectedUsers.split(",")).anyMatch(h -> {
-                                                    boolean isMatched = false;
-                                                    if (!isMatched) {
-                                                        isMatched = h.contains(handle);
+                                        for (final String websocket : websockets) {
+                                            final ServerWebSocket webSocket = clients.get(websocket);
+                                            if (!webSocket.isClosed()) {
+                                                if (!websocket.equals(ws.textHandlerID())) {
+                                                    // broadcast message
+                                                    query = ParseQueryUtilHelper
+                                                            .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
+                                                    final String handle = query.get("handle");
+                                                    if (selectedUsers.length() == 0 && command[0].length() == 0) {
+                                                        webSocket.writeTextMessage(
+                                                                messageUser.getName() + ": " + computedMessage[0]);
+                                                        // private message
+                                                    } else if (Arrays.stream(selectedUsers.split(",")).anyMatch(h -> {
+                                                        boolean isMatched = false;
+                                                        if (!isMatched) {
+                                                            isMatched = h.contains(handle);
+                                                        }
+                                                        return isMatched;
+                                                    })) {
+                                                        webSocket.writeTextMessage(
+                                                                messageUser.getName() + ": " + computedMessage[0]);
+                                                        // keep track of delivered messages
+                                                        onlineUsers.add(handle);
                                                     }
-                                                    return isMatched;
-                                                })) {
-                                                    webSocket.writeTextMessage(
-                                                            messageUser.getName() + ": " + computedMessage[0]);
-                                                    // keep track of delivered messages
-                                                    onlineUsers.add(handle);
-                                                }
-                                            } else {
-                                                if (selectedUsers.length() == 0 && command[0].length() > 0) {
-                                                    ws.writeTextMessage("Private user not selected");
                                                 } else {
-                                                    ws.writeTextMessage("ok");
+                                                    if (selectedUsers.length() == 0 && command[0].length() > 0) {
+                                                        ws.writeTextMessage("Private user not selected");
+                                                    } else {
+                                                        ws.writeTextMessage("ok");
+                                                    }
                                                 }
                                             }
                                         }
                                     }
-                                }
 
-                                // calculate difference between selected and online users
-                                if (selectedUsers.length() > 0) {
-                                    final List<String> selected = Arrays.asList(selectedUsers.split(","));
-                                    final List<String> disconnectedUsers = selected.stream()
-                                            .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
-                                    // Save private message to send when to-user logs in
-                                    if (disconnectedUsers.size() > 0) {
-                                        Future<FirebaseMessage> future = null;
-                                        try {
-                                        
-                                            future = dodexFirebase.addMessage(ws, messageUser, computedMessage[0], disconnectedUsers);
-                                        
-                                        } catch (ExecutionException | InterruptedException e) {
-                                            e.printStackTrace();
-                                            ws.writeTextMessage("Message delivery failure: " + e.getMessage());
+                                    // calculate difference between selected and online users
+                                    if (selectedUsers.length() > 0) {
+                                        final List<String> selected = Arrays.asList(selectedUsers.split(","));
+                                        final List<String> disconnectedUsers = selected.stream()
+                                                .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
+                                        // Save private message to send when to-user logs in
+                                        if (!disconnectedUsers.isEmpty()) {
+                                            try {
+                                            
+                                                dodexFirebase.addMessage(ws, messageUser, computedMessage[0], disconnectedUsers);
+                                            
+                                            } catch (ExecutionException | InterruptedException e) {
+                                                e.printStackTrace();
+                                                ws.writeTextMessage("Message delivery failure: " + e.getMessage());
+                                            }
                                         }
                                     }
-                                }
-                            });
+                                });
+                            }
                         }
                     });
                     /*
@@ -269,5 +267,9 @@ public class FirebaseRouter {
         };
 
         server.webSocketHandler(handler);
+    }
+
+    public Firestore getDbf() {
+        return dbf;
     }
 }

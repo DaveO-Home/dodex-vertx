@@ -22,8 +22,8 @@
     "postgres": {
         "dev": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "dodex",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
@@ -31,14 +31,14 @@
                 "host2": "localhost",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
-                "dbname": "/test",
-                "database": "test"
+                "dbname": "/dodex",
+                "database": "dodex"
             }
         },
         "prod": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "dodex",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
@@ -54,7 +54,7 @@
     "cubrid": {
         "dev": { 
             "credentials": {
-                "user": "user",
+                "user": "dba",
                 "password": "password",
                 "ssl": "false"
             },

@@ -5,9 +5,11 @@ import dodex from "dodex";
 import input from "dodex-input";
 import mess from "dodex-mess";
 
+let port = 8080; // Must equal Vertx production port 
 /* develblock:start */
 // if (typeof window.testit === "undefined" || !window.testit) {
 if (location.href.indexOf("context.html") === -1) {
+  port = 8087;
   /* develblock:end */
   ReactDOM.render(
     <Menulinks />,
@@ -24,19 +26,14 @@ if (location.href.indexOf("context.html") === -1) {
     dodex.setContentFile("./dodex/data/content.js");
     dodex.init({
       width: 375,
-      height: 200,
+      height: 210,
       left: "50%",
       top: "100px",
       input: input,    	// required if using frontend content load
       private: "full", 	// frontend load of private content, "none", "full", "partial"(only cards 28-52) - default none
       replace: true,   	// append to or replace default content - default false(append only)
       mess: mess,
-      // server: "localhost:3087", // You will have to start the node server for port 3087 - do the following;
-      // cd to src/main/resources/static/node_modules/dodex-mess/server and execute "npm install" then "node koa" 
-      // server: "daveomix.us-south.cf.appdomain.cloud" // This will link to the cloud version
-      // for the verticle "dodex-vertx" use
-      // server: "localhost:8087" // if the test verticle is running.
-      server: "localhost:8087"
+      server: "localhost:" + port
     }).then(function () {
       // Add in app/personal cards
       for (let i = 0;i < 4;i++) {
@@ -93,7 +90,7 @@ function getAdditionalContent() {
         }
       },
       card31: {
-        tab: "TWT",
+        tab: "TW",
         front: {
           content: '<blockquote data-cards="hidden" class="twitter-tweet"><p lang="en" dir="ltr">Sunsets don&#39;t get much better than this one over <a href="https://twitter.com/GrandTetonNPS?ref_src=twsrc%5Etfw">@GrandTetonNPS</a>. <a href="https://twitter.com/hashtag/nature?src=hash&amp;ref_src=twsrc%5Etfw">#nature</a> <a href="https://twitter.com/hashtag/sunset?src=hash&amp;ref_src=twsrc%5Etfw">#sunset</a> <a href="http://t.co/YuKy2rcjyU">pic.twitter.com/YuKy2rcjyU</a></p>&mdash; US Department of the Interior (@Interior) <a href="https://twitter.com/Interior/status/463440424141459456?ref_src=twsrc%5Etfw">May 5, 2014</a></blockquote>'
         },

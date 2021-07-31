@@ -11,7 +11,7 @@ import dmo.fs.utils.DodexUtil;
 public abstract class DbConfiguration {
 
     private static Map<String, String> map = new ConcurrentHashMap<>();
-    private static Properties properties = new Properties();
+    protected static Properties properties = new Properties();
 
     private static Boolean isUsingSqlite3 = false;
     private static Boolean isUsingPostgres = false;

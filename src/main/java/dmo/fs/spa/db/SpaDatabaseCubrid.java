@@ -69,6 +69,7 @@ public class SpaDatabaseCubrid extends DbCubrid {
 		dbProperties = dodexUtil.mapToProperties(dbMap);
 	}
 
+	@Override
 	public Future<Void> databaseSetup() throws InterruptedException, SQLException {
 		// Override default credentials
 		// dbProperties.setProperty("user", "myUser");
@@ -149,10 +150,12 @@ public class SpaDatabaseCubrid extends DbCubrid {
         return (T) pool4;
     }
 
+	@Override
     public Vertx getVertx() {
         return vertx;
     }
 
+	@Override
     public void setVertx(Vertx vertx) {
         this.vertx = vertx;
     }

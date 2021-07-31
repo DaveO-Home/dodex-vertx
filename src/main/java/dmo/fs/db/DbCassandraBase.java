@@ -22,12 +22,11 @@ public abstract class DbCassandraBase {
 	private final static Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
 	private Map<String, Promise<MessageUser>> mUserPromises = new ConcurrentHashMap<>();
 	private Map<String, Promise<mjson.Json>> mJsonPromises = new ConcurrentHashMap<>();
-	private static String vertxConsumer = "";
+	private String vertxConsumer = "";
 
 	private Vertx vertx;
 
-	public Future<mjson.Json> deleteUser(ServerWebSocket ws, EventBus eb, MessageUser messageUser)
-			throws InterruptedException, SQLException {
+	public Future<mjson.Json> deleteUser(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
 		mJsonPromises.put(ws.textHandlerID() + "deleteuser", promise);
@@ -45,17 +44,19 @@ public abstract class DbCassandraBase {
 
 		mJsonPromises.put(ws.textHandlerID() + "addmessage", promise);
 		mjson.Json mess = setMessage("addmessage", messageUser, ws);
-		mess.set("users", undelivered).set("message", message);
-		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
-		eb.send("akka", jsonPayLoad);
+
+		if(mess != null) {
+			mess.set("users", undelivered).set("message", message);
+			mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+			eb.send("akka", jsonPayLoad);
+		}
 
 		return promise.future();
 	}
 
 	public abstract MessageUser createMessageUser();
 
-	public Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws, EventBus eb)
-			throws InterruptedException, SQLException {
+	public Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws, EventBus eb) {
 		Promise<MessageUser> promise = Promise.promise();
 		// This promise will be completed in the eb.consumer listener - see
 		// setEbConsumer
@@ -64,7 +65,7 @@ public abstract class DbCassandraBase {
 		mjson.Json mess = setMessage("selectuser", messageUser, ws);
 		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
 		// Only one handler for all event bridge sends - see setEbConsumer
-		if (vertxConsumer.equals("")) {
+		if ("".equals(vertxConsumer)) {
 			eb.consumer("vertx", setEbConsumer());
 			vertxConsumer = "vertx";
 		}
@@ -75,8 +76,7 @@ public abstract class DbCassandraBase {
 		return promise.future();
 	}
 
-	public Future<mjson.Json> buildUsersJson(ServerWebSocket ws, EventBus eb, MessageUser messageUser)
-			throws InterruptedException, SQLException {
+	public Future<mjson.Json> buildUsersJson(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
 		mJsonPromises.put(ws.textHandlerID() + "allusers", promise);
@@ -102,8 +102,7 @@ public abstract class DbCassandraBase {
 		return promise.future();
 	}
 
-	public Future<mjson.Json> processUserMessages(ServerWebSocket ws, EventBus eb, MessageUser messageUser)
-			throws Exception {
+	public Future<mjson.Json> processUserMessages(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
 		mJsonPromises.put(ws.textHandlerID() + "delivermess", promise);
@@ -171,7 +170,7 @@ public abstract class DbCassandraBase {
 							break;
 					}
 				} else {
-					logger.error("ERROR received " + msg.getErrMessage());
+					logger.error("ERROR received {}", msg.getErrMessage());
 				}
 			}
 		};

@@ -1,0 +1,9 @@
+#!/usr/bin/bash
+#####
+# It appears the all graalvm dependencies are resolved from the location of native-image.
+# So you can build the executable from the vertx directory. 
+#
+# Run "gradlew shadowJar" first
+#####
+
+~/installs/graalvm-ce-java11-21.1.0/bin/native-image io.vertx.core.Launcher -jar ./build/libs/dodex-vertx-4.1.2.jar  -cp ./build/classes/java/main --initialize-at-build-time=org.slf4j,org.apache.commons.logging -H:+ReportExceptionStackTraces 

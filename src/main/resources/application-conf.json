@@ -8,7 +8,7 @@
   "color": true,
   "vertx.version": 4,
   "prod.color": true,
-  "prod.http.port" : 8082,
+  "prod.http.port" : 8080,
   "prod.bridge.port": 7032,
   "prod.vertx.version": 4
 }

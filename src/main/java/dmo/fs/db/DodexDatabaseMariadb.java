@@ -162,7 +162,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
 						
 								Single<RowSet<Row>> crow = conn.query(sql).rxExecute()
 									.doOnError(err -> {
-										logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));;
+										logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
 									}).doOnSuccess(row2 -> {
 										logger.info("Undelivered Table Added.");
 									});
@@ -183,7 +183,6 @@ public class DodexDatabaseMariadb extends DbMariadb {
 
 		completable.subscribe(() -> {
 			try {
-                pool4.rxClose();
 				setupSql(pool4);
 			} catch (SQLException e) {
 				e.printStackTrace();

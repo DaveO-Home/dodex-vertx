@@ -37,8 +37,8 @@ import io.vertx.reactivex.sqlclient.SqlConnection;
 import io.vertx.reactivex.sqlclient.Tuple;
 
 public abstract class SqlBuilder {
-    private final static Logger logger = LoggerFactory.getLogger(SqlBuilder.class.getName());
-    protected final static String QUERYLOGIN = "select * from LOGIN where name=?";
+    private static final Logger logger = LoggerFactory.getLogger(SqlBuilder.class.getName());
+    protected static final String QUERYLOGIN = "select * from LOGIN where name=?";
 
     private static DSLContext create;
 
@@ -144,7 +144,7 @@ public abstract class SqlBuilder {
 
     public abstract SpaLogin createSpaLogin();
 
-    public Future<SpaLogin> getLogin(SpaLogin spaLogin) throws InterruptedException, SQLException {
+    public Future<SpaLogin> getLogin(SpaLogin spaLogin) {
         Promise<SpaLogin> promise = Promise.promise();
 
         SpaLogin resultLogin = createSpaLogin();
@@ -217,7 +217,7 @@ public abstract class SqlBuilder {
         return promise.future();
     }
 
-    public Future<SpaLogin> addLogin(SpaLogin spaLogin) throws InterruptedException, SQLException {
+    public Future<SpaLogin> addLogin(SpaLogin spaLogin) {
         Promise<SpaLogin> promise = Promise.promise();
         Timestamp current = new Timestamp(new Date().getTime());
         OffsetDateTime time = OffsetDateTime.now();
@@ -257,7 +257,7 @@ public abstract class SqlBuilder {
         return promise.future();
     }
 
-    public Future<SpaLogin> removeLogin(SpaLogin spaLogin) throws InterruptedException, SQLException {
+    public Future<SpaLogin> removeLogin(SpaLogin spaLogin) {
         Promise<SpaLogin> promise = Promise.promise();
 
         
@@ -299,8 +299,7 @@ public abstract class SqlBuilder {
         return promise.future();
     }
 
-    public Future<Integer> updateCustomLogin(SpaLogin spaLogin, String type) 
-            throws InterruptedException, SQLException {
+    public Future<Integer> updateCustomLogin(SpaLogin spaLogin, String type) {
         Promise<Integer> promise = Promise.promise();
 
         pool.getConnection(c -> {

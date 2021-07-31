@@ -14,7 +14,7 @@
             "credentials": {
             },
             "config": {
-                "filename": "dodex.db",
+                "filename": "db/dodex.db",
                 "url": "jdbc:sqlite:"
             }
         }
@@ -22,8 +22,8 @@
     "postgres": {
         "dev": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "dodex",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
@@ -31,8 +31,8 @@
                 "host2": "localhost",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
-                "dbname": "/database",
-                "database": "database"
+                "dbname": "/dodex",
+                "database": "dodex"
             }
         },
         "prod": { 
@@ -66,14 +66,14 @@
         },
         "prod": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "dba",
+                "password": "",
                 "ssl": "false"
             },
             "config": {
                 "host": "localhost:33000",
                 "url": "jdbc:CUBRID:",
-                "dbname": "dodex:public::"
+                "dbname": "dodex:::"
             }
         }
     },
@@ -113,7 +113,7 @@
         "dev": { 
             "credentials": {
                 "user": "db2inst1",
-                "password": "stuffit4me2",
+                "password": "password",
                 "ssl": "false"
             },
             "config": {

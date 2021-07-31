@@ -3,6 +3,12 @@ package dmo.fs.router;
 import java.io.IOException;
 import java.sql.SQLException;
 
+import com.google.cloud.firestore.Firestore;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.reactivex.core.Vertx;
@@ -18,11 +24,13 @@ import io.vertx.reactivex.ext.web.sstore.LocalSessionStore;
 import io.vertx.reactivex.ext.web.sstore.SessionStore;
 
 public class Routes {
+	private static final Logger logger = LoggerFactory.getLogger(Routes.class.getName());
 	protected Vertx vertx;
 	protected Router router;
 	protected HttpServer server;
 	protected SessionStore sessionStore;
 	Integer counter = 0;
+	Firestore firestore;
 
 	public Routes(Vertx vertx, HttpServer server, Integer vertxVersion) throws InterruptedException, IOException, SQLException {
 		this.vertx = vertx;
@@ -38,11 +46,11 @@ public class Routes {
 		}
 		DodexUtil.setVertx(vertx);
 		
-		setFavRoute(vertxVersion);
+		setFavRoute();
 		setStaticRoute();
 		setDodexRoute();
 
-		if (DodexUtil.getEnv().equals("dev")) {
+		if ("dev".equals(DodexUtil.getEnv())) {
 			setTestRoute();
 		} else {
 			setProdRoute();
@@ -62,8 +70,10 @@ public class Routes {
 			String file = length < 7 ? "test/index.html" : path.substring(1);
 			
 			response.sendFile(file);
-			response.end();
 		});
+		route.failureHandler(ctx -> 
+			logger.error(String.format("%sFAILURE in /test/ route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+		  );
 	}
 
 	public void setProdRoute() {
@@ -78,8 +88,10 @@ public class Routes {
 			String file = length < 8 ? "dodex/index.html" : path.substring(1);
 
 			response.sendFile(file);
-			response.end();
 		});
+		route.failureHandler(ctx -> 
+			logger.error(String.format("%sFAILURE in prod/dodex route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+		  );
 	}
 
 	public void setStaticRoute() {
@@ -94,26 +106,25 @@ public class Routes {
                 HttpServerResponse response = ctx.response();
                 String acceptableContentType = ctx.getAcceptableContentType();
                 response.putHeader("content-type", acceptableContentType);
-                response.sendFile("static" + ctx.normalizedPath());
+                response.sendFile(ctx.normalizedPath());
                 staticHandler.handle(ctx);
             });
             
 		Route staticRoute = router.route("/*").handler(TimeoutHandler.create(2000));
-		if (DodexUtil.getEnv().equals("dev")) {
+		if ("dev".equals(DodexUtil.getEnv())) {
 			staticRoute.handler(CorsHandler.create("*" /* Need ports 8087 & 9876 */ ).allowedMethod(HttpMethod.GET));
 		}
 		staticRoute.handler(staticHandler);
+		staticRoute.failureHandler(ctx -> 
+			logger.error(String.format("%sFAILURE in static route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+		  );
 	}
 
-	public void setFavRoute(Integer vertxVersion) {
+	public void setFavRoute() {
 		FaviconHandler faviconHandler = null;
 
-		if (vertxVersion == 4) {
-			faviconHandler = FaviconHandler.create(vertx);
-		}
-		// if (vertxVersion == 3) {
-		// 	faviconHandler = FaviconHandler.create();
-		// }
+		faviconHandler = FaviconHandler.create(vertx);
+		
 		router.route().handler(faviconHandler);
 	}
 
@@ -125,8 +136,10 @@ public class Routes {
 			try {
 				FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
 				firebaseRouter.setWebSocket(server);
+				firestore = firebaseRouter.getDbf();
 			} catch(Exception ex) {
 				ex.printStackTrace();
+				throw ex;
 			}
         } else if ("cassandra".equals(defaultDbName)) {
 			try {
@@ -134,6 +147,7 @@ public class Routes {
 				cassandraRouter.setWebSocket(server);
 			} catch(Exception ex) {
 				ex.printStackTrace();
+				throw ex;
 			}
         } else {
 			try {
@@ -141,11 +155,16 @@ public class Routes {
 				dodexRouter.setWebSocket(server);
 			} catch(Exception ex) {
 				ex.printStackTrace();
+				throw ex;
 			}
 		}
 	}
 
-	public Router getRouter() throws InterruptedException {
+	public Router getRouter() {
 		return router;
+	}
+
+	public Firestore getFirestore() {
+		return firestore;
 	}
 }

@@ -17,22 +17,25 @@ import io.vertx.core.Promise;
 import io.vertx.reactivex.core.Vertx;
 
 public abstract class DbCassandraBase {
-	private final static Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
 	private Map<String, Promise<SpaLogin>> mUserPromises = new ConcurrentHashMap<>();
+	private static final String GETLOGIN = "getlogin";
+	private static final String ADDLOGIN = "addlogin";
+	private static final String REMOVELOGIN = "removelogin";
 
 	private Vertx vertx;
-	private static String vertxConsumer = "";
+	private String vertxConsumer = "";
 	public Future<SpaLogin> getLogin(SpaLogin spaLogin, EventBus eb) throws InterruptedException {
 
-		if (vertxConsumer.equals("")) {
+		if ("".equals(vertxConsumer)) {
 			eb.consumer("vertx", setEbConsumer());
 			vertxConsumer = "vertx";
 		}
 		Promise<SpaLogin> promise = Promise.promise();
 
-		mUserPromises.put(spaLogin.getPassword() + "getlogin", promise);
-		mjson.Json mess = setMessage("getlogin", spaLogin);
-		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue()); 
+		mUserPromises.put(spaLogin.getPassword() + GETLOGIN, promise);
+		mjson.Json mess = setMessage(GETLOGIN, spaLogin);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess == null ? "" : mess.getValue()); 
 
 		eb.send("akka", jsonPayLoad);
 
@@ -42,9 +45,9 @@ public abstract class DbCassandraBase {
 	public Future<SpaLogin> addLogin(SpaLogin spaLogin, EventBus eb) throws InterruptedException {
 		Promise<SpaLogin> promise = Promise.promise();
 
-		mUserPromises.put(spaLogin.getPassword() + "addlogin", promise);
-		mjson.Json mess = setMessage("addlogin", spaLogin);
-		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+		mUserPromises.put(spaLogin.getPassword() + ADDLOGIN, promise);
+		mjson.Json mess = setMessage(ADDLOGIN, spaLogin);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess == null ? "" : mess.getValue());
 
 		eb.send("akka", jsonPayLoad);
 
@@ -55,9 +58,9 @@ public abstract class DbCassandraBase {
 
 		Promise<SpaLogin> promise = Promise.promise();
 
-		mUserPromises.put(spaLogin.getPassword() + "removelogin", promise);
-		mjson.Json mess = setMessage("removelogin", spaLogin);
-		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
+		mUserPromises.put(spaLogin.getPassword() + REMOVELOGIN, promise);
+		mjson.Json mess = setMessage(REMOVELOGIN, spaLogin);
+		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess == null ? "" : mess.getValue());
 
 		eb.send("akka", jsonPayLoad);
 
@@ -96,11 +99,12 @@ public abstract class DbCassandraBase {
 
 					switch (json.at("cmd").asString()) {
 						case "string":
-							logger.info(json.at("msg").asString());
+							String infoMsg = json.at("msg").asString();
+							logger.info(infoMsg);
 							break;
-						case "getlogin":
-						case "addlogin":
-						case "removelogin":
+						case GETLOGIN:
+						case ADDLOGIN:
+						case REMOVELOGIN:
 							mjson.Json cassJson = json.at("msg");
 							String cmd = json.at("cmd").asString();
 							SpaLogin spaLogin = createSpaLogin();
@@ -117,7 +121,7 @@ public abstract class DbCassandraBase {
 							break;
 						}
 				} else {
-					logger.error("ERROR received " + msg.getErrMessage());
+					logger.error("ERROR received {}", msg.getErrMessage());
 				}
 			}
 		};

@@ -73,6 +73,7 @@ public class SpaDatabaseMariadb extends DbMariadb {
 		dbProperties.setProperty("foreign_keys", "true");
 	}
 
+    @Override
 	public Future<Void> databaseSetup() throws InterruptedException, SQLException {
 		if ("dev".equals(webEnv)) {
 			SpaDbConfiguration.configureTestDefaults(dbMap, dbProperties);
@@ -149,10 +150,12 @@ public class SpaDatabaseMariadb extends DbMariadb {
         return (T) pool4;
     }
 
+    @Override
     public Vertx getVertx() {
         return vertx;
     }
 
+    @Override
     public void setVertx(Vertx vertx) {
         this.vertx = vertx;
     }

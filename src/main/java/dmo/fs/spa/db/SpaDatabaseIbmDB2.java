@@ -72,6 +72,7 @@ public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
         // databaseSetup();
     }
 
+    @Override
     public Future<Void> databaseSetup() throws InterruptedException, SQLException {
 
         // Override default credentials
@@ -155,10 +156,12 @@ public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
         return (T) pool4;
     }
 
+    @Override
     public Vertx getVertx() {
         return vertx;
     }
 
+    @Override
     public void setVertx(Vertx vertx) {
         this.vertx = vertx;
     }

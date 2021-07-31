@@ -3,7 +3,7 @@
  *
  * This generated file contains a sample Java project to get you started.
  * For more details take a look at the Java Quickstart chapter in the Gradle
- * User Manual available at https://docs.gradle.org/5.6.3/userguide/tutorial_java_projects.html
+ * User Manual available at https://docs.gradle.org/current/userguide/building_java_projects.html
  */
 
 plugins {
@@ -13,7 +13,7 @@ plugins {
     // Apply the application plugin to add support for building a CLI application
     id "application"
 
-    id "com.github.johnrengelman.shadow" version "5.2.0"
+    id "com.github.johnrengelman.shadow" version "7.0.0"
 
     id "nu.studer.jooq" version "3.0.3"
 
@@ -25,7 +25,6 @@ plugins {
 repositories {
     // Use jcenter for resolving dependencies.
     // You can declare any Maven/Ivy/file repository here.
-    jcenter()
     maven {
         url "https://plugins.gradle.org/m2/"
     }
@@ -35,13 +34,14 @@ repositories {
     mavenCentral()
     mavenLocal()
     maven {
-        url "http://maven.cubrid.org/"
+        url "https://maven.cubrid.org/"
     }
 }
 
-version = "4.0.3"
+version = "4.1.2"
+
 ext {
-    vertxVersion = "4.0.3"
+    vertxVersion = "4.1.2"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.13.2"
 }
@@ -56,7 +56,7 @@ pmd {
     ruleSetFiles = files("dodexstart.xml")
     ruleSets = []
     ignoreFailures = true
-    toolVersion = "6.24.0"
+    toolVersion = "6.36.0"
 }
 
 dependencies {
@@ -71,8 +71,10 @@ dependencies {
     implementation "io.vertx:vertx-rx-java2:$version"
     implementation "org.slf4j:slf4j-jcl:1.7.28"
     implementation group: "org.xerial", name: "sqlite-jdbc", version: "3.31.1"
-    implementation group: "cubrid", name: "cubrid-jdbc", version: "11.0.0.0248"
+    implementation group: "cubrid", name: "cubrid-jdbc", version: "11.0.1.0286"
     implementation "com.google.firebase:firebase-admin:7.2.0"
+    // implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
+
 
     implementation "org.jooq:jooq"
     implementation "io.vertx:vertx-tcp-eventbus-bridge:$version"
@@ -91,15 +93,16 @@ dependencies {
 
 application {
     // Define the main class for the application
-    mainClassName = "io.vertx.core.Launcher"
+    getMainClass().set("io.vertx.core.Launcher")
 }
 
-
 def mainVerticleName = "dmo.fs.vertx.Server"
+def mainClassName = "io.vertx.core.Launcher"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = "src/main/java/**/*.java"
 def debug = ""
 def OS = System.getProperty("os.name").toLowerCase();
+def usr = System.getProperty("user.home")
 
 apply plugin: "nu.studer.jooq"
 // apply plugin: "org.sonatype.gradle.plugins.scan"
@@ -111,14 +114,14 @@ run {
 
     environment "VERTXWEB_ENVIRONMENT", "dev"
     if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
-      environment "GOOGLE_APPLICATION_CREDENTIALS", "/home/<user>/auth/<service-account-key.json>"
+      environment "GOOGLE_APPLICATION_CREDENTIALS", "$usr/auth/service-account-key.json"
     }
 
     args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName", "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json"]
     systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
 }
 /*
-  The stop, start, list Sever commands can be used after running "gradlew shadowJar".
+  The stop, start, list Server commands can be used after running "gradlew shadowJar".
  */
 task stopServer(type:Exec) {
   def id = System.getProperty("id") ? System.getProperty("id") : "";

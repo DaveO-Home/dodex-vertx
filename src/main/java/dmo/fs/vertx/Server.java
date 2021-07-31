@@ -36,16 +36,17 @@ import io.vertx.reactivex.ext.web.Route;
 
 public class Server extends AbstractVerticle {
   private static Logger logger;
-  private int port;
-  private int eventBridgePort = 7032;
+  private int startupPort;
+  private int port = startupPort = 0;
+  
 
   public Server() {
     Locale.setDefault(new Locale("US"));
   }
 
-  public Server(int port) {
+  public Server(int startupPort) {
     Locale.setDefault(new Locale("US"));
-    this.port = port;
+    this.startupPort = startupPort;
   }
 
   static {
@@ -64,23 +65,24 @@ public class Server extends AbstractVerticle {
   private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
   private HttpServer server;
   private JsonObject config;
-  private Integer vertxVersion;
 
   @Override
-  public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException, IOException, SQLException {
+  public void start(Promise<Void> promise) throws 
+      InterruptedException, URISyntaxException, IOException, SQLException, NumberFormatException {
     if (development == null || development.equals("")) {
       development = "prod";
     } else if ("dev".equalsIgnoreCase(development)) {
-      port = 8087;
+      port = startupPort == 0 ? 8087 : startupPort;
     } else if ("test".equalsIgnoreCase(development)) {
-      port = 8089;
+      port = startupPort == 0 ? 8089 : startupPort;
     }
+
     config = Vertx.currentContext().config();
     if (config.getInteger("http.port") == null) {
       config = getAlternateConfig();
     }
     /* From application-conf.json - Vertx version defaults to 4 */
-    vertxVersion = config.getInteger(development + ".vertx.version",
+    Integer vertxVersion = config.getInteger(development + ".vertx.version",
         config.getInteger("vertx.version") == null ? 4 : config.getInteger("vertx.version"));
 
     Boolean color = "prod".equalsIgnoreCase(development) ? config.getBoolean("prod.color") : config.getBoolean("color");
@@ -94,46 +96,67 @@ public class Server extends AbstractVerticle {
       server = vertx.createHttpServer();
     }
 
-    Routes routes = new Routes(vertx, server, vertxVersion);
+    Routes routes = null;
+    SpaRoutes allRoutes = null;
+    List<Route> routesList = null;
+    routes = new Routes(vertx, server, vertxVersion);
 
-    SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter());
+    allRoutes = new SpaRoutes(vertx, server, routes.getRouter(), routes.getFirestore());
+    routesList = allRoutes.getRouter().getRoutes();
+    
     FileSystem fs = vertx.fileSystem();
-    List<Route> routesList = allRoutes.getRouter().getRoutes();
+    /* For BoxFuse - sqlite3 */
+    // fs.mkdir("/efs");
+    // Runtime.getRuntime().exec("mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 <your-efs-id>.efs.<your-aws-region>.amazonaws.com:/ /efs").waitFor();
 
     for (Route r : routesList) {
       String path = parsePath(r);
-      logger.info(String.join("", ColorUtilConstants.CYAN_BOLD_BRIGHT, path + (r.methods() == null ? "" : r.methods()), ColorUtilConstants.RESET));
+      String methods = path + (r.methods() == null ? "" : r.methods());
+      logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT, methods, ColorUtilConstants.RESET);
     }
 
     server.requestHandler(allRoutes.getRouter());
 
+    // Note; development = "prod" in production mode
+    // Can override port at execution time with env variable "VERTX_PORT"
+
+    String overridePort =  System.getenv("VERTX_PORT") == null ? development + ".http.port" : System.getenv("VERTX_PORT");
+    int secondaryPort = this.port == 0 ? 8080 : port;
     try {
-      server.listen(config.getInteger(development + ".http.port", this.port == 0 ? 8080 : port), result -> {
+      port = System.getenv("VERTX_PORT") == null ? config.getInteger(overridePort, secondaryPort) : 
+          Integer.parseInt(System.getenv("VERTX_PORT"));
+    } catch(NumberFormatException ex) {
+      ex.printStackTrace();
+      throw ex;
+    }
+
+    try {
+      server.listen(port, result -> {
         if (result.succeeded()) {
-          Integer port = this.port != 0 ? this.port : config.getInteger(development + ".http.port", 8080);
-          logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT, "HTTP Started on port: ", port.toString(),
+          logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT, "HTTP Started on port: ", Integer.toString(port),
               ColorUtilConstants.RESET));
           promise.complete();
           try {
-            if (development.toLowerCase().equals("dev")) {
+            if ("dev".equalsIgnoreCase(development)) {
               String fileStarted = "./server-started";
               if (!fs.existsBlocking(fileStarted)) {
                 fs.createFileBlocking(fileStarted);
               }
             }
           } catch (Exception e) {
-            logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET));
+            logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET);
           }
         } else {
+          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, result.cause(), ColorUtilConstants.RESET);
           promise.fail(result.cause());
         }
       });
-    } catch (Error e) {
-      logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET));
+    } catch (Exception e) {
+      logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET);
     }
 
     String defaultDb = new DodexUtil().getDefaultDb();
-    logger.info(String.format("%sUsing %s database.%s", ColorUtilConstants.PURPLE_BOLD_BRIGHT, defaultDb, ColorUtilConstants.RESET));
+    logger.info("{}{}{}{}{}",ColorUtilConstants.PURPLE_BOLD_BRIGHT, "Using ", defaultDb, " database", ColorUtilConstants.RESET);
     
     if ("cassandra".equals(defaultDb)) {
       TcpEventBusBridge bridge = TcpEventBusBridge.create(vertx,
@@ -142,7 +165,7 @@ public class Server extends AbstractVerticle {
               .addInboundPermitted(new PermittedOptions().setAddress("akka"))
               .addOutboundPermitted(new PermittedOptions().setAddress("vertx")));
 
-      eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
+      int eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
           : config.getInteger(development + "bridge.port");
 
       bridge.listen(eventBridgePort, res -> {
@@ -160,12 +183,12 @@ public class Server extends AbstractVerticle {
 
   private void setupEventBridge() {
     // Note; development has the value of "prod" when in production
-    Integer port = config.getInteger(development + ".bridge.port");
-    EventBus eb = EventBus.create("localhost", port == null ? 7032 : port);
+    Integer bridgePort = config.getInteger(development + ".bridge.port");
+    EventBus eb = EventBus.create("localhost", bridgePort == null ? 7032 : bridgePort);
     SpaApplication.setEb(eb);
     CassandraRouter.setEb(eb);
-    logger.info(String.format("%sDodex Connected to Event Bus Bridge%s", ColorUtilConstants.BLUE_BOLD_BRIGHT,
-        ColorUtilConstants.RESET));
+    logger.info("{}{}{}", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Dodex Connected to Event Bus Bridge%s",
+        ColorUtilConstants.RESET);
   }
 
   private HttpServer configureLinuxOptions(Vertx vertx, boolean fastOpen, boolean cork, boolean quickAck,
@@ -191,9 +214,8 @@ public class Server extends AbstractVerticle {
     }
 
     String info = route.toString();
-    String pattern = info.substring(info.indexOf("pattern=") + 8, info.indexOf(',', info.indexOf("pattern=")));
 
-    return pattern;
+    return info.substring(info.indexOf("pattern=") + 8, info.indexOf(',', info.indexOf("pattern=")));
   }
 
   public static boolean isWindows() {
@@ -220,8 +242,7 @@ public class Server extends AbstractVerticle {
       node = jsonMapper.readTree(in);
     }
 
-    JsonObject config = new JsonObject(node.toString());
-    return config;
+    return new JsonObject(node.toString());
   }
 
   public HttpServer getServer() {

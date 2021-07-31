@@ -13,17 +13,18 @@ import java.util.concurrent.ConcurrentHashMap;
 public class SpaLoginImpl implements SpaLogin {
 
     private Long id;
+    private String idS;
     private String name;
     private String password;
     private Timestamp lastLogin;
     private String status;
 
     @Override
-    public void setId(final Long id) {
+    public <T> void setId(T id) {
         if (id instanceof Long) {
-            this.id = id;
+            this.id = (Long)id;
         } else {
-            this.id = Long.parseLong(id.toString());
+            this.idS = id.toString();
         }
     }
 
@@ -37,9 +38,13 @@ public class SpaLoginImpl implements SpaLogin {
         this.password = password;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public Long getId() {
-        return id;
+    public <T> T getId() {
+        if(idS == null) {
+            return (T) id;
+        }
+        return (T) idS;
     }
 
     @Override
@@ -55,7 +60,7 @@ public class SpaLoginImpl implements SpaLogin {
     @Override
     public <T> void setLastLogin(T lastLogin) {
         Optional<?> login = Optional.of(lastLogin);
-        if(login.isPresent()) {
+        if(Boolean.valueOf(login.isPresent()).equals(true)) {
             Optional<Timestamp> loginTimestamp = login
                 .filter(Timestamp.class::isInstance)
                 .map(Timestamp.class::cast);

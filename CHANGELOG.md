@@ -1,6 +1,22 @@
 # Changelog
 
-## [v2.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.1.0) (2020-05-10)
+## [v2.2.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.0) (2021-08-01)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.1.0...v2.2.0)
+
+* Added VERTX_PORT environment variable to change port at execution time
+* Setup graalvm with both java8 and java11 - dodexvm8 & dodexvm11
+* Upgraded javascript modules in spa react demo
+* Upgraded javascript modules in firebase setup 
+* Added Firebase to spa react demo for 'login' table  
+* Upgraded Vert.x to 4.1.2
+* Upgraded Gradle to 7.1.1 - faster rebuilds
+* Fixed AKKA connection problem
+* Fixed Postgres SPA login problem
+* Code clean-up - based on PMD and SonarLint
+* Seperated out Cubrid database code from DbDefinitionBase.java to DbCubridOverride.java - fixed in 4.2.0?
+
+## [v2.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.1.0) (2021-05-10)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.6...v2.1.0)
 
@@ -8,7 +24,7 @@
 * Cleaned up some code.
 * Fixed startup messages.
 
-## [v2.0.6](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.6) (2020-04-20)
+## [v2.0.6](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.6) (2021-04-20)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.5...v2.0.6)
 
@@ -16,7 +32,7 @@
 * Display regex route patterns
 * Changed sql "Update" to "Insert" form for Cubrid, Update,Select,Delete are still problematic
 
-## [v2.0.5](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.5) (2020-04-14)
+## [v2.0.5](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.5) (2021-04-14)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.4...v2.0.5)
 
@@ -26,7 +42,7 @@
 * Fixed deprecated karma server configuration
 * Added keystore to easily test ssl(commented out by default), see Server.java
 
-## [v2.0.4](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.4) (2020-02-12)
+## [v2.0.4](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.4) (2021-02-12)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.3...v2.0.4)
 
@@ -34,7 +50,7 @@
 * Upgraded to Gradle 6.8.1
 * Fixed repository defines in build.gradle
 
-## [v2.0.3](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.3) (2020-01-23)
+## [v2.0.3](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.3) (2021-01-23)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.2...v2.0.3)
 

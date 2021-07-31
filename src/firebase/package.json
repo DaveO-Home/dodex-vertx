@@ -24,13 +24,13 @@
     "firebase": "^8.4.3",
     "firebase-admin": "^9.7.0",
     "firebase-tools": "^9.10.0",
-    "uuid": "^3.4.0"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^1.2.11",
     "@types/mocha": "^8.2.2",
     "@types/uuid": "^8.3.0",
-    "mocha": "^8.3.2",
+    "mocha": "^9.0.2",
     "typescript": "^4.2.4"
   }
 }

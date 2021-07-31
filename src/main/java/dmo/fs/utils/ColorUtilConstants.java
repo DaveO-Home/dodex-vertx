@@ -1,6 +1,10 @@
 package dmo.fs.utils;
 
-public class ColorUtilConstants {
+public final class ColorUtilConstants {
+    
+  private ColorUtilConstants() {
+  }
+
     // Reset
     public static   String RESET = "\033[0m";  // Text Reset
 

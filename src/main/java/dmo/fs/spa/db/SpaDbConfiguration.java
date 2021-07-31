@@ -12,6 +12,7 @@ public class SpaDbConfiguration extends DbConfiguration {
     private static String defaultDb = "sqlite3";
     private static SpaDatabase spaDatabase;
     private static SpaCassandra spaCassandra;
+    private static SpaFirebase spaFirebase;
     
     private enum DbTypes {
         POSTGRES("postgres"),
@@ -19,7 +20,8 @@ public class SpaDbConfiguration extends DbConfiguration {
         CUBRID("cubrid"),
         MARIADB("mariadb"),
         IBMDB2("ibmdb2"),
-        CASSANDRA("cassandra");
+        CASSANDRA("cassandra"),
+        FIREBASE("firebase");
 
         String db;
 
@@ -50,6 +52,9 @@ public class SpaDbConfiguration extends DbConfiguration {
             }  else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
                 spaCassandra = spaCassandra == null? new SpaDatabaseCassandra(): spaCassandra;
                 return (T) spaCassandra;
+            } else if(defaultDb.equals(DbTypes.FIREBASE.db)) {
+                spaFirebase = spaFirebase == null? new SpaDatabaseFirebase(): spaFirebase;
+                return (T) spaFirebase;
             }
         } catch (Exception exception) { 
             throw exception;
@@ -76,6 +81,9 @@ public class SpaDbConfiguration extends DbConfiguration {
             } else if(defaultDb.equals(DbTypes.CASSANDRA.db)) {
                 spaCassandra = spaCassandra == null? new SpaDatabaseCassandra(overrideMap, overrideProps): spaCassandra;
                 return (T) spaCassandra;
+            } else if(defaultDb.equals(DbTypes.FIREBASE.db)) {
+                spaFirebase = spaFirebase == null? new SpaDatabaseFirebase(overrideMap, overrideProps): spaFirebase;
+                return (T) spaFirebase;
             }
         } catch (Exception exception) { 
             throw exception;

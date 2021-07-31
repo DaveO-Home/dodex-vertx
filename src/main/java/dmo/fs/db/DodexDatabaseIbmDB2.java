@@ -139,7 +139,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 						
                             Single<RowSet<Row>> crow = conn.query(sql).rxExecute()
                                 .doOnError(err -> {
-                                    logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));;
+                                    logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
                                 }).doOnSuccess(row2 -> {
                                     logger.info("Undelivered Table Added.");
                                 });

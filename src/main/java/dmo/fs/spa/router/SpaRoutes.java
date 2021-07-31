@@ -5,6 +5,9 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+
+import com.google.cloud.firestore.Firestore;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,19 +33,20 @@ import io.vertx.reactivex.ext.web.sstore.LocalSessionStore;
 import io.vertx.reactivex.ext.web.sstore.SessionStore;
 
 public class SpaRoutes {
-    private final static Logger logger = LoggerFactory.getLogger(SpaRoutes.class.getName());
-    private final static String FAILURE = "{\"status\":\"-99\"}";
+    private static final Logger logger = LoggerFactory.getLogger(SpaRoutes.class.getName());
+    private static final String FAILURE = "{\"status\":\"-99\"}";
 
     protected Vertx vertx;
     protected Router router;
     protected HttpServer server;
     protected SessionStore sessionStore;
+    protected Firestore firestore;
 
-    public SpaRoutes(Vertx vertx, HttpServer server, Router router)
-            throws InterruptedException, IOException, SQLException {
+    public SpaRoutes(Vertx vertx, HttpServer server, Router router, Firestore firestore) {
         this.vertx = vertx;
         this.router = router;
         this.server = server;
+        this.firestore = firestore;
         sessionStore = LocalSessionStore.create(vertx);
         DodexUtil.setVertx(vertx);
 
@@ -56,7 +60,7 @@ public class SpaRoutes {
         SessionHandler sessionHandler = SessionHandler.create(sessionStore);
         Route route = router.route(HttpMethod.GET, "/userlogin").handler(sessionHandler);
 
-        if (DodexUtil.getEnv().equals("dev")) {
+        if ("dev".equals(DodexUtil.getEnv())) {
             route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.GET));
         }
 
@@ -65,6 +69,7 @@ public class SpaRoutes {
                 SpaApplication spaApplication = new SpaApplication();
 
                 spaApplication.setVertx(vertx);
+                spaApplication.setDbf(firestore);
                 spaApplication.setupDatabase().onSuccess(v -> {
                     Session session = routingContext.session();
 
@@ -121,7 +126,7 @@ public class SpaRoutes {
         SessionHandler sessionHandler = SessionHandler.create(sessionStore);
         Route route = router.route(HttpMethod.PUT, "/userlogin").handler(sessionHandler);
 
-        if (DodexUtil.getEnv().equals("dev")) {
+        if ("dev".equals(DodexUtil.getEnv())) {
             route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.PUT));
         }
 
@@ -132,6 +137,7 @@ public class SpaRoutes {
                 SpaApplication spaApplication = new SpaApplication();
 
                 spaApplication.setVertx(vertx);
+                spaApplication.setDbf(firestore);
                 spaApplication.setupDatabase().onSuccess(v -> {
                     Session session = routingContext.session();
 
@@ -155,14 +161,14 @@ public class SpaRoutes {
                             Future<SpaLogin> futureLogin = spaApplication.getLogin(jsonObject.encode());
 
                             futureLogin.onSuccess(result -> {
-                                if (result.getStatus().equals("0")) {
+                                if ("0".equals(result.getStatus())) {
                                     result.setStatus("-2");
                                     response.end(new JsonObject(result.getMap()).encode());
                                 } else {
                                     Future<SpaLogin> future = null;
                                     try {
                                         future = new SpaApplication().addLogin(routingContext.getBodyAsString());
-                                    } catch (InterruptedException | SQLException | IOException e) {
+                                    } catch (InterruptedException | SQLException | IOException | ExecutionException e) {
                                         e.printStackTrace();
                                     }
 
@@ -205,7 +211,7 @@ public class SpaRoutes {
     public void setLogoutRoute() {
         SessionHandler sessionHandler = SessionHandler.create(sessionStore);
         Route route = router.route(HttpMethod.DELETE, "/userlogin").handler(sessionHandler);
-        if (DodexUtil.getEnv().equals("dev")) {
+        if ("dev".equals(DodexUtil.getEnv())) {
             route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.DELETE));
         }
 
@@ -245,7 +251,7 @@ public class SpaRoutes {
         SessionHandler sessionHandler = SessionHandler.create(sessionStore);
         Route route = router.route(HttpMethod.DELETE, "/userlogin/unregister").handler(sessionHandler);
 
-        if (DodexUtil.getEnv().equals("dev")) {
+        if ("dev".equals(DodexUtil.getEnv())) {
             route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.DELETE));
         }
 
@@ -298,7 +304,7 @@ public class SpaRoutes {
         });
     }
 
-    public Router getRouter() throws InterruptedException {
+    public Router getRouter() {
         return router;
     }
 }

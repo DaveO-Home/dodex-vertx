@@ -69,6 +69,7 @@ public class SpaDatabasePostgres extends DbPostgres {
 		dbProperties = dodexUtil.mapToProperties(dbMap);
 	}
 
+    @Override
 	public Future<Void> databaseSetup() throws InterruptedException, SQLException {
 		// Override default credentials
 		// dbProperties.setProperty("user", "myUser");
@@ -89,8 +90,8 @@ public class SpaDatabasePostgres extends DbPostgres {
         connectOptions = new PgConnectOptions()
             .setHost(dbMap.get("host2"))
             .setPort(Integer.valueOf(dbMap.get("port")))
-            .setUser(dbProperties.getProperty("user").toString())
-            .setPassword(dbProperties.getProperty("password").toString())
+            .setUser(dbProperties.getProperty("user"))
+            .setPassword(dbProperties.getProperty("password"))
             .setDatabase(dbMap.get("database"))
             .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
             .setIdleTimeout(1)
@@ -104,24 +105,27 @@ public class SpaDatabasePostgres extends DbPostgres {
         Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> 
             conn.rxBegin().flatMapCompletable(
 			tx -> conn.query(CHECKLOGINSQL).rxExecute().doOnSuccess(rows -> {
-                if (rows.size() == 0) {
-                    final String usersSql = getCreateTable("LOGIN");
+                for (Row row : rows) {
+                    if (row.getValue(0) == null) {
+                        final String usersSql = getCreateTable("LOGIN").replace("dummy",
+                            dbProperties.get("user").toString());
 
-                    Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute()
-                        .doOnError(err -> {
-                            logger.info(String.format("Users Table Error: %s", err.getMessage()));
-                        }).doOnSuccess(result -> {
-                            logger.info("Users Table Added.");
+                        Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute()
+                            .doOnError(err -> {
+                                logger.info(String.format("Login Table Error: %s", err.getMessage()));
+                            }).doOnSuccess(result -> {
+                                logger.info("Login Table Added.");
+                            });
+
+                        crow.subscribe(result -> {
+                            //
+                        }, err -> {
+                            logger.info(String.format("Login Table Error: %s", err.getMessage()));
                         });
-
-                    crow.subscribe(result -> {
-                        //
-                    }, err -> {
-                        logger.info(String.format("Users Table Error: %s", err.getMessage()));
-                    });
+                    }
                 }
 			}).doOnError(err -> {
-				logger.info(String.format("Users Table Error: %s", err.getMessage()));
+				logger.info(String.format("Login Table Error: %s", err.getMessage()));
 
             }).flatMapCompletable(res -> tx.rxCommit())
         ));
@@ -152,10 +156,12 @@ public class SpaDatabasePostgres extends DbPostgres {
         return (T) pool4;
     }
 
+    @Override
     public Vertx getVertx() {
         return vertx;
     }
 
+    @Override
     public void setVertx(Vertx vertx) {
         this.vertx = vertx;
     }

@@ -3,13 +3,12 @@ package dmo.fs.db;
 
 import java.sql.SQLException;
 import java.text.DateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import com.google.api.core.ApiFuture;
@@ -25,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import dmo.fs.utils.ColorUtilConstants;
+import dmo.fs.utils.DodexUtil;
 import dmo.fs.utils.FirebaseMessage;
 import dmo.fs.utils.FirebaseUser;
 import io.vertx.core.Future;
@@ -35,7 +35,7 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.ServerWebSocket;
 
 public abstract class DbFirebaseBase {
-	private final static Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
+	private static final Logger logger = LoggerFactory.getLogger(DbFirebaseBase.class.getName());
 
 	private Vertx vertx;
     private Firestore dbf;
@@ -53,7 +53,7 @@ public abstract class DbFirebaseBase {
 
     public FirebaseUser updateUser(ServerWebSocket ws, FirebaseUser firebaseUser)
 			throws InterruptedException, ExecutionException {
-        Map<String, Object> lastLogin = new HashMap<String, Object>();
+        Map<String, Object> lastLogin = new ConcurrentHashMap<>();
         DocumentReference userDoc = dbf.collection("users").document(firebaseUser.getName());
         
         lastLogin.put("lastLogin", Timestamp.now());
@@ -124,7 +124,7 @@ public abstract class DbFirebaseBase {
         ApiFuture<DocumentSnapshot> apiFuture = documentReference.get();
         Map<String, Object> user = apiFuture.get().getData();
         
-        if(user == null || user.size() == 0) {
+        if(user == null || user.isEmpty()) {
             addUser(ws, firebaseUser);
             promise.complete(firebaseUser);
         } else {
@@ -138,19 +138,17 @@ public abstract class DbFirebaseBase {
 	}
 
     private FirebaseUser setUserFromMap(Map<String, Object> user) {
-        FirebaseUser firebaseUser = new FirebaseUser(
+        return new FirebaseUser(
             (String)user.get("id"),
             (String)user.get("name"),
             (String)user.get("password"),
             (String)user.get("ip"),
             (Timestamp)user.get("lastLogin")
         );
-        
-        return firebaseUser;
     }
 
     private FirebaseMessage setMessageFromUser(MessageUser user, String message) {
-        FirebaseMessage firebaseMessage = new FirebaseMessage(
+        return new FirebaseMessage(
             null,
             null,
             UUID.randomUUID().toString(),
@@ -159,8 +157,6 @@ public abstract class DbFirebaseBase {
             user.getName(),
             Timestamp.now()
         );
-        
-        return firebaseMessage;
     }
 
 	public Future<StringBuilder> buildUsersJson(ServerWebSocket ws, MessageUser messageUser)
@@ -186,31 +182,35 @@ public abstract class DbFirebaseBase {
 		return promise.future();
 	}
 
+    
+
 	public Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws, FirebaseUser firebaseUser)
 			throws Exception {
 		Promise<Map<String, Integer>> promise = Promise.promise();
-        Map<String, Integer> counts = new HashMap<String, Integer>();
+        Map<String, Integer> counts = new ConcurrentHashMap<>();
 
         CollectionReference messageQuery = dbf.collection(String.format("messages/%s/documents", firebaseUser.getName()));
         ApiFuture<QuerySnapshot> documents = messageQuery.get();
         
         counts.put("messages", 0);
-        if(documents == null) {
+        if(DodexUtil.isNull(documents)) {
             promise.complete(counts);
         }
-        else documents.get().forEach(message -> {
-            Date postDate = message.getTimestamp("post_date").toDate();
-            DateFormat formatDate = DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.getDefault());
-            String handle = message.getString("name");
+        else {
+                documents.get().forEach(message -> {
+                Date postDate = message.getTimestamp("post_date").toDate();
+                DateFormat formatDate = DateFormat.getDateInstance(DateFormat.DEFAULT, Locale.getDefault());
+                String handle = message.getString("name");
 
-            ws.writeTextMessage(handle + formatDate.format(postDate) + " " + message.getString("message"));
+                ws.writeTextMessage(handle + formatDate.format(postDate) + " " + message.getString("message"));
 
-            messageQuery.document(message.getId()).delete();
+                messageQuery.document(message.getId()).delete();
 
-            Integer count = counts.get("messages") + 1;
-            counts.put("messages", count);
-            promise.tryComplete(counts);
-        });
+                Integer count = counts.get("messages") + 1;
+                counts.put("messages", count);
+                promise.tryComplete(counts);
+            });
+        }
 
         return promise.future();
 	}

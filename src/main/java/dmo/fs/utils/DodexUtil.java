@@ -22,12 +22,11 @@ import io.reactivex.disposables.Disposable;
 import io.vertx.reactivex.core.Vertx;
 
 public class DodexUtil {
-    private final static Logger logger = LoggerFactory.getLogger(DodexUtil.class.getName());
-    private final static String REMOVEUSER = ";removeuser";
-    private final static String USERS = ";users";
+    private static final Logger logger = LoggerFactory.getLogger(DodexUtil.class.getName());
+    private static final String REMOVEUSER = ";removeuser";
+    private static final String USERS = ";users";
     private static String env = "dev";
-    private static Vertx vertx = null;
-    private static io.vertx.core.Vertx vertx2 = null;
+    private static Vertx vertx;
 
     String defaultDb = "sqlite3";
 
@@ -94,9 +93,9 @@ public class DodexUtil {
         Split out command and data from client message.
     */
     public static class ClientInfoUtilHelper {
-        private final static String[] commands = { REMOVEUSER, USERS };
+        private static final String[] commands = { REMOVEUSER, USERS };
 
-        private static Function<String, String> command = (clientData) -> {
+        private static Function<String, String> command = clientData -> {
             for (String clientCommand : commands) {
                 if (clientData.contains(clientCommand)) {
                     return clientCommand;
@@ -105,18 +104,18 @@ public class DodexUtil {
             return null;
         };
 
-        public static Function<String, String> getCommand = (clientData) -> {
+        public static Function<String, String> getCommand = clientData -> {
             return command.apply(clientData);
         };
 
-        public static Function<String, String> getMessage = (clientData) -> {
+        public static Function<String, String> getMessage = clientData -> {
             if (getCommand.apply(clientData) == null) {
                 return clientData;
             }
             return clientData.substring(0, clientData.indexOf(getCommand.apply(clientData)));
         };
 
-        public static Function<String, String> getData = (clientData) -> {
+        public static Function<String, String> getData = clientData -> {
             String command = getCommand.apply(clientData);
             Integer indexOf = command == null? -1: clientData.indexOf("!!");
             if (indexOf == -1) {
@@ -218,11 +217,7 @@ public class DodexUtil {
           DodexUtil.vertx = vertx;
       }
 
-      public static io.vertx.core.Vertx getVertx2() {
-        return vertx2;
-    }
-
-    public static void setVertx2(io.vertx.core.Vertx vertx2) {
-        DodexUtil.vertx2 = vertx2;
+      public static boolean isNull(Object obj) {
+        return obj == null;
     }
 }

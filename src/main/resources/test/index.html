@@ -34,12 +34,13 @@
     const input = window.doDexInput;
     const mess = window.doDexMess;
     dodex.setContentFile("../content/content.js");
+    const server = window.location.hostname + (window.location.port.length > 0 ? ":" + window.location.port : "");
     dodex.init({/*width:550, height:250, left: "25%", top: "150px"*/
       input: input,       // required if using frontend content load
       private: "full",    // frontend load of private content, "none", "full", "partial"(only cards 28-52) - default none
       replace: true,      // append to or replace default content - default false(append only)
       mess: mess,         // required if using messaging
-      server: "localhost:8087" // configured websocket server - example in node_modules/dodex-mess, koa.js
+      server: server // configured websocket server - example in node_modules/dodex-mess, koa.js
     })
       .then(function () {
         for (var i = 0; i < 3; i++) {

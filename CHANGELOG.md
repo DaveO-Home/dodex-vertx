@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.2.1](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.1) (2021-10-14)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.2.0...v2.2.1)
+
+* Upgraded and modified firebase tests - src/firebase/testsrc/dodex.tests.ts
+* Made dodex connections to server more generic - index.html, bootstrap.html, entry.jsx
+
 ## [v2.2.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.0) (2021-08-01)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.1.0...v2.2.0)

@@ -58,6 +58,7 @@ public class Server extends AbstractVerticle {
     System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tF %1$tT] [%4$s] %5$s %3$s %n");
     System.setProperty("dmo.fs.level", "INFO");
     System.setProperty("org.jooq.no-logo", "true");
+    System.setProperty("org.jooq.no-tips", "true");
     logger = LoggerFactory.getLogger(Server.class.getName());
   }
 

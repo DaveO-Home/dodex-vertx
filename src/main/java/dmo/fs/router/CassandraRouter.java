@@ -74,7 +74,7 @@ public class CassandraRouter {
         final Optional<Context> context = Optional.ofNullable(Vertx.currentContext());
         if (context.isPresent()) {
             final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
-            try {
+            try { 
                 JsonObject config = jsonObject.isPresent() ? jsonObject.get() : new JsonObject();
                 final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
                 if (runClean.isPresent() && runClean.get()) {

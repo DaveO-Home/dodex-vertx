@@ -80,8 +80,8 @@
     "mariadb": {
         "dev": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "dodex",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
@@ -113,16 +113,16 @@
         "dev": { 
             "credentials": {
                 "user": "db2inst1",
-                "password": "password",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
                 "host": "//localhost:50000",
                 "host2": "localhost",
-                "port": "50000",
+                "port": "25010",
                 "url": "jdbc:db2:",
                 "dbname": "/testdb",
-                "database": "testdb",
+                "database": "dodex",
                 "tabschema": "DB2INST1"
             }
         },

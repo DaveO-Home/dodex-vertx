@@ -19,5 +19,5 @@ RUN cd ~ && echo '{"name": "my-vertx", "description": "dodex server", "repositor
 
 WORKDIR /home/vertx/dodex-vertx
 
-# Coping generated production jar to host; execute from host.
+# Copying generated production jar to host; execute from host.
 # docker cp test_vertx:/home/vertx/dodex-vertx/build/libs/dodex-vertx-3.8.4.jar dodex-vertx.jar

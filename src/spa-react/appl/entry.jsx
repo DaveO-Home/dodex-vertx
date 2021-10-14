@@ -5,47 +5,44 @@ import dodex from "dodex";
 import input from "dodex-input";
 import mess from "dodex-mess";
 
-let port = 8080; // Must equal Vertx production port 
-/* develblock:start */
-// if (typeof window.testit === "undefined" || !window.testit) {
-if (location.href.indexOf("context.html") === -1) {
-  port = 8087;
-  /* develblock:end */
-  ReactDOM.render(
-    <Menulinks />,
-    document.getElementById("root")
-  );
+ReactDOM.render(
+  <Menulinks />,
+  document.getElementById("root")
+);
 
-  ReactDOM.render(
-    <Dodexlink />,
-    document.querySelector(".dodex--ico")
-  );
+ReactDOM.render(
+  <Dodexlink />,
+  document.querySelector(".dodex--ico")
+);
 
-  if (document.querySelector(".top--dodex") === null) {
-    // Content for cards A-Z and static card
-    dodex.setContentFile("./dodex/data/content.js");
-    dodex.init({
-      width: 375,
-      height: 210,
-      left: "50%",
-      top: "100px",
-      input: input,    	// required if using frontend content load
-      private: "full", 	// frontend load of private content, "none", "full", "partial"(only cards 28-52) - default none
-      replace: true,   	// append to or replace default content - default false(append only)
-      mess: mess,
-      server: "localhost:" + port
-    }).then(function () {
-      // Add in app/personal cards
-      for (let i = 0;i < 4;i++) {
-        dodex.addCard(getAdditionalContent());
-      }
-      /* Auto display of widget */
-      // dodex.openDodex();
-    });
-  }
-  /* develblock:start */
+if (document.querySelector(".top--dodex") === null) {
+  // Content for cards A-Z and static card
+  dodex.setContentFile("./dodex/data/content.js");
+  const server = window.location.hostname + (window.location.port.length > 0 ? ":" + window.location.port : "");
+  dodex.init({
+    width: 375,
+    height: 210,
+    left: "50%",
+    top: "100px",
+    input: input,    	// required if using frontend content load
+    private: "full", 	// frontend load of private content, "none", "full", "partial"(only cards 28-52) - default none
+    replace: true,   	// append to or replace default content - default false(append only)
+    mess: mess,
+    // server: "localhost:3087", // You will have to start the node server for port 3087 - do the following;
+    // cd to src/main/resources/static/node_modules/dodex-mess/server and execute "npm install" then "node koa" 
+    // server: "daveomix.us-south.cf.appdomain.cloud" // This will link to the cloud version
+    // for the verticle "dodex-vertx" use
+    // server: "localhost:8087" // if the test verticle is running.
+    server: server
+  }).then(function () {
+    // Add in app/personal cards
+    for (let i = 0; i < 4; i++) {
+      dodex.addCard(getAdditionalContent());
+    }
+    /* Auto display of widget */
+    // dodex.openDodex();
+  });
 }
-/* develblock:end */
 
 function getAdditionalContent() {
   return {

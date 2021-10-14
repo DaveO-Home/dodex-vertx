@@ -4,8 +4,8 @@ package dmo.fs.db;
 public abstract class DbMariadb extends DbDefinitionBase implements DodexDatabase {
     protected final static String CHECKLOGINSQL = "select 1 from information_schema.tables where table_name='LOGIN';";
     public final static String CHECKUSERSQL = "select 1 from information_schema.tables where table_name='USERS';";
-    protected final static String CHECKMESSAGESSQL = "select 1 from information_schema.tables where table_name='USERS';";
-    protected final static String CHECKUNDELIVEREDSQL = "select 1 from information_schema.tables where table_name='USERS';";
+    protected final static String CHECKMESSAGESSQL = "select 1 from information_schema.tables where table_name='MESSAGES';";
+    protected final static String CHECKUNDELIVEREDSQL = "select 1 from information_schema.tables where table_name='UNDELIVERED';";
 
     private enum CreateTable {
 		CREATEUSERS(

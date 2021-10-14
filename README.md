@@ -4,7 +4,7 @@
 
 1. Using Vertx4 @ <https://vertx.io/introduction-to-vertx-and-reactive/>
 2. Java 8 or higher installed with JAVA_HOME set.
-3. Gradle 6+ installed. If you have sdkman installed, execute ```sdk install gradle 6.7```
+3. Gradle 7+ installed. If you have sdkman installed, execute ```sdk install gradle 7.1.1```
 4. npm javascript package manager installed.
 
 ## Getting Started
@@ -69,11 +69,11 @@
   2. Follow install instructions.
   3. Execute ```<graalvm directory>/bin/gu install native-image``` to install the ```native-image``` program.
   4. In the dodex-vertx directory execute ```gradlew installDist``` and ```gradlew shadowJar```.
-  5. Modify the dodexvm or dodexvm.bat shell to the graalvm install directory.
-  6. In your dodex-vertx directory execute the dodexvm shell program. This should create an executable named ```io.vertx.core.Launcher```.
+  5. Modify the dodexvm8/vm11 or dodexvm.bat shell to the graalvm install directory.
+  6. In your dodex-vertx directory execute the dodexvm8 or dodexvm11 shell program. This should create an executable named ```io.vertx.core.Launcher```.
   7. Execute the production server with ```io.vertx.core.Launcher```.
 
-   __Note;__ A Java VM(JAVA_HOME) is required since ```dodex-vertx``` is a server.
+   __Note;__ dodex-vertx will not build as a stand alone, therefore, if you move the executeable to different directory, you must also move the shadowJar to the same directory with structure `build\libs`.
 
 ### Single Page React Application to demo Development and Integration Testing
 
@@ -99,12 +99,12 @@
 * You only need the `Authentication` and `Firestore` extensions.
 * If you want a different project name, change `.firebaserc`.
 
-### Testing
+  #### Testing
 
-* To make sure your project is created and the setup works, you should run the tests. __Note;__ They are written in Typescript.
-* cd `../dodex-vertx/src/firebase` and run `npm install`
-* execute `npm run emulators` to startup the emulators for testing.
-* To test the model and rules after starting the emulators, in a different terminal window, run `npm test`.
+  * To make sure your project is created and the setup works, you should run the tests. __Note;__ They are written in Typescript.
+  * cd `../dodex-vertx/src/firebase` and run `npm install`
+  * execute `npm run emulators` to startup the emulators for testing.
+  * To test the model and rules after starting the emulators, in a different terminal window, run `npm test`.
 
 ## ChangeLog
 

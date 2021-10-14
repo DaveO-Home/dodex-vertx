@@ -205,3 +205,18 @@ public class DodexDatabasePostgres extends DbPostgres {
 		return new MessageUserImpl();
 	}
 }
+
+/*
+Uni<RowSet<Row>> data = pool.preparedQuery("select * from users").execute();
+        
+        processRows2.apply(data);
+        
+        Uni<String> json = data.onItem().transform(rs -> {
+            String jsonData = null;
+            for(Row row : rs) {
+                jsonData = row.toJson().toString();
+                logger.info("Transform Print {}", jsonData);
+            }
+            return jsonData;
+        }).onFailure().transform(this::getMessage);
+*/

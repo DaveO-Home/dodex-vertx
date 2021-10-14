@@ -38,10 +38,10 @@ repositories {
     }
 }
 
-version = "4.1.2"
+version = "4.2.0.Beta1" // "4.1.2"
 
 ext {
-    vertxVersion = "4.1.2"
+    vertxVersion = "4.2.0.Beta1" // "4.1.2"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.13.2"
 }
@@ -67,6 +67,7 @@ dependencies {
     implementation "io.vertx:vertx-pg-client:$vertxVersion"
     implementation "io.vertx:vertx-mysql-client:$vertxVersion"
     implementation "io.vertx:vertx-jdbc-client:$vertxVersion"
+    // implementation 'io.vertx:vertx-jdbc-client:4.2.0.Beta1'
     implementation "io.vertx:vertx-db2-client:$vertxVersion"
     implementation "io.vertx:vertx-rx-java2:$version"
     implementation "org.slf4j:slf4j-jcl:1.7.28"

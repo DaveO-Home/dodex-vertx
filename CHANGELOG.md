@@ -1,5 +1,12 @@
 # Changelog
 
+## [v2.2.2](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.2) (2021-10-29)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.2.1...v2.2.2)
+
+* Upgraded to vertx 4.2.0 final
+* upgraded dodex and vertx dependencies(cubrid/agroal)
+
 ## [v2.2.1](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.1) (2021-10-14)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.2.0...v2.2.1)

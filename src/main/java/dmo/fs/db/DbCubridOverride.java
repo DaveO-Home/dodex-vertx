@@ -403,12 +403,15 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                     for (Row row : rows) {
                         id = row.getLong(0);
                     }
-                    id = rows.property(JDBCPool.GENERATED_KEYS).getLong(0);
+                    if (id == 0) {
+                        id = rows.property(JDBCPool.GENERATED_KEYS).getLong(0);
+                    }
                     conn.close();
                     promise.complete(id);
                 }).doOnError(err -> {
                     logger.error(String.format("%sError adding messaage: %s%s", ColorUtilConstants.RED, err,
                             ColorUtilConstants.RESET));
+                    err.printStackTrace();
                     ws.writeTextMessage(err.toString());
                     conn.close();
                 }).subscribe(rows -> {

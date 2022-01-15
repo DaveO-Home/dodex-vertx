@@ -31,7 +31,7 @@
     "karma": "^6.0.1",
     "lodash-es": "^4.17.20",
     "luxon": "^1.25.0",
-    "marked": "^2.0.3",
+    "marked": "^4.0.10",
     "mini-create-react-context": "^0.4.1",
     "popper": "^1.0.1",
     "popper.js": "^1.16.1",

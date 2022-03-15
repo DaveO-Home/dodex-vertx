@@ -28,6 +28,7 @@ hidden { display: none; }
     text-align: center;
     width: 100%;
 }
+
 .control-group + .required .control-label:after {
     color:red;
     content:"*";
@@ -37,16 +38,19 @@ hidden { display: none; }
     font-size: 16px;
 }
 
-.f14 {
-    font-size: 14px;
-}
-
 .list .span4 .thumbnail {
     height: 350px;
 }
 
+.body-bg {
+    background-color: rgb(248, 248, 252);
+}
+
 .grey {
     color:grey;
+}
+.bg-footer {
+    background-color: #e4e7eb;
 }
 
 .modal-wide .modal-body {
@@ -78,37 +82,19 @@ body {
     overflow-x: hidden; /* Prevent scroll on narrow devices */
 }
 body {
-    padding-top: 70px;
+    padding-top: 57px;
 }
 
 .nav-bar-bg {
     background-color: #B0C4DE;
 }
-
+ 
 .nav-side-menu {
-    font-size: 18px;
-    font-weight: 200;
-    overflow: auto;
+    font-size: 14px;
 }
 
-#main {
-    height:100%;
-    overflow:auto;
-}
-
-/* Sticky footer */
-html {
-    min-height: 100%;
-    position: relative;
-}
-
-.footer {
-    background-color: #f5f5f5;
-    bottom: 0;
-    height: 30px;
-    line-height: 30px;
-    position: absolute;
-    width: 100%;
+.page-bg {
+    background-color: #f9f9f5
 }
 
 .login:hover {
@@ -119,54 +105,29 @@ html {
     float: right; 
     padding-right: 1rem;
 }
-/*
- * Sidebar
- */
 
-.sidebar {
-    border-right: 1px solid #eee;
+.dodex-footer {
+    background-color: #f5f5f5;
     bottom: 0;
-    height: 85vh;
-    left: 0;
-    overflow-x: hidden;
-    overflow-y: auto; /* Scrollable contents if viewport is shorter than content. */
-    padding: 20px;
-    position: fixed;
-    top: 30px;
-    z-index: 1000;
-}
-
-/* Sidebar navigation */
-
-.sidebar {
-    padding-left: 0;
-    padding-right: 0;
-}
-
-.sidebar .nav {
-    margin-bottom: 20px;
-}
-
-.sidebar .nav-item {
+    height: 15px;
+    line-height: 10px;
+    position: absolute;
     width: 100%;
 }
 
-.sidebar .nav-item + .nav-item {
-    margin-left: 0;
-}
-
-.sidebar .nav-link {
-    border-radius: 0;
-}
-
-.sidebar-nav {
-    padding: 9px 0;
-}
-
 .editor {
-    width: 80%; height: 400px; position: fixed; bottom: 0; left: 0;
+    bottom: 0;
+    height: 400px;
+    left: 0;
+    position: fixed;
+    width: 80%;
 }
 
-.z-2100 {
-    z-index: 2100;
+.pointer {
+    cursor: pointer;
+}
+
+.pmain {
+    padding-left: calc(var(--bs-gutter-x) * 0);
+    padding-right: calc(var(--bs-gutter-x) * 0);
 }

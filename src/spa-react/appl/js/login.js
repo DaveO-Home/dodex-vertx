@@ -51,7 +51,7 @@ function Login() {
                 if (status === "0" && type !== "DELETE") {
                     sessionStorage.setItem("credentials", JSON.stringify(Login.returnData));
                     $(".login:first").html("Log Out");
-                    $(".close-modal:first").click();
+                    $(".close-modal:first").trigger("click");
                     Login.newLogin = false;
                 } 
             },

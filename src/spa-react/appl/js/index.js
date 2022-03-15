@@ -1,7 +1,6 @@
 // eslint-disable-next-line
 import "./config";
 import Setup from "./utils/setup";
-import popper from "popper.js";
 import App from "./app";
 import Default from "./utils/default";
 import "tablesorter/dist/js/extras/jquery.tablesorter.pager.min.js";
@@ -12,8 +11,8 @@ import "../entry";
 import apptest from "../jasmine/apptest";
 window._bundler = "fusebox";
 /* develblock:end */
+
 window.JSONEditor = JSONEditor;
-window.Popper = popper;
 App.init(Default);
 Setup.init();
 

@@ -13,13 +13,11 @@ import StartC, { getStartComp } from "../components/StartC";
 import { getPdfComp } from "../components/PdfC";
 import ToolsC from "../components/ToolsC";
 import LoginC from "../components/LoginC";
-import Menulinks, { Dodexlink } from "../Menulinks";
+import { Dodexlink, Menulinks } from "../Menulinks";
 import { timer } from "rxjs";
 import dodex from "dodex";
 import input from "dodex-input";
 import mess from "dodex-mess";
-// import { act } from 'react-dom/test-utils';
-// import { render, fireEvent, cleanup, waitForElement } from 'react-testing-library'
 
 export default function (App) {
     karmaDisplay();
@@ -90,9 +88,9 @@ export default function (App) {
                     done();
                 });
         });
-
-        routerTest("table");
+ 
         routerTest("pdf");
+        routerTest("table");
 
         // Executing here makes sure the tests are run in sequence.
         // Spec to test if page data changes on select change event.

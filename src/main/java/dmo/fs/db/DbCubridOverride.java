@@ -397,17 +397,16 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                 SqlConnection conn = ar.result();
 
                 String query = create.query(getAddMessage(), message, messageUser.getName(), postDate).toString();
-
                 conn.query(query).rxExecute().doOnSuccess(rows -> {
-                    Long id = 0L;
-                    for (Row row : rows) {
-                        id = row.getLong(0);
-                    }
-                    if (id == 0) {
-                        id = rows.property(JDBCPool.GENERATED_KEYS).getLong(0);
-                    }
-                    conn.close();
-                    promise.complete(id);
+                    String query2 = create.query(getMessageIdByHandleDate(), messageUser.getName(), postDate).toString();
+                    conn.query(query2).rxExecute().doOnSuccess(msg -> {
+                        Long id = 0L; 
+                        for (Row row : msg) {
+                            id = row.getLong(0);
+                        }
+                        conn.close();
+                        promise.complete(id);
+                    }).subscribe();
                 }).doOnError(err -> {
                     logger.error(String.format("%sError adding messaage: %s%s", ColorUtilConstants.RED, err,
                             ColorUtilConstants.RESET));

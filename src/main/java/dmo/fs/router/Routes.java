@@ -95,8 +95,7 @@ public class Routes {
 	}
 
 	public void setStaticRoute() {
-		StaticHandler staticHandler = StaticHandler.create();
-		staticHandler.setWebRoot("static");
+		StaticHandler staticHandler = StaticHandler.create("static");
 		staticHandler.setCachingEnabled(false);
         
         router.routeWithRegex("/.*\\.md|" + "/.*/templates/.*")

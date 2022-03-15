@@ -14,13 +14,9 @@ export default {
             const hash = trimStart(window.location.hash, "#!");
 
             if (hash === url) {
-                window.location.hash = "";
-
                 $(this).addClass("active").siblings().removeClass("active");
 
-                window.location.hash = `#!${hash}`;
                 activated = true;
-
                 return false;
             }
         });

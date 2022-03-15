@@ -75,6 +75,7 @@ public abstract class DbDefinitionBase {
     private static String GETMARIAINSERTUSER;
     private static String GETMARIAADDMESSAGE;
     private static String GETMARIADELETEUSER;
+    private static String GETMESSAGEIDBYHANDLEDATE;
     private Boolean isTimestamp;
     protected Vertx vertx;
     protected static Pool pool;
@@ -120,6 +121,7 @@ public abstract class DbDefinitionBase {
         GETREMOVEUSERS = qmark ? setupRemoveUsers().replaceAll("\\$\\d", "?") : setupRemoveUsers();
         GETCUSTOMDELETEMESSAGES = setupCustomDeleteMessage();
         GETCUSTOMDELETEUSERS = setupCustomDeleteUsers();
+        GETMESSAGEIDBYHANDLEDATE = qmark ? setupMessageByHandleDate().replaceAll("\\$\\d", "?") : setupRemoveUsers();
     }
 
     private static String setupAllUsers() {
@@ -130,6 +132,16 @@ public abstract class DbDefinitionBase {
 
     public String getAllUsers() {
         return GETALLUSERS;
+    }
+
+    private static String setupMessageByHandleDate() {
+        return create.renderNamedParams(
+                select(field("ID"))
+                        .from(table("MESSAGES")).where(field("FROM_HANDLE").eq("$").and(field("POST_DATE").eq("$"))));
+    }
+
+    public String getMessageIdByHandleDate() {
+        return GETMESSAGEIDBYHANDLEDATE;
     }
 
     private static String setupUserByName() {
@@ -227,10 +239,10 @@ public abstract class DbDefinitionBase {
     private static String setupRemoveMessage() {
         return create
                 .renderNamedParams(
-                        deleteFrom(table("MESSAGES")).where(create.renderNamedParams(field("ID").eq("$1")
-                                .and(create.renderNamedParams(notExists(select().from(table("MESSAGES"))
-                                        .join(table("UNDELIVERED")).on(field("ID").eq(field("MESSAGE_ID")))
-                                        .and(field("ID").eq("$2"))))))));
+                    deleteFrom(table("MESSAGES")).where(create.renderNamedParams(field("ID").eq("$1")
+                        .and(create.renderNamedParams(notExists(select().from(table("MESSAGES"))
+                            .join(table("UNDELIVERED")).on(field("ID").eq(field("MESSAGE_ID")))
+                            .and(field("ID").eq("$2"))))))));
     }
 
     public String getRemoveMessage() {

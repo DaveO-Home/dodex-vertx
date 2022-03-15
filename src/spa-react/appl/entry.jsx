@@ -1,6 +1,6 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import Menulinks, { Dodexlink } from "./Menulinks";
+import { Menulinks,  Dodexlink } from "./Menulinks";
 import dodex from "dodex";
 import input from "dodex-input";
 import mess from "dodex-mess";
@@ -20,8 +20,8 @@ if (document.querySelector(".top--dodex") === null) {
   dodex.setContentFile("./dodex/data/content.js");
   const server = window.location.hostname + (window.location.port.length > 0 ? ":" + window.location.port : "");
   dodex.init({
-    width: 375,
-    height: 210,
+    width: 390,
+    height: 260,
     left: "50%",
     top: "100px",
     input: input,    	// required if using frontend content load
@@ -30,7 +30,6 @@ if (document.querySelector(".top--dodex") === null) {
     mess: mess,
     // server: "localhost:3087", // You will have to start the node server for port 3087 - do the following;
     // cd to src/main/resources/static/node_modules/dodex-mess/server and execute "npm install" then "node koa" 
-    // server: "daveomix.us-south.cf.appdomain.cloud" // This will link to the cloud version
     // for the verticle "dodex-vertx" use
     // server: "localhost:8087" // if the test verticle is running.
     server: server
@@ -80,7 +79,7 @@ function getAdditionalContent() {
       card30: {
         tab: "NP",
         front: {
-          content: "<a class=\"twitter-timeline\" data-width=\"340\" data-height=\"200\" href=\"https://twitter.com/TwitterDev/lists/national-parks?ref_src=twsrc%5Etfw\">A Twitter List by TwitterDev</a>"
+          content: "<a class=\"twitter-timeline\" data-width=\"340\" data-height=\"250\" href=\"https://twitter.com/TwitterDev/lists/national-parks?ref_src=twsrc%5Etfw\">A Twitter List by TwitterDev</a>"
         },
         back: {
           content: "<h1 style=\"font-size: 14px;\">My New Card Back</h1>"
@@ -89,7 +88,7 @@ function getAdditionalContent() {
       card31: {
         tab: "TW",
         front: {
-          content: '<blockquote data-cards="hidden" class="twitter-tweet"><p lang="en" dir="ltr">Sunsets don&#39;t get much better than this one over <a href="https://twitter.com/GrandTetonNPS?ref_src=twsrc%5Etfw">@GrandTetonNPS</a>. <a href="https://twitter.com/hashtag/nature?src=hash&amp;ref_src=twsrc%5Etfw">#nature</a> <a href="https://twitter.com/hashtag/sunset?src=hash&amp;ref_src=twsrc%5Etfw">#sunset</a> <a href="http://t.co/YuKy2rcjyU">pic.twitter.com/YuKy2rcjyU</a></p>&mdash; US Department of the Interior (@Interior) <a href="https://twitter.com/Interior/status/463440424141459456?ref_src=twsrc%5Etfw">May 5, 2014</a></blockquote>'
+          content: '<blockquote data-cards="hidden" data-width="340" data-height="200" class="twitter-tweet"><p lang="en" dir="ltr">Sunsets don&#39;t get much better than this one over <a href="https://twitter.com/GrandTetonNPS?ref_src=twsrc%5Etfw">@GrandTetonNPS</a>. <a href="https://twitter.com/hashtag/nature?src=hash&amp;ref_src=twsrc%5Etfw">#nature</a> <a href="https://twitter.com/hashtag/sunset?src=hash&amp;ref_src=twsrc%5Etfw">#sunset</a> <a href="http://t.co/YuKy2rcjyU">pic.twitter.com/YuKy2rcjyU</a></p>&mdash; US Department of the Interior (@Interior) <a href="https://twitter.com/Interior/status/463440424141459456?ref_src=twsrc%5Etfw"></a></blockquote>'
         },
         back: {
           content: "<h1 style=\"font-size: 14px;\">My New Card Back</h1>"

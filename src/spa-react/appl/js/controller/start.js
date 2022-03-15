@@ -3,7 +3,7 @@
 import App from "../app";
 import Base from "../utils/base.control";
 import Menu from "../utils/menu";
-import Marked from "marked";
+import { marked } from "marked";
 let me;
 
 export default App.controllers.Start ||
@@ -124,7 +124,7 @@ export default App.controllers.Start ||
             form.find("input[type=submit]", el).click(formFunction);
         },
         footer: `<button type="submit" class="btn btn-sm btn-primary submit-modal mr-auto raised submit-login">{{submit}}</button>
-                 <button class="btn btn-sm close-modal raised" data-dismiss="modal" aria-hidden="true">{{close}}</button>
+                 <button class="btn btn-sm close-modal raised" data-bs-dismiss="modal" aria-hidden="true">{{close}}</button>
                  <div class="ml-auto">
                     <input type="checkbox" class="align-middle checkbox" id="newLogin" name="newLogin">
                     <label class="f14" for="newLogin">New Login</label>
@@ -135,7 +135,7 @@ export default App.controllers.Start ||
                             "</div>" +
                             "</div>",
         alert: "<div class=\"alert alert-info alert-dismissible fade show\" role=\"alert\">" +
-                    "<button type=\"button\" class=\"close\" data-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times</span></button>" +
+                    "<button type=\"button\" class=\"close\" data-bs-dismiss=\"alert\" aria-label=\"Close\"><span aria-hidden=\"true\">&times</span></button>" +
                     "<strong>Thank You!</strong> Your request is being processed." +
                     "</div>",
         showAlert (me) {
@@ -145,7 +145,7 @@ export default App.controllers.Start ||
             // const marked = require('../utils/marked')
             me = this;
             const mdFunction = data => {
-                me.html = `${App.html} ${Marked(data)}`;
+                me.html = `${App.html} ${marked.parse(data)}`;
             };
             $.get(options.urlMd, mdFunction, "text")
             .fail(err => {

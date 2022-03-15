@@ -38,10 +38,10 @@ repositories {
     }
 }
 
-version = "4.2.0"
+version = "4.2.5"
 
 ext {
-    vertxVersion = "4.2.0"
+    vertxVersion = "4.2.5"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.13.2"
 }

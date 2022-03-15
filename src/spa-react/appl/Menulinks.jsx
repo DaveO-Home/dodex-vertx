@@ -1,5 +1,5 @@
 import React from "react";
-import {/* BrowserRouter as Router, */ Route, Link, HashRouter } from "react-router-dom";
+import { Routes, Route, Link, HashRouter, Outlet } from "react-router-dom";
 import ReactDOM from "react-dom";
 import Start from "./components/StartC";
 import Pdf from "./components/PdfC";
@@ -16,7 +16,7 @@ const SideBar = () => (
                 <Link to="/"><i className="fa fa-fw fa-home"></i> Home</Link>
             </li>
             <li className="nav-item" >
-                <Link to={{ pathname: "/pdf/test" }}><i className="fa fa-fw fa-file-pdf-o"></i> PDF View</Link>
+                <Link to={{ pathname: "/pdf/test" }}><i className="far fa-fw fa-file-pdf"></i> PDF View</Link>
             </li>
             <li className="nav-header nav-item">Statistics</li>
             <li className="nav-item">
@@ -24,24 +24,27 @@ const SideBar = () => (
             </li>
             <li className="nav-header nav-item">React</li>
             <li className="nav-item">
-                <Link to="/welcome"><i className="fa fa-fw fa-hand-paper-o"></i> React Welcome</Link>
+                <Link to="/welcome"><i className="far fa-fw fa-hand-paper"></i> React Welcome</Link>
             </li>
         </ul>
         <div className="content">
-            <Route exact path="/" component={Start} />
-            <Route path="/pdf/test" component={Pdf} />
-            <Route path="/table/tools" component={Tools} />
-            <Route path="/contact" component={Contact} />
-            <Route path="/welcome" component={Welcome} />
-            <Route component={Start} />
+            <Routes>
+                <Route exact path="/" element={<Start />} />
+                <Route path="/pdf/test" element={<Pdf />} />
+                <Route path="/table/tools" element={<Tools />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/welcome" element={<Welcome />} />
+                <Route path="!" element={<Start />} />
+                <Route element={<Start />} />
+            </Routes>
         </div>
     </div>
-
 );
 
 const Menulinks = () => (
     <HashRouter>
         <SideBar />
+        <Outlet />
     </HashRouter>
 );
 
@@ -58,5 +61,5 @@ if (window.__karma__ === undefined || (typeof window.testit !== "undefined" && !
     }
 }
 
-export default Menulinks;
+export { Menulinks };
 export { Dodexlink };

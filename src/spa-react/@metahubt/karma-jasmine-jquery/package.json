@@ -1,0 +1,79 @@
+{
+  "name": "@metahubt/karma-jasmine-jquery",
+  "description": "A Karma plugin for jasmine-jquery",
+  "version": "4.0.1",
+  "author": "Pierre Vanduynslager (https://github.com/pvdlg)",
+  "ava": {
+    "files": [
+      "test/*.test.js"
+    ]
+  },
+  "bugs": {
+    "url": "https://github.com/pvdlg/karma-jasmine-jquery/issues"
+  },
+  "devDependencies": {
+  },
+  "engines": {
+    "node": ">=10.18"
+  },
+  "files": [
+    "index.js",
+    "lib"
+  ],
+  "homepage": "https://github.com/pvdlg/karma-jasmine-jquery#readme",
+  "keywords": [
+    "jasmine",
+    "jasmine-jquery",
+    "jquery",
+    "karma",
+    "karma-framework",
+    "karma-jasmine",
+    "karma-plugin"
+  ],
+  "license": "MIT",
+  "main": "index.js",
+  "nyc": {
+    "include": [
+      "index.js",
+      "lib/*.js",
+      "!lib/*.bundle.js"
+    ],
+    "reporter": [
+      "json",
+      "text",
+      "html"
+    ],
+    "all": true
+  },
+  "peerDependencies": {
+    "jasmine-core": "*",
+    "jasmine-jquery": "*",
+    "karma": "*",
+    "karma-jasmine": "*"
+  },
+  "prettier": {
+    "printWidth": 120,
+    "trailingComma": "es5"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "release": {
+    "analyzeCommits": {
+      "preset": "metahub",
+      "releaseRules": "conventional-changelog-metahub/release-rules"
+    },
+    "generateNotes": {
+      "preset": "metahub"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pvdlg/karma-jasmine-jquery.git"
+  },
+  "scripts": {
+  },
+  "xo": {
+    "prettier": true
+  }
+}

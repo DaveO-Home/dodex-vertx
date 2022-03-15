@@ -1,5 +1,19 @@
 # Changelog
 
+## [v2.3.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.3.0) (2022-3-15)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.2.2...v2.3.0)
+
+* Upgraded to vertx 4.2.5 final
+* Upgraded spa-react dependencies
+* Fixed pointer on tools dropdown
+* Added custom @metahub package in karma to remove deprecation
+* Changed vertx static handler to remove deprecation
+* Upgraded marked to latest.
+* Upgraded react router to v6 - Needed changes to "MenuLinks" and "routertest.js"
+* Upgraded Bootstap 4 -> 5 - New layout
+* Upgraded fontawesome 4 -> 5
+
 ## [v2.2.2](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.2) (2021-10-29)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.2.1...v2.2.2)

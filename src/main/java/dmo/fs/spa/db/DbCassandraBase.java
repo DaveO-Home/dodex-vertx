@@ -4,17 +4,15 @@ package dmo.fs.spa.db;
 import java.sql.Timestamp;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.modellwerkstatt.javaxbus.ConsumerHandler;
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.modellwerkstatt.javaxbus.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import dmo.fs.spa.utils.SpaLogin;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.reactivex.core.Vertx;
+import io.vertx.rxjava3.core.Vertx;
 
 public abstract class DbCassandraBase {
 	private static final Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
@@ -25,6 +23,7 @@ public abstract class DbCassandraBase {
 
 	private Vertx vertx;
 	private String vertxConsumer = "";
+
 	public Future<SpaLogin> getLogin(SpaLogin spaLogin, EventBus eb) throws InterruptedException {
 
 		if ("".equals(vertxConsumer)) {
@@ -35,7 +34,8 @@ public abstract class DbCassandraBase {
 
 		mUserPromises.put(spaLogin.getPassword() + GETLOGIN, promise);
 		mjson.Json mess = setMessage(GETLOGIN, spaLogin);
-		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess == null ? "" : mess.getValue()); 
+		mjson.Json jsonPayLoad =
+				mjson.Json.object().set("msg", mess == null ? "" : mess.getValue());
 
 		eb.send("akka", jsonPayLoad);
 
@@ -47,20 +47,23 @@ public abstract class DbCassandraBase {
 
 		mUserPromises.put(spaLogin.getPassword() + ADDLOGIN, promise);
 		mjson.Json mess = setMessage(ADDLOGIN, spaLogin);
-		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess == null ? "" : mess.getValue());
+		mjson.Json jsonPayLoad =
+				mjson.Json.object().set("msg", mess == null ? "" : mess.getValue());
 
 		eb.send("akka", jsonPayLoad);
 
 		return promise.future();
 	}
 
-	public Future<SpaLogin> removeLogin(SpaLogin spaLogin, EventBus eb) throws InterruptedException {
+	public Future<SpaLogin> removeLogin(SpaLogin spaLogin, EventBus eb)
+			throws InterruptedException {
 
 		Promise<SpaLogin> promise = Promise.promise();
 
 		mUserPromises.put(spaLogin.getPassword() + REMOVELOGIN, promise);
 		mjson.Json mess = setMessage(REMOVELOGIN, spaLogin);
-		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess == null ? "" : mess.getValue());
+		mjson.Json jsonPayLoad =
+				mjson.Json.object().set("msg", mess == null ? "" : mess.getValue());
 
 		eb.send("akka", jsonPayLoad);
 
@@ -70,10 +73,8 @@ public abstract class DbCassandraBase {
 	private mjson.Json setMessage(String cmd, SpaLogin spaLogin) {
 		mjson.Json mess = null;
 		try {
-			mess = mjson.Json.object()
-				.set("cmd", cmd)
-				.set("password", spaLogin.getPassword())
-				.set("name", spaLogin.getName());
+			mess = mjson.Json.object().set("cmd", cmd).set("password", spaLogin.getPassword())
+					.set("name", spaLogin.getName());
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}
@@ -111,7 +112,8 @@ public abstract class DbCassandraBase {
 							spaLogin.setId(0L);
 							spaLogin.setPassword(cassJson.at("password").asString());
 							spaLogin.setName(cassJson.at("name").asString());
-							spaLogin.setLastLogin(new Timestamp(cassJson.at("last_login").asLong()));
+							spaLogin.setLastLogin(
+									new Timestamp(cassJson.at("last_login").asLong()));
 							spaLogin.setStatus(cassJson.at("status").asString());
 							// Return Akka data to requester
 							mUserPromises.get(spaLogin.getPassword() + cmd).tryComplete(spaLogin);
@@ -119,7 +121,7 @@ public abstract class DbCassandraBase {
 							break;
 						default:
 							break;
-						}
+					}
 				} else {
 					logger.error("ERROR received {}", msg.getErrMessage());
 				}

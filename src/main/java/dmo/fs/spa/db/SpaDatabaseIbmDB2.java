@@ -5,25 +5,22 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaLoginImpl;
 import dmo.fs.utils.DodexUtil;
-import io.reactivex.Completable;
-import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.db2client.DB2ConnectOptions;
-import io.vertx.reactivex.core.Promise;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.db2client.DB2Pool;
-import io.vertx.reactivex.sqlclient.Row;
-import io.vertx.reactivex.sqlclient.RowSet;
+import io.vertx.rxjava3.core.Promise;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.db2client.DB2Pool;
+import io.vertx.rxjava3.sqlclient.Row;
+import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
 
 public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
@@ -87,58 +84,63 @@ public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
             SpaDbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
         }
 
-        PoolOptions poolOptions = new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
+        PoolOptions poolOptions =
+                new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
         DB2ConnectOptions connectOptions;
 
-        connectOptions = new DB2ConnectOptions()
-			.setHost(dbMap.get("host2"))
-			.setPort(Integer.valueOf(dbMap.get("port")))
-			.setUser(dbProperties.getProperty("user").toString())
-			.setPassword(dbProperties.getProperty("password").toString())
-			.setDatabase(dbMap.get("database"))
-            .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
-			// .setCachePreparedStatements(true)
-            ;
+        connectOptions = new DB2ConnectOptions().setHost(dbMap.get("host2"))
+                .setPort(Integer.valueOf(dbMap.get("port")))
+                .setUser(dbProperties.getProperty("user").toString())
+                .setPassword(dbProperties.getProperty("password").toString())
+                .setDatabase(dbMap.get("database"))
+                .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
+        // .setCachePreparedStatements(true)
+        ;
 
         vertx = DodexUtil.getVertx();
 
         pool4 = DB2Pool.pool(vertx, connectOptions, poolOptions);
 
-        Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> 
-            conn.rxBegin().flatMapCompletable(
-			tx -> conn.query(CHECKLOGINSQL.replace("DB2INST1", dbMap.get("tabschema"))).rxExecute().doOnSuccess(rows -> {
-                if (rows.size() == 0) {
-                    final String usersSql = getCreateTable("LOGIN");
+        Completable completable =
+                pool4.rxGetConnection()
+                        .flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(tx -> conn
+                                .query(CHECKLOGINSQL.replace("DB2INST1", dbMap.get("tabschema")))
+                                .rxExecute().doOnSuccess(rows -> {
+                                    if (rows.size() == 0) {
+                                        final String usersSql = getCreateTable("LOGIN");
 
-                    Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute()
-                        .doOnError(err -> {
-                            logger.info(String.format("Users Table Error: %s", err.getMessage()));
-                        }).doOnSuccess(result -> {
-                            logger.info("Users Table Added.");
-                        });
+                                        Single<RowSet<Row>> crow =
+                                                conn.query(usersSql).rxExecute().doOnError(err -> {
+                                                    logger.info(
+                                                            String.format("Users Table Error: %s",
+                                                                    err.getMessage()));
+                                                }).doOnSuccess(result -> {
+                                                    logger.info("Users Table Added.");
+                                                });
 
-                    crow.subscribe(result -> {
-                        //
-                    }, err -> {
-                        logger.info(String.format("Users Table Error: %s", err.getMessage()));
-                    });
-                }
-			}).doOnError(err -> {
-				logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                                        crow.subscribe(result -> {
+                                            //
+                                        }, err -> {
+                                            logger.info(String.format("Users Table Error: %s",
+                                                    err.getMessage()));
+                                        });
+                                    }
+                                }).doOnError(err -> {
+                                    logger.info(String.format("Users Table Error: %s",
+                                            err.getMessage()));
 
-            }).flatMapCompletable(res -> tx.rxCommit())
-        ));
-        
+                                }).flatMapCompletable(res -> tx.rxCommit())));
+
         Promise<Void> setupPromise = Promise.promise();
         completable.subscribe(() -> {
-			try {
+            try {
                 setupSql(pool4);
                 setupPromise.complete();
-			} catch (SQLException e) {
-				e.printStackTrace();
-			}
-		}, err -> {
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }, err -> {
             logger.info(String.format("Tables Create Error: %s", err.getMessage()));
         });
 
@@ -151,7 +153,7 @@ public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
     }
 
     @Override
-	@SuppressWarnings("unchecked")
+    @SuppressWarnings("unchecked")
     public <T> T getPool4() {
         return (T) pool4;
     }

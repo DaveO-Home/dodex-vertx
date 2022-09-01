@@ -9,17 +9,13 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-
+import org.jooq.SQLDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.jooq.SQLDialect;
-
-import io.reactivex.disposables.Disposable;
-import io.vertx.reactivex.core.Vertx;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.rxjava3.core.Vertx;
 
 public class DodexUtil {
     private static final Logger logger = LoggerFactory.getLogger(DodexUtil.class.getName());

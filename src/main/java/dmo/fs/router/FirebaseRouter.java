@@ -13,30 +13,29 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.FirestoreOptions;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DodexFirebase;
 import dmo.fs.db.MessageUser;
+import dmo.fs.kafka.KafkaEmitterDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.utils.FirebaseUser;
 import dmo.fs.utils.ParseQueryUtilHelper;
+import dmo.fs.vertx.Server;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.reactivex.core.Promise;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.core.http.ServerWebSocket;
-import io.vertx.reactivex.core.shareddata.LocalMap;
-import io.vertx.reactivex.core.shareddata.SharedData;
+import io.vertx.rxjava3.core.Promise;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.buffer.Buffer;
+import io.vertx.rxjava3.core.http.HttpServer;
+import io.vertx.rxjava3.core.http.ServerWebSocket;
+import io.vertx.rxjava3.core.shareddata.LocalMap;
+import io.vertx.rxjava3.core.shareddata.SharedData;
 
 public class FirebaseRouter {
     private static final Logger logger = LoggerFactory.getLogger(FirebaseRouter.class.getName());
@@ -47,6 +46,7 @@ public class FirebaseRouter {
     Firestore dbf;
     static FirestoreOptions firestoreOptions;
     private static final String LOGFORMAT = "{}{}{}";
+    private KafkaEmitterDodex ke;
     static {
         try {
             firestoreOptions =
@@ -63,6 +63,9 @@ public class FirebaseRouter {
         this.vertx = vertx;
         dbf = firestoreOptions.getService();
         dbf.collection("users").get(); // dummy call to get firestore ready, helps on initial thread blockage
+        if(Server.getUseKafka()) {
+            ke = new KafkaEmitterDodex();
+        }
     }
 
     public void setWebSocket(final HttpServer server) throws InterruptedException, IOException, SQLException {
@@ -111,12 +114,19 @@ public class FirebaseRouter {
                         e.printStackTrace();
                     }
                     clients.put(ws.textHandlerID(), ws);
-
+                    if(ke != null) {
+                        ke.setValue("sessions", wsChatSessions.size());
+                    }
                     ws.closeHandler(ch -> {
-                        logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
-                                "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
+                        if (logger.isInfoEnabled()) {
+                            logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+                                    "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
+                        }
                         wsChatSessions.remove(ws.textHandlerID());
                         clients.remove(ws.textHandlerID());
+                        if(ke != null) {
+                            ke.setValue("sessions", wsChatSessions.size());
+                        }
                     });
                     /*
                      * This is websocket onMessage.
@@ -187,6 +197,13 @@ public class FirebaseRouter {
                                                         ws.writeTextMessage("Private user not selected");
                                                     } else {
                                                         ws.writeTextMessage("ok");
+                                                        if(ke != null) {
+                                                            if(selectedUsers.length() > 0) {
+                                                                ke.setValue("private", 1);
+                                                            } else {
+                                                                ke.setValue(1); // broadcast
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -203,7 +220,10 @@ public class FirebaseRouter {
                                             try {
                                             
                                                 dodexFirebase.addMessage(ws, messageUser, computedMessage[0], disconnectedUsers);
-                                            
+                                                if (ke != null) {
+                                                    ke.setValue("undelivered", disconnectedUsers.size());
+                                                }
+                                                
                                             } catch (ExecutionException | InterruptedException e) {
                                                 e.printStackTrace();
                                                 ws.writeTextMessage("Message delivery failure: " + e.getMessage());
@@ -248,6 +268,9 @@ public class FirebaseRouter {
                                                 logger.info(String.format("%sMessages Delivered: %d to %s%s",
                                                         ColorUtilConstants.BLUE_BOLD_BRIGHT, messageCount,
                                                         firebaseUser.getName(), ColorUtilConstants.RESET));
+                                                if (ke != null) {
+                                                    ke.setValue("delivered", messageCount);
+                                                }
                                             }
                                         });
                                     } catch (Exception e) {

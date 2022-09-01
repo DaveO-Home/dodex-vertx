@@ -1,10 +1,9 @@
 package dmo.fs.spa.db;
 
 import org.modellwerkstatt.javaxbus.EventBus;
-
 import dmo.fs.spa.utils.SpaLogin;
 import io.vertx.core.Future;
-import io.vertx.reactivex.core.Vertx;
+import io.vertx.rxjava3.core.Vertx;
 
 public interface SpaCassandra {
 
@@ -13,7 +12,7 @@ public interface SpaCassandra {
 	Future<SpaLogin> getLogin(SpaLogin spaLogin, EventBus eb) throws InterruptedException;
 
 	Future<SpaLogin> addLogin(SpaLogin spaLogin, EventBus eb) throws InterruptedException;
-	
+
 	Future<SpaLogin> removeLogin(SpaLogin spaLogin, EventBus eb) throws InterruptedException;
 
 	void setVertx(Vertx vertx);

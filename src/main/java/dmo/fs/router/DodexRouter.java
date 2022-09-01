@@ -13,28 +13,28 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import dmo.fs.admin.CleanOrphanedUsers;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.MessageUser;
+import dmo.fs.kafka.KafkaEmitterDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.utils.ParseQueryUtilHelper;
+import dmo.fs.vertx.Server;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.Context;
-import io.vertx.reactivex.core.Promise;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.core.http.ServerWebSocket;
-import io.vertx.reactivex.core.shareddata.LocalMap;
-import io.vertx.reactivex.core.shareddata.SharedData;
+import io.vertx.rxjava3.core.Context;
+import io.vertx.rxjava3.core.Promise;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.buffer.Buffer;
+import io.vertx.rxjava3.core.http.HttpServer;
+import io.vertx.rxjava3.core.http.ServerWebSocket;
+import io.vertx.rxjava3.core.shareddata.LocalMap;
+import io.vertx.rxjava3.core.shareddata.SharedData;
 
 public class DodexRouter {
     private static final Logger logger = LoggerFactory.getLogger(DodexRouter.class.getName());
@@ -42,9 +42,13 @@ public class DodexRouter {
     private final Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
     private DodexDatabase dodexDatabase;
     private static final String LOGFORMAT = "{}{}{}";
+    private KafkaEmitterDodex ke;
 
     public DodexRouter(final Vertx vertx) throws InterruptedException {
         this.vertx = vertx;
+        if(Server.getUseKafka()) {
+            ke = new KafkaEmitterDodex();
+        }
     }
 
     public void setWebSocket(final HttpServer server) throws InterruptedException, IOException, SQLException {
@@ -115,12 +119,19 @@ public class DodexRouter {
                         e.printStackTrace();
                     }
                     clients.put(ws.textHandlerID(), ws);
-
+                    if(ke != null) {
+                        ke.setValue("sessions", clients.size());
+                    }
                     ws.closeHandler(ch -> {
-                        logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
-                                "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
+                        if (logger.isInfoEnabled()) {
+                            logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+                                    "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
+                        }
                         wsChatSessions.remove(ws.textHandlerID());
                         clients.remove(ws.textHandlerID());
+                        if(ke != null) {
+                            ke.setValue("sessions", wsChatSessions.size());
+                        }
                     });
                     /*
                      * This is websocket onMessage.
@@ -192,6 +203,13 @@ public class DodexRouter {
                                                         ws.writeTextMessage("Private user not selected");
                                                     } else {
                                                         ws.writeTextMessage("ok");
+                                                        if(ke != null) {
+                                                            if(selectedUsers.length() > 0) {
+                                                                ke.setValue("private", 1);
+                                                            } else {
+                                                                ke.setValue(1); // broadcast
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -208,6 +226,9 @@ public class DodexRouter {
                                             Future<Long> future = null;
                                             try {
                                                 future = dodexDatabase.addMessage(ws, messageUser, computedMessage[0]);
+                                                if (ke != null) {
+                                                    ke.setValue("undelivered", disconnectedUsers.size());
+                                                }
                                                 future.onSuccess(key -> {
                                                     try {
                                                         dodexDatabase.addUndelivered(ws, disconnectedUsers, key);
@@ -248,6 +269,9 @@ public class DodexRouter {
                                 final Future<StringBuilder> userJson = dodexDatabase.buildUsersJson(mUser);
                                 userJson.onSuccess(json -> {
                                     ws.writeTextMessage("connected:" + json); // Users for private messages
+                                    if(ke != null) {
+                                        ke.setValue("sessions", wsChatSessions.size());
+                                    }
                                     /*
                                      * Send undelivered messages and remove user related messages.
                                      */
@@ -258,6 +282,9 @@ public class DodexRouter {
                                                 logger.info(String.format("%sMessages Delivered: %d to %s%s",
                                                         ColorUtilConstants.BLUE_BOLD_BRIGHT, messageCount,
                                                         mUser.getName(), ColorUtilConstants.RESET));
+                                                if (ke != null) {
+                                                    ke.setValue("delivered", messageCount);
+                                                }
                                             }
                                         });
                                     } catch (final Exception e) {

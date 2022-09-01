@@ -91,7 +91,7 @@ After setting the database to `cassandra`, co-ordination among `Akka`, `Vertx` a
 
 ### Test Tasks
 
-Run these commands from `src/spa-react/devl`.
+Run these commands from `src/spa-react/devl`. __Note;__ If `gulp` is not installed globally, you and execute `npx gulp`. 
 
 1. `gulp test`
     * default, run once with headless browser
@@ -224,7 +224,7 @@ SUMMARY:
 
 [Top](#react-integration-testing-with-karma-jasmine-and-vertx)
 
-A test and development scenario for ***Dodex-Vertx***.
+A test and development scenario for ***Dodex-Vertx***. __Note;__ If `gulp` is not installed globally, you and execute `npx gulp`. 
 
 1. Open a desktop terminal window
 2. `cd <dodex-vertx install>`, make sure ***Dodex*** is installed `npm install` in src/main/resources/static

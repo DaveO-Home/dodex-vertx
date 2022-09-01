@@ -9,13 +9,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
+import org.jooq.SQLDialect;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.jooq.SQLDialect;
-
-import io.reactivex.disposables.Disposable;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
@@ -44,8 +41,8 @@ public class SpaUtil {
     public static JsonNode getDefaultNode() throws IOException {
         final ObjectMapper jsonMapper = new ObjectMapper();
         JsonNode node;
-        
-        try(InputStream in = SpaUtil.class.getResourceAsStream("/database_spa_config.json")) {
+
+        try (InputStream in = SpaUtil.class.getResourceAsStream("/database_spa_config.json")) {
             node = jsonMapper.readTree(in);
         }
 
@@ -53,10 +50,10 @@ public class SpaUtil {
         final String defaultdbEnv = System.getenv("DEFAULT_DB");
         defaultDb = node.get("defaultdb").textValue();
         /*
-         * use environment variable first, if set, than properties and then from config
-         * json
+         * use environment variable first, if set, than properties and then from config json
          */
-        defaultDb = defaultdbEnv != null ? defaultdbEnv : defaultdbProp != null ? defaultdbProp : defaultDb;
+        defaultDb = defaultdbEnv != null ? defaultdbEnv
+                : defaultdbProp != null ? defaultdbProp : defaultDb;
 
         return node.get(defaultDb);
     }
@@ -121,9 +118,9 @@ public class SpaUtil {
         }
 
         return SQLDialect.DEFAULT;
-      }
+    }
 
-      public static SpaLogin parseBody(String bodyData, SpaLogin spaLogin) {
+    public static SpaLogin parseBody(String bodyData, SpaLogin spaLogin) {
         JsonObject loginObject = new JsonObject(String.join("", "{\"data\":", bodyData, "}"));
         JsonArray data = loginObject.getJsonArray("data");
         int size = loginObject.getJsonArray("data").getList().size();
@@ -143,17 +140,17 @@ public class SpaUtil {
                     break;
             }
         }
-        
+
         spaLogin.setName(userName);
         spaLogin.setPassword(password);
         spaLogin.setId(0l);
         spaLogin.setLastLogin(new Date());
         spaLogin.setStatus("0");
-        
-        return spaLogin;
-      }
 
-      public static SpaLogin createSpaLogin() {
-		return new SpaLoginImpl();
-	}
+        return spaLogin;
+    }
+
+    public static SpaLogin createSpaLogin() {
+        return new SpaLoginImpl();
+    }
 }

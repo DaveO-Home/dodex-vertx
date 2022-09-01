@@ -6,17 +6,15 @@ import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.modellwerkstatt.javaxbus.ConsumerHandler;
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.modellwerkstatt.javaxbus.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.http.ServerWebSocket;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.http.ServerWebSocket;
 
 public abstract class DbCassandraBase {
 	private final static Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
@@ -38,14 +36,15 @@ public abstract class DbCassandraBase {
 		return promise.future();
 	}
 
-	public Future<mjson.Json> addMessage(ServerWebSocket ws, MessageUser messageUser, String message,
-			List<String> undelivered, EventBus eb) throws InterruptedException, SQLException {
+	public Future<mjson.Json> addMessage(ServerWebSocket ws, MessageUser messageUser,
+			String message, List<String> undelivered, EventBus eb)
+			throws InterruptedException, SQLException {
 		Promise<mjson.Json> promise = Promise.promise();
 
 		mJsonPromises.put(ws.textHandlerID() + "addmessage", promise);
 		mjson.Json mess = setMessage("addmessage", messageUser, ws);
 
-		if(mess != null) {
+		if (mess != null) {
 			mess.set("users", undelivered).set("message", message);
 			mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
 			eb.send("akka", jsonPayLoad);
@@ -56,7 +55,8 @@ public abstract class DbCassandraBase {
 
 	public abstract MessageUser createMessageUser();
 
-	public Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws, EventBus eb) {
+	public Future<MessageUser> selectUser(MessageUser messageUser, ServerWebSocket ws,
+			EventBus eb) {
 		Promise<MessageUser> promise = Promise.promise();
 		// This promise will be completed in the eb.consumer listener - see
 		// setEbConsumer
@@ -76,7 +76,8 @@ public abstract class DbCassandraBase {
 		return promise.future();
 	}
 
-	public Future<mjson.Json> buildUsersJson(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
+	public Future<mjson.Json> buildUsersJson(ServerWebSocket ws, EventBus eb,
+			MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
 		mJsonPromises.put(ws.textHandlerID() + "allusers", promise);
@@ -89,7 +90,8 @@ public abstract class DbCassandraBase {
 		return promise.future();
 	}
 
-	public Future<mjson.Json> deleteDelivered(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
+	public Future<mjson.Json> deleteDelivered(ServerWebSocket ws, EventBus eb,
+			MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
 		mJsonPromises.put(ws.textHandlerID() + "deletedelivered", promise);
@@ -102,7 +104,8 @@ public abstract class DbCassandraBase {
 		return promise.future();
 	}
 
-	public Future<mjson.Json> processUserMessages(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
+	public Future<mjson.Json> processUserMessages(ServerWebSocket ws, EventBus eb,
+			MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
 		mJsonPromises.put(ws.textHandlerID() + "delivermess", promise);
@@ -152,7 +155,8 @@ public abstract class DbCassandraBase {
 							resultUser.setIp(cassJson.at("ip").asString());
 							resultUser.setPassword(cassJson.at("password").asString());
 							resultUser.setName(cassJson.at("name").asString());
-							resultUser.setLastLogin(new Timestamp(cassJson.at("last_login").asLong()));
+							resultUser.setLastLogin(
+									new Timestamp(cassJson.at("last_login").asLong()));
 
 							mUserPromises.get(json.at("ws").asString()).tryComplete(resultUser);
 							mUserPromises.remove(json.at("ws").asString());

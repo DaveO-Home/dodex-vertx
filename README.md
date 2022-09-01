@@ -106,6 +106,56 @@
   * execute `npm run emulators` to startup the emulators for testing.
   * To test the model and rules after starting the emulators, in a different terminal window, run `npm test`.
 
+### Neo4j
+
+* See <https://neo4j.com/docs/operations-manual/current/> for usage.
+* To use a container with `apoc` you can try: __Note:__ this has `--privileged` set.
+    ```
+    docker run \
+    -p 7474:7474 -p 7687:7687 \
+    -v $PWD/neo4j/data:/neo4j/data -v $PWD/neo4j/plugins:/neo4j/plugins \
+    --name neo4j-apoc \
+    --privileged \
+    -e 'NEO4J_AUTH=neo4j/secret' \
+    -e NEO4J_apoc_export_file_enabled=true \
+    -e NEO4J_apoc_import_file_enabled=true \
+    -e NEO4J_apoc_import_file_use__neo4j__config=true \
+    -e NEO4JLABS_PLUGINS=\[\"apoc\"\] \
+    -e NEO4J_dbms_security_procedures_unrestricted=apoc.\\\* \
+    neo4j:4.3
+    ```
+To restart and stop: `docker start neo4j-apoc` and `docker stop neo4j-apoc`
+
+The Neo4j was tested with the `apoc` install, however the database should work without it.
+
+Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
+
+### Dodex Monitoring
+
+#### Getting Started
+
+* Apache Kafka must be installed.
+    *  [Kafka Quickstart](https://kafka.apache.org/quickstart) - A container should also work
+    *  .../config/server.properties should be modified if using a local install
+        * advertised.listeners=PLAINTEXT://localhost:9092
+        * num.partitions=2   # at least 2
+    * local startup
+        *  ./bin/zookeeper-server-start.sh config/zookeeper.properties
+        *  ./bin/kafka-server-start.sh config/server.properties
+
+* Setup Vertx for Kafka
+    *  __set environment variable `DODEX_KAFKA=true`__ or 
+    *  __set "dodex.kafka" to true__ in the `application-conf.json` file(default is false)
+    *  startup Vertx - the monitor should work with any of the databases
+    *  the monitor configuation can be found in `application-conf.json`
+
+* Monitor Dodex
+    * in a browser enter `localhost:8087/monitor` or `localhost:8080/monitor` in production.
+    * as dodex messaging executes the events should be recorded.
+    * in the browser's `developer tools` console execute `stop();` and `start();` to stop/start the polling. Polling is started by default.
+    
+    __Note;__ you can open the messaging dialog with `ctrl-doubleclick` on the dials
+
 ## ChangeLog
 
 <https://github.com/DaveO-Home/dodex-vertx/blob/master/CHANGELOG.md>

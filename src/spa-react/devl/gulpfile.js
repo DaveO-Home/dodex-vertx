@@ -4,7 +4,7 @@
  */
 const { src, /*dest,*/ series, parallel, task } = require("gulp");
 const runFusebox = require("./fuse.js");
-const chalk = require("chalk");
+// const chalk = require("chalk");
 const csslint = require("gulp-csslint");
 const eslint = require("gulp-eslint");
 const exec = require("child_process").exec;
@@ -93,11 +93,13 @@ const esLint = function (cb) {
         process.exit(1);
     });
 
-    return stream.on("end", function () {
-        log(chalk.blue.bold("# javascript & jsx files linted: " + lintCount));
-        cb();
+    import("chalk").then(chalk => {
+        return stream.on("end", function () {
+            log(chalk.blue.bold("# javascript & jsx files linted: " + lintCount));
+            cb();
+        });
     });
-};
+}
 /*
  * css linter
  */
@@ -125,7 +127,9 @@ const bootLint = function (cb) {
         if (err) {
             log("ERROR", err);
         } else {
-            log(chalk.green("Bootstrap linting a success"));
+            import("chalk").then(chalk => {
+                log(chalk.green("Bootstrap linting a success"));
+            });
         }
         cb();
     });

@@ -180,5 +180,33 @@
                 "url": ""
             }
         }
+    },
+    "neo4j": {
+        "dev": { 
+            "credentials": {
+                "user": "neo4j",
+		        "password": "secret",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "localhost",
+                "port": "7687",
+                "protocol": "bolt",
+                "dbname": "neo4j"
+            }
+        },
+        "prod": { 
+            "credentials": {
+                "user": "neo4j",
+		        "password": "secret",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "localhost",
+                "port": "7687",
+                "protocol": "bolt",
+                "dbname": "neo4j"
+            }
+        }
     }
 }

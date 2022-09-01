@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
-
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.spa.utils.SpaUtil;
 
@@ -13,6 +12,7 @@ public class SpaDbConfiguration extends DbConfiguration {
     private static SpaDatabase spaDatabase;
     private static SpaCassandra spaCassandra;
     private static SpaFirebase spaFirebase;
+    private static SpaNeo4j spaNeo4j;
     
     private enum DbTypes {
         POSTGRES("postgres"),
@@ -21,7 +21,8 @@ public class SpaDbConfiguration extends DbConfiguration {
         MARIADB("mariadb"),
         IBMDB2("ibmdb2"),
         CASSANDRA("cassandra"),
-        FIREBASE("firebase");
+        FIREBASE("firebase"),
+        NEO4J("neo4j");
 
         String db;
 
@@ -55,6 +56,9 @@ public class SpaDbConfiguration extends DbConfiguration {
             } else if(defaultDb.equals(DbTypes.FIREBASE.db)) {
                 spaFirebase = spaFirebase == null? new SpaDatabaseFirebase(): spaFirebase;
                 return (T) spaFirebase;
+            } else if(defaultDb.equals(DbTypes.NEO4J.db)) {
+                spaNeo4j = spaNeo4j == null? new SpaDatabaseNeo4j(): spaNeo4j;
+                return (T) spaNeo4j;
             }
         } catch (Exception exception) { 
             throw exception;
@@ -83,6 +87,9 @@ public class SpaDbConfiguration extends DbConfiguration {
                 return (T) spaCassandra;
             } else if(defaultDb.equals(DbTypes.FIREBASE.db)) {
                 spaFirebase = spaFirebase == null? new SpaDatabaseFirebase(overrideMap, overrideProps): spaFirebase;
+                return (T) spaFirebase;
+            } else if(defaultDb.equals(DbTypes.NEO4J.db)) {
+                spaNeo4j = spaNeo4j == null? new SpaDatabaseNeo4j(overrideMap, overrideProps): spaNeo4j;
                 return (T) spaFirebase;
             }
         } catch (Exception exception) { 

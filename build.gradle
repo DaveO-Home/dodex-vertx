@@ -38,10 +38,10 @@ repositories {
     }
 }
 
-version = "4.2.5"
+version = "4.3.3"
 
 ext {
-    vertxVersion = "4.2.5"
+    vertxVersion = "4.3.3"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.13.2"
 }
@@ -68,16 +68,25 @@ dependencies {
     implementation "io.vertx:vertx-mysql-client:$vertxVersion"
     implementation "io.vertx:vertx-jdbc-client:$vertxVersion"
     implementation "io.vertx:vertx-db2-client:$vertxVersion"
-    implementation "io.vertx:vertx-rx-java2:$version"
-    implementation "org.slf4j:slf4j-jcl:1.7.28"
+    implementation "io.vertx:vertx-rx-java3:$version"
+    implementation group: "org.slf4j", name: "slf4j-reload4j", version: "2.0.0"
+
     implementation group: "org.xerial", name: "sqlite-jdbc", version: "3.31.1"
     implementation group: "cubrid", name: "cubrid-jdbc", version: "11.0.3.0293"
     implementation "com.google.firebase:firebase-admin:7.2.0"
+    implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: "4.4.9"
+    implementation "io.smallrye.reactive:smallrye-mutiny-vertx-core:2.24.1"
+    implementation group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
+
     // implementation group: 'com.h2database', name: 'h2', version: '1.4.200'
 
 
     implementation "org.jooq:jooq"
     implementation "io.vertx:vertx-tcp-eventbus-bridge:$version"
+
+    implementation "io.vertx:vertx-kafka-client:$vertxVersion"
+    // implementation 'org.eclipse.microprofile.reactive.messaging:microprofile-reactive-messaging-api:3.0-RC4'
+
 
     // This dependency is used by the application.u
     implementation "com.google.guava:guava:28.0-jre"

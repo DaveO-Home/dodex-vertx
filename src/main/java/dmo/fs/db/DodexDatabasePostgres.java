@@ -5,25 +5,23 @@ import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import dmo.fs.utils.DodexUtil;
-import io.reactivex.Completable;
-import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.reactivex.pgclient.PgPool;
-import io.vertx.reactivex.sqlclient.Row;
-import io.vertx.reactivex.sqlclient.RowIterator;
-import io.vertx.reactivex.sqlclient.RowSet;
+import io.vertx.rxjava3.pgclient.PgPool;
+import io.vertx.rxjava3.sqlclient.Row;
+import io.vertx.rxjava3.sqlclient.RowIterator;
+import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
 
 public class DodexDatabasePostgres extends DbPostgres {
-	private final static Logger logger = LoggerFactory.getLogger(DodexDatabasePostgres.class.getName());
+	private final static Logger logger =
+			LoggerFactory.getLogger(DodexDatabasePostgres.class.getName());
 	protected Disposable disposable;
 	protected PgPool pool4;
 	protected Properties dbProperties = new Properties();
@@ -79,53 +77,52 @@ public class DodexDatabasePostgres extends DbPostgres {
 			DbConfiguration.configureDefaults(dbMap, dbProperties); // Prod
 		}
 
-		PoolOptions poolOptions = new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
+		PoolOptions poolOptions =
+				new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
 		PgConnectOptions connectOptions;
 
-		connectOptions = new PgConnectOptions()
-			.setHost(dbMap.get("host2"))
-			.setPort(Integer.valueOf(dbMap.get("port")))
-			.setUser(dbProperties.getProperty("user").toString())
-			.setPassword(dbProperties.getProperty("password").toString())
-			.setDatabase(dbMap.get("database"))
-            .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
-            .setIdleTimeout(1)
-			// .setCachePreparedStatements(true)
-            ;
+		connectOptions = new PgConnectOptions().setHost(dbMap.get("host2"))
+				.setPort(Integer.valueOf(dbMap.get("port")))
+				.setUser(dbProperties.getProperty("user").toString())
+				.setPassword(dbProperties.getProperty("password").toString())
+				.setDatabase(dbMap.get("database"))
+				.setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
+		// .setCachePreparedStatements(true)
+		;
 
-        pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+		pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
 
-		Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
-			tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
-                RowIterator<Row> ri = row.iterator();
-                String val = null;
-				while (ri.hasNext()) {
-					val = ri.next().getString(0);
-				}
+		Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+				.flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
+					RowIterator<Row> ri = row.iterator();
+					String val = null;
+					while (ri.hasNext()) {
+						val = ri.next().getString(0);
+					}
 
-                if (val == null) {
-                    final String usersSql = getCreateTable("USERS").replaceAll("dummy",
-                            dbProperties.get("user").toString());
+					if (val == null) {
+						final String usersSql = getCreateTable("USERS").replaceAll("dummy",
+								dbProperties.get("user").toString());
 
-                    Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute()
-                        .doOnError(err -> {
-                            logger.info(String.format("Users Table Error: %s", err.getMessage()));
-                        }).doOnSuccess(result -> {
-                            logger.info("Users Table Added.");
-                        });
+						Single<RowSet<Row>> crow =
+								conn.query(usersSql).rxExecute().doOnError(err -> {
+									logger.info(String.format("Users Table Error: %s",
+											err.getMessage()));
+								}).doOnSuccess(result -> {
+									logger.info("Users Table Added.");
+								});
 
-                    crow.subscribe(result -> {
-                        //
-                    }, err -> {
-                        logger.info(String.format("Users Table Error: %s", err.getMessage()));
-                    });
-                }
-			}).doOnError(err -> {
-				logger.info(String.format("Users Table Error: %s", err.getMessage()));
+						crow.subscribe(result -> {
+							//
+						}, err -> {
+							logger.info(String.format("Users Table Error: %s", err.getMessage()));
+						});
+					}
+				}).doOnError(err -> {
+					logger.info(String.format("Users Table Error: %s", err.getMessage()));
 
-			}).flatMap(
-				result -> conn.query(CHECKMESSAGESSQL).rxExecute().doOnSuccess(row -> {
+				}).flatMap(result -> conn.query(CHECKMESSAGESSQL).rxExecute().doOnSuccess(row -> {
 					RowIterator<Row> ri = row.iterator();
 					String val = null;
 					while (ri.hasNext()) {
@@ -136,52 +133,54 @@ public class DodexDatabasePostgres extends DbPostgres {
 						final String sql = getCreateTable("MESSAGES").replaceAll("dummy",
 								dbProperties.get("user").toString());
 
-						Single<RowSet<Row>> crow = conn.query(sql).rxExecute()
-							.doOnError(err -> {
-								logger.info(String.format("Messages Table Error: %s", err.getMessage()));
-							}).doOnSuccess(row2 -> {
-								logger.info("Messages Table Added.");
-							});
+						Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
+							logger.info(
+									String.format("Messages Table Error: %s", err.getMessage()));
+						}).doOnSuccess(row2 -> {
+							logger.info("Messages Table Added.");
+						});
 
 						crow.subscribe(res -> {
 							//
 						}, err -> {
-							logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+							logger.info(
+									String.format("Messages Table Error: %s", err.getMessage()));
 						});
 					}
 				}).doOnError(err -> {
 					logger.info(String.format("Messages Table Error: %s", err.getMessage()));
 
-				})).flatMap(result -> conn.query(CHECKUNDELIVEREDSQL).rxExecute()
-					.doOnSuccess(row -> {
-						RowIterator<Row> ri = row.iterator();
-						String val = null;
-						while (ri.hasNext()) {
-							val = ri.next().getString(0);
-						}
+				})).flatMap(
+						result -> conn.query(CHECKUNDELIVEREDSQL).rxExecute().doOnSuccess(row -> {
+							RowIterator<Row> ri = row.iterator();
+							String val = null;
+							while (ri.hasNext()) {
+								val = ri.next().getString(0);
+							}
 
-						if (val == null) {
-							final String sql = getCreateTable("UNDELIVERED").replaceAll("dummy",
-								dbProperties.get("user").toString());
-						
-								Single<RowSet<Row>> crow = conn.query(sql).rxExecute()
-									.doOnError(err -> {
-										logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
-									}).doOnSuccess(row2 -> {
-										logger.info("Undelivered Table Added.");
-									});
+							if (val == null) {
+								final String sql = getCreateTable("UNDELIVERED").replaceAll("dummy",
+										dbProperties.get("user").toString());
 
-							crow.subscribe(result2 -> {
-								//
-							}, err -> {
-								logger.info(String.format("Messages Table Error: %s", err.getMessage()));
-							});
-						}
-					}).doOnError(err -> {
-						logger.info(String.format("Messages Table Error: %s", err.getMessage()));
-					}))
-                .flatMapCompletable(res -> tx.rxCommit())
-		));
+								Single<RowSet<Row>> crow =
+										conn.query(sql).rxExecute().doOnError(err -> {
+											logger.info(String.format("Undelivered Table Error: %s",
+													err.getMessage()));
+										}).doOnSuccess(row2 -> {
+											logger.info("Undelivered Table Added.");
+										});
+
+								crow.subscribe(result2 -> {
+									//
+								}, err -> {
+									logger.info(String.format("Messages Table Error: %s",
+											err.getMessage()));
+								});
+							}
+						}).doOnError(err -> {
+							logger.info(
+									String.format("Messages Table Error: %s", err.getMessage()));
+						})).flatMapCompletable(res -> tx.rxCommit())));
 
 		completable.subscribe(() -> {
 			try {
@@ -196,27 +195,12 @@ public class DodexDatabasePostgres extends DbPostgres {
 
 	@Override
 	@SuppressWarnings("unchecked")
-    public <T> T getPool4() {
-        return (T) pool4;
-    }
+	public <T> T getPool4() {
+		return (T) pool4;
+	}
 
 	@Override
 	public MessageUser createMessageUser() {
 		return new MessageUserImpl();
 	}
 }
-
-/*
-Uni<RowSet<Row>> data = pool.preparedQuery("select * from users").execute();
-        
-        processRows2.apply(data);
-        
-        Uni<String> json = data.onItem().transform(rs -> {
-            String jsonData = null;
-            for(Row row : rs) {
-                jsonData = row.toJson().toString();
-                logger.info("Transform Print {}", jsonData);
-            }
-            return jsonData;
-        }).onFailure().transform(this::getMessage);
-*/

@@ -2,26 +2,31 @@ package dmo.fs.router;
 
 import java.io.IOException;
 import java.sql.SQLException;
-
-import com.google.cloud.firestore.Firestore;
-
+import java.util.HashMap;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.cloud.firestore.Firestore;
+import dmo.fs.kafka.KafkaConsumerDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.web.Route;
-import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.ext.web.handler.CorsHandler;
-import io.vertx.reactivex.ext.web.handler.FaviconHandler;
-import io.vertx.reactivex.ext.web.handler.StaticHandler;
-import io.vertx.reactivex.ext.web.handler.TimeoutHandler;
-import io.vertx.reactivex.ext.web.sstore.LocalSessionStore;
-import io.vertx.reactivex.ext.web.sstore.SessionStore;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.http.HttpServer;
+import io.vertx.rxjava3.core.http.HttpServerResponse;
+import io.vertx.rxjava3.ext.web.Route;
+import io.vertx.rxjava3.ext.web.Router;
+import io.vertx.rxjava3.ext.web.Session;
+import io.vertx.rxjava3.ext.web.handler.CorsHandler;
+import io.vertx.rxjava3.ext.web.handler.FaviconHandler;
+import io.vertx.rxjava3.ext.web.handler.SessionHandler;
+import io.vertx.rxjava3.ext.web.handler.StaticHandler;
+import io.vertx.rxjava3.ext.web.handler.TimeoutHandler;
+import io.vertx.rxjava3.ext.web.sstore.LocalSessionStore;
+import io.vertx.rxjava3.ext.web.sstore.SessionStore;
+import io.vertx.rxjava3.kafka.client.producer.KafkaProducer;
 
 public class Routes {
 	private static final Logger logger = LoggerFactory.getLogger(Routes.class.getName());
@@ -29,10 +34,12 @@ public class Routes {
 	protected Router router;
 	protected HttpServer server;
 	protected SessionStore sessionStore;
+	protected static KafkaProducer<String, Integer> producer;
 	Integer counter = 0;
 	Firestore firestore;
 
-	public Routes(Vertx vertx, HttpServer server, Integer vertxVersion) throws InterruptedException, IOException, SQLException {
+	public Routes(Vertx vertx, HttpServer server, Integer vertxVersion)
+			throws InterruptedException, IOException, SQLException {
 		this.vertx = vertx;
 		router = Router.router(vertx);
 		sessionStore = LocalSessionStore.create(vertx);
@@ -45,7 +52,9 @@ public class Routes {
 			DodexUtil.setEnv("prod");
 		}
 		DodexUtil.setVertx(vertx);
-		
+		if(Server.getUseKafka()) {
+			setMonitorRoute();
+		}
 		setFavRoute();
 		setStaticRoute();
 		setDodexRoute();
@@ -55,6 +64,20 @@ public class Routes {
 		} else {
 			setProdRoute();
 		}
+
+		if(Server.getUseKafka()) {
+			Map<String, String> config = new HashMap<>();
+			config.put("bootstrap.servers", "localhost:9092");
+			config.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+			config.put("value.serializer", "org.apache.kafka.common.serialization.IntegerSerializer");
+			config.put("acks", "1");
+
+			producer = KafkaProducer.create(vertx, config);
+		}
+	}
+
+	public static  KafkaProducer<String, Integer> getProducer() {
+		return producer;
 	}
 
 	public void setTestRoute() {
@@ -127,6 +150,39 @@ public class Routes {
 		router.route().handler(faviconHandler);
 	}
 
+	public void setMonitorRoute() {
+		Route route = router.route(HttpMethod.GET, "/events/:command/:init")
+ 			.produces("application/json");
+
+		route.handler(SessionHandler.create(SessionStore.create(vertx)));
+		route.handler(routingContext -> {
+			routingContext.put("name", "monitor");
+			HttpServerResponse response = routingContext.response();
+			String acceptableContentType = routingContext.getAcceptableContentType();
+			response.putHeader("content-type",  acceptableContentType);
+			Session session = routingContext.session();
+			
+			if(session.isEmpty()) {
+				session.put("monitor", new KafkaConsumerDodex());
+			}
+			
+			KafkaConsumerDodex kafkaConsumerDodex = session.get("monitor");
+
+			try {
+				response.send(kafkaConsumerDodex.list(
+					routingContext.pathParam("command"), routingContext.pathParam("init"))).subscribe();
+			} catch (JsonProcessingException e) {
+				e.printStackTrace();
+			}
+			if("-1".equals(routingContext.pathParam("init"))) {
+				session.destroy();
+			}
+		});
+		route.failureHandler(ctx -> 
+			logger.error(String.format("%sFAILURE in /monitor/ route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+		  );
+	}
+
 	public void setDodexRoute() throws InterruptedException, IOException, SQLException {
 		DodexUtil du = new DodexUtil();
 		String defaultDbName = du.getDefaultDb();
@@ -148,7 +204,15 @@ public class Routes {
 				ex.printStackTrace();
 				throw ex;
 			}
-        } else {
+        } else if ("neo4j".equals(defaultDbName)) {
+			try {
+				Neo4jRouter neo4jRouter = new Neo4jRouter(vertx);
+				neo4jRouter.setWebSocket(server);
+			} catch(Exception ex) {
+				ex.printStackTrace();
+				throw ex;
+			}
+		} else {
 			try {
 				DodexRouter dodexRouter = new DodexRouter(vertx);
 				dodexRouter.setWebSocket(server);

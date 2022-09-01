@@ -1,5 +1,16 @@
 # Changelog
 
+## [v2.4.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.4.0) (2022-9-1)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.3.0...v2.4.0)
+
+* Upgraded to vertx 4.3.3 final
+* Upgraded java/javascript dependencies
+* Migrated to rxjava3
+* Added Neo4j database(using mutiny with database access)
+* Added Dodex monitor using Kafka/Zookeeper
+* Changed Logger to Log4j to control Kafka logging
+
 ## [v2.3.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.3.0) (2022-3-15)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.2.2...v2.3.0)

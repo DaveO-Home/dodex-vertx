@@ -7,14 +7,24 @@ import java.util.Map;
 
 public interface SpaLogin {
     <T> void setId(T id);
+
     void setName(String name);
+
     void setPassword(String password);
-    <T>void setLastLogin(T lastLogin);
+
+    <T> void setLastLogin(T lastLogin);
+
     void setStatus(String status);
+
     <T> T getId();
+
     String getName();
+
     String getPassword();
+
     Timestamp getLastLogin();
+
     String getStatus();
+
     Map<String, Object> getMap();
 }

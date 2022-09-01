@@ -2,11 +2,6 @@ package org.modellwerkstatt.javaxbus;
 
 import mjson.Json;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.nio.charset.Charset;
-
 public class VertXProtoMJson {
 
     public VertXProtoMJson(){

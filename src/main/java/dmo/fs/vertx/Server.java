@@ -8,14 +8,11 @@ import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dmo.fs.router.CassandraRouter;
 import dmo.fs.router.Routes;
 import dmo.fs.spa.SpaApplication;
@@ -27,18 +24,18 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
-import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.file.FileSystem;
-import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.ext.eventbus.bridge.tcp.TcpEventBusBridge;
-import io.vertx.reactivex.ext.web.Route;
+import io.vertx.rxjava3.core.AbstractVerticle;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.file.FileSystem;
+import io.vertx.rxjava3.core.http.HttpServer;
+import io.vertx.rxjava3.ext.eventbus.bridge.tcp.TcpEventBusBridge;
+import io.vertx.rxjava3.ext.web.Route;
 
 public class Server extends AbstractVerticle {
   private static Logger logger;
   private int startupPort;
   private int port = startupPort = 0;
-  
+
 
   public Server() {
     Locale.setDefault(new Locale("US"));
@@ -55,7 +52,8 @@ public class Server extends AbstractVerticle {
       logDir.mkdir();
     }
 
-    System.setProperty("java.util.logging.SimpleFormatter.format", "[%1$tF %1$tT] [%4$s] %5$s %3$s %n");
+    System.setProperty("java.util.logging.SimpleFormatter.format",
+        "[%1$tF %1$tT] [%4$s] %5$s %3$s %n");
     System.setProperty("dmo.fs.level", "INFO");
     System.setProperty("org.jooq.no-logo", "true");
     System.setProperty("org.jooq.no-tips", "true");
@@ -64,12 +62,13 @@ public class Server extends AbstractVerticle {
 
   private static String OS = System.getProperty("os.name").toLowerCase();
   private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
+  private static String useKafka = System.getenv("DODEX_KAFKA");
   private HttpServer server;
   private JsonObject config;
 
   @Override
-  public void start(Promise<Void> promise) throws 
-      InterruptedException, URISyntaxException, IOException, SQLException, NumberFormatException {
+  public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException,
+      IOException, SQLException, NumberFormatException {
     if (development == null || development.equals("")) {
       development = "prod";
     } else if ("dev".equalsIgnoreCase(development)) {
@@ -82,11 +81,18 @@ public class Server extends AbstractVerticle {
     if (config.getInteger("http.port") == null) {
       config = getAlternateConfig();
     }
+    if(useKafka == null) {
+      useKafka = config.getString("dodex.kafka");
+    }
+    if("true".toLowerCase().equals(useKafka)) {
+      logger.info("{}Using Kafka - make sure it is running with ZooKeeper.{}", ColorUtilConstants.GREEN, ColorUtilConstants.RESET);
+    }
     /* From application-conf.json - Vertx version defaults to 4 */
     Integer vertxVersion = config.getInteger(development + ".vertx.version",
         config.getInteger("vertx.version") == null ? 4 : config.getInteger("vertx.version"));
 
-    Boolean color = "prod".equalsIgnoreCase(development) ? config.getBoolean("prod.color") : config.getBoolean("color");
+    Boolean color = "prod".equalsIgnoreCase(development) ? config.getBoolean("prod.color")
+        : config.getBoolean("color");
     if (color != null && !color) {
       ColorUtilConstants.colorOff();
     }
@@ -104,11 +110,13 @@ public class Server extends AbstractVerticle {
 
     allRoutes = new SpaRoutes(vertx, server, routes.getRouter(), routes.getFirestore());
     routesList = allRoutes.getRouter().getRoutes();
-    
+
     FileSystem fs = vertx.fileSystem();
     /* For BoxFuse - sqlite3 */
     // fs.mkdir("/efs");
-    // Runtime.getRuntime().exec("mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 <your-efs-id>.efs.<your-aws-region>.amazonaws.com:/ /efs").waitFor();
+    // Runtime.getRuntime().exec("mount -t nfs4 -o
+    // nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
+    // <your-efs-id>.efs.<your-aws-region>.amazonaws.com:/ /efs").waitFor();
 
     for (Route r : routesList) {
       String path = parsePath(r);
@@ -121,44 +129,47 @@ public class Server extends AbstractVerticle {
     // Note; development = "prod" in production mode
     // Can override port at execution time with env variable "VERTX_PORT"
 
-    String overridePort =  System.getenv("VERTX_PORT") == null ? development + ".http.port" : System.getenv("VERTX_PORT");
+    String overridePort = System.getenv("VERTX_PORT") == null ? development + ".http.port"
+        : System.getenv("VERTX_PORT");
     int secondaryPort = this.port == 0 ? 8080 : port;
     try {
-      port = System.getenv("VERTX_PORT") == null ? config.getInteger(overridePort, secondaryPort) : 
-          Integer.parseInt(System.getenv("VERTX_PORT"));
-    } catch(NumberFormatException ex) {
+      port = System.getenv("VERTX_PORT") == null ? config.getInteger(overridePort, secondaryPort)
+          : Integer.parseInt(System.getenv("VERTX_PORT"));
+    } catch (NumberFormatException ex) {
       ex.printStackTrace();
       throw ex;
     }
 
     try {
-      server.listen(port, result -> {
-        if (result.succeeded()) {
-          logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT, "HTTP Started on port: ", Integer.toString(port),
-              ColorUtilConstants.RESET));
-          promise.complete();
-          try {
-            if ("dev".equalsIgnoreCase(development)) {
-              String fileStarted = "./server-started";
-              if (!fs.existsBlocking(fileStarted)) {
-                fs.createFileBlocking(fileStarted);
-              }
+      server.rxListen(port).doOnSuccess(result -> {
+        logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT, "HTTP Started on port: ",
+            Integer.toString(port), ColorUtilConstants.RESET));
+        promise.complete();
+        try {
+          if ("dev".equalsIgnoreCase(development)) {
+            String fileStarted = "./server-started";
+            if (!fs.existsBlocking(fileStarted)) {
+              fs.createFileBlocking(fileStarted);
             }
-          } catch (Exception e) {
-            logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET);
           }
-        } else {
-          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, result.cause(), ColorUtilConstants.RESET);
-          promise.fail(result.cause());
+        } catch (Exception e) {
+          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
+              ColorUtilConstants.RESET);
         }
-      });
+      }).doOnError(err -> {
+        logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
+            ColorUtilConstants.RESET);
+        promise.fail(err.getCause());
+      }).subscribe();
     } catch (Exception e) {
-      logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET);
+      logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
+          ColorUtilConstants.RESET);
     }
 
     String defaultDb = new DodexUtil().getDefaultDb();
-    logger.info("{}{}{}{}{}",ColorUtilConstants.PURPLE_BOLD_BRIGHT, "Using ", defaultDb, " database", ColorUtilConstants.RESET);
-    
+    logger.info("{}{}{}{}{}", ColorUtilConstants.PURPLE_BOLD_BRIGHT, "Using ", defaultDb,
+        " database", ColorUtilConstants.RESET);
+
     if ("cassandra".equals(defaultDb)) {
       TcpEventBusBridge bridge = TcpEventBusBridge.create(vertx,
           new BridgeOptions().addInboundPermitted(new PermittedOptions().setAddress("vertx"))
@@ -169,16 +180,14 @@ public class Server extends AbstractVerticle {
       int eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
           : config.getInteger(development + "bridge.port");
 
-      bridge.listen(eventBridgePort, res -> {
-        if (res.succeeded()) {
-          logger.info(String.format("%s%s%d%s", ColorUtilConstants.GREEN_BOLD_BRIGHT, "TCP Event Bus Bridge Started: ",
-              eventBridgePort, ColorUtilConstants.RESET));
-          setupEventBridge();
-        } else {
-          logger.error(String.format("%s%s%s", ColorUtilConstants.RED_BOLD_BRIGHT, res.cause().getMessage(),
-              ColorUtilConstants.RESET));
-        }
-      });
+      bridge.rxListen(eventBridgePort).doOnSuccess(res -> {
+        logger.info(String.format("%s%s%d%s", ColorUtilConstants.GREEN_BOLD_BRIGHT,
+            "TCP Event Bus Bridge Started: ", eventBridgePort, ColorUtilConstants.RESET));
+        setupEventBridge();
+      }).doOnError(err -> {
+        logger.error(String.format("%s%s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
+            err.getCause().getMessage(), ColorUtilConstants.RESET));
+      }).subscribe();
     }
   }
 
@@ -188,35 +197,36 @@ public class Server extends AbstractVerticle {
     EventBus eb = EventBus.create("localhost", bridgePort == null ? 7032 : bridgePort);
     SpaApplication.setEb(eb);
     CassandraRouter.setEb(eb);
-    logger.info("{}{}{}", ColorUtilConstants.BLUE_BOLD_BRIGHT, "Dodex Connected to Event Bus Bridge%s",
-        ColorUtilConstants.RESET);
+    logger.info("{}{}{}", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+        "Dodex Connected to Event Bus Bridge%s", ColorUtilConstants.RESET);
   }
 
-  private HttpServer configureLinuxOptions(Vertx vertx, boolean fastOpen, boolean cork, boolean quickAck,
-      boolean reusePort) {
+  private HttpServer configureLinuxOptions(Vertx vertx, boolean fastOpen, boolean cork,
+      boolean quickAck, boolean reusePort) {
     // Available on Linux
     return vertx.createHttpServer(new HttpServerOptions().setTcpFastOpen(fastOpen).setTcpCork(cork)
         .setTcpQuickAck(quickAck).setReusePort(reusePort)
     // https - generate and get signed your certificate
     // Self signed for testing, per;
     // sslshopper.com/article-most-common-java-keytool-keystore-commands.html
-    // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks 
+    // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks
     // -storepass password -validity 360 -keysize 2048
-        // .setKeyStoreOptions(new JksOptions()
-        //     .setPath("keystore.jks") // good until April 9, 2022
-        //     .setPassword("apassword"))
-        //     .setSsl(true)
+    // .setKeyStoreOptions(new JksOptions()
+    // .setPath("keystore.jks") // good until April 9, 2022
+    // .setPassword("apassword"))
+    // .setSsl(true)
     );
   }
 
   private String parsePath(Route route) {
-    if(!route.isRegexPath()) {
-        return route.getPath();
+    if (!route.isRegexPath()) {
+      return route.getPath();
     }
 
     String info = route.toString();
 
-    return info.substring(info.indexOf("pattern=") + 8, info.indexOf(',', info.indexOf("pattern=")));
+    return info.substring(info.indexOf("pattern=") + 8,
+        info.indexOf(',', info.indexOf("pattern=")));
   }
 
   public static boolean isWindows() {
@@ -247,6 +257,10 @@ public class Server extends AbstractVerticle {
   }
 
   public HttpServer getServer() {
-      return server;
+    return server;
+  }
+
+  public static Boolean getUseKafka() {
+    return useKafka == null? false: Boolean.valueOf(useKafka);
   }
 }

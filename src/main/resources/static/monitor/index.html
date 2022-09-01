@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dodex</title>
+  <!-- <link rel="icon" type="image/png" href="/favicon.ico" /> -->
+  <link rel='stylesheet' href='../node_modules/dodex/dist/dodex.min.css'>
+  <link rel='stylesheet' href='../css/demo.css'>
+  <link href="../node_modules/jsoneditor/dist/jsoneditor.min.css" rel="stylesheet" type="text/css">
+  <style>
+    .editor {
+      width: 80%;
+      height: 400px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="dodex--open">
+    <img src="../node_modules/dodex/dist/dodex_g.ico">
+  </div>
+  <div id="jsoneditor" class="editor"></div>
+
+  <script src="../node_modules/dodex/dist/dodex.min.js" type="text/javascript"></script>
+  <script src="../node_modules/dodex-input/dist/dodex-input.min.js" type="text/javascript"></script>
+  <script src="../node_modules/dodex-mess/dist/dodex-mess.min.js" type="text/javascript"></script>
+  <script src="../node_modules/jsoneditor/dist/jsoneditor.min.js"></script>
+  <script src="../node_modules/chart.js/dist/chart.min.js"></script>
+
+  <script>
+    const dodex = window.doDex;
+    const input = window.doDexInput;
+    const mess = window.doDexMess;
+    const server = window.location.hostname + (window.location.port.length > 0 ? ":" + window.location.port : "");
+    dodex.setContentFile("../content/content.js");
+    dodex.init({/*width:550, height:250, left: "25%", top: "150px"*/
+      input: input,       // required if using frontend content load
+      private: "full",    // frontend load of private content, "none", "full", "partial"(only cards 28-52) - default none
+      replace: true,      // append to or replace default content - default false(append only)
+      mess: mess,         // required if using messaging
+      server: server      // configured websocket server - example in node_modules/dodex-mess, koa.js
+    })
+      .then(function () {
+        for (var i = 0; i < 1; i++) {
+          dodex.addCard(content);
+        }
+
+        /* Auto display of widget */
+        dodex.openDodex();
+
+        const ctx = document.getElementById("dodexLine");
+        window.dodexData = [0, 0, 0, 0, 0];
+        window.dodexChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: ['Sessions', 'Broadcsts', 'Private', 'Delivered', 'Undeliverd'],
+            datasets: [{
+              label: 'Events',
+              data: window.dodexData,
+              backgroundColor: [
+                'rgba(255, 99, 132, 0.2)',
+                'rgba(54, 162, 235, 0.2)',
+                'rgba(255, 206, 86, 0.2)',
+                'rgba(75, 192, 192, 0.2)',
+                'rgba(153, 102, 255, 0.2)',
+                'rgba(255, 159, 64, 0.2)',
+              ],
+              borderColor: [
+                'rgba(255, 99, 132, 1)',
+                'rgba(54, 162, 235, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(153, 102, 255, 1)',
+                'rgba(255, 159, 64, 1)'
+              ],
+              borderWidth: 1
+            }]
+          },
+          options: {
+            scales: {
+              y: {
+                beginAtZero: true
+              }
+            },
+            plugins: {
+              legend: {
+                labels: {
+                  boxWidth: 0,
+                },
+              }
+            }
+          },
+        });
+
+        // The timeout is for Firefox - increase if dodex does not flip to monitor tab
+        setTimeout(() => {
+          const front26 = document.querySelector(".front28");
+          const dodexElement = document.querySelector(".dodex");
+          const mouseEvent = new MouseEvent("mousedown");
+          front26.onmousedown = dodexElement.onmousedown; // Generic dodex handler for all cards.
+          front26.dispatchEvent(mouseEvent);
+          const back28 = document.querySelector(".back28");
+          back28.onmousedown = dodexElement.onmousedown;
+          back28.dispatchEvent(mouseEvent);
+        }, 1000);
+      });
+
+    var content = {
+      cards: {
+        card28: {
+          tab: "MON", // Dodex monitor
+          front: {
+            content: `<canvas id="dodexLine" width="360" height="150"></canvas>`
+          },
+          back: {
+            content: ``
+          }
+        }
+      }
+    };
+
+    let stopRun = false;
+    let init = 0;
+
+    function fetchData() {
+      fetch("http://" + server + "/events/list/" + init, {
+        method: 'get'
+      })
+        .catch(err => {
+          console.log(err);
+        })
+        .then(response => response.json())
+        .then(jsonData => dodexStats(jsonData));
+    }
+
+    fetchData();
+
+    const start = function () {
+      stopRun = false;
+
+      const runId = setInterval(function () {
+        fetchData();
+        if (stopRun) {
+          clearInterval(runId);
+        }
+      }, 2500);
+    };
+
+    start();
+
+    const stop = function () {
+      for (let i in window.dodexData) {
+        window.dodexData[i] = 0;
+      }
+      window.dodexChart.update();
+      stopRun = true;
+    }
+
+    let statsOffset = 0;
+    let idx = 0;
+
+    const timestamp = {
+      session: { partitions: [] },
+      broadcast: { partitions: [] },
+      private: { partitions: [] },
+      delivered: { partitions: [] },
+      undelivered: { partitions: [] }
+    }
+
+    function dodexStats(dodexStats) {
+      let statsLength = dodexStats.length - 1;
+      
+      for (let idx in dodexStats) {
+        if (dodexStats.length !== 0 && dodexStats[statsLength].offset !== statsOffset) {
+          let messageTimestamp = new Date(dodexStats[idx].timestamp);
+
+          switch (dodexStats[idx].key) {
+            case "sessions":
+              if (timestamp.session.partitions.length === 0 ||
+                typeof timestamp.session.partitions[dodexStats[idx].partitions] === "undefined" ||
+                dodexStats[idx].timestamp > timestamp.session.partitions[dodexStats[idx].partition].timestamp
+              ) {
+                if (typeof timestamp.session.partitions[dodexStats[idx].partition] === "undefined") {
+                  timestamp.session.partitions[dodexStats[idx].partition] = { timestamp: 0 };
+                }
+                timestamp.session.partitions[dodexStats[idx].partition].timestamp = messageTimestamp;
+                if(typeof window.dodexData != "undefined" && typeof window.dodexData[0] !== "undefined") {
+                  window.dodexData[0] = dodexStats[idx].payload;
+                  window.dodexChart.update();
+                }
+              }
+              break;
+            case "broadcast":
+              if (timestamp.broadcast.partitions.length === 0 ||
+                typeof timestamp.broadcast.partitions[dodexStats[idx].partition] === "undefined" ||
+                messageTimestamp > timestamp.broadcast.partitions[dodexStats[idx].partition].timestamp) {
+                if (typeof timestamp.broadcast.partitions[dodexStats[idx].partition] === "undefined") {
+                  timestamp.broadcast.partitions[dodexStats[idx].partition] = { timestamp: 0 };
+                }
+                timestamp.broadcast.partitions[dodexStats[idx].partition].timestamp = messageTimestamp;
+                if(typeof window.dodexData != "undefined" && typeof window.dodexData[1] !== "undefined") {
+                  window.dodexData[1] = dodexData[1] + dodexStats[idx].payload;
+                  window.dodexChart.update();
+                }
+              }
+              break;
+            case "private":
+              if (timestamp.private.partitions.length === 0 ||
+                typeof timestamp.private.partitions[dodexStats[idx].partition] === "undefined" ||
+                messageTimestamp > timestamp.private.partitions[dodexStats[idx].partition].timestamp) {
+                if (typeof timestamp.private.partitions[dodexStats[idx].partition] === "undefined") {
+                  timestamp.private.partitions[dodexStats[idx].partition] = { timestamp: 0 };
+                }
+                timestamp.private.partitions[dodexStats[idx].partition].timestamp = messageTimestamp;
+                if(typeof window.dodexData != "undefined" && typeof window.dodexData[2] !== "undefined") {
+                  window.dodexData[2] = dodexData[2] + dodexStats[idx].payload;
+                  window.dodexChart.update();
+                }
+              }
+              break;
+            case "delivered":
+              if (timestamp.delivered.partitions.length === 0 ||
+                typeof timestamp.delivered.partitions[dodexStats[idx].partition] === "undefined" ||
+                messageTimestamp > timestamp.delivered.partitions[dodexStats[idx].partition].timestamp) {
+                if (typeof timestamp.delivered.partitions[dodexStats[idx].partition] === "undefined") {
+                  timestamp.delivered.partitions[dodexStats[idx].partition] = { timestamp: 0 };
+                }
+                timestamp.delivered.partitions[dodexStats[idx].partition].timestamp = messageTimestamp;
+                if(typeof window.dodexData != "undefined" && typeof window.dodexData[3] !== "undefined") {
+                  window.dodexData[3] = dodexData[3] + dodexStats[idx].payload;
+                  window.dodexChart.update();
+                }
+              }
+              break;
+            case "undelivered":
+              if (timestamp.undelivered.partitions.length === 0 ||
+                typeof timestamp.undelivered.partitions[dodexStats[idx].partition] === "undefined" ||
+                messageTimestamp > timestamp.undelivered.partitions[dodexStats[idx].partition].timestamp) {
+                if (typeof timestamp.undelivered.partitions[dodexStats[idx].partition] === "undefined") {
+                  timestamp.undelivered.partitions[dodexStats[idx].partition] = { timestamp: 0 };
+                }
+                timestamp.undelivered.partitions[dodexStats[idx].partition].timestamp = messageTimestamp;
+                if(typeof window.dodexData != "undefined" && typeof window.dodexData[4] !== "undefined") {
+                  window.dodexData[4] = dodexData[4] + dodexStats[idx].payload;
+                  window.dodexChart.update();
+                }
+              }
+              break;
+
+            default:
+              window.dodexChart.update();
+          }
+        }
+      }
+      statsOffset = statsLength < 0 ? statsOffset : dodexStats[statsLength].offset;
+      init = 1;
+    }
+
+  </script>
+</body>
+
+</html>

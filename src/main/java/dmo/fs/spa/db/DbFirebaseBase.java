@@ -5,7 +5,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.Timestamp;
 import com.google.cloud.firestore.CollectionReference;
@@ -13,27 +14,25 @@ import com.google.cloud.firestore.DocumentReference;
 import com.google.cloud.firestore.DocumentSnapshot;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.WriteResult;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import dmo.fs.spa.utils.SpaLogin;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.reactivex.core.Vertx;
+import io.vertx.rxjava3.core.Vertx;
 
 public abstract class DbFirebaseBase {
-	private static final Logger logger = LoggerFactory.getLogger(DbFirebaseBase.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(DbFirebaseBase.class.getName());
 
-	private Vertx vertx;
+    private Vertx vertx;
     private Firestore dbf;
 
 
-	public Future<SpaLogin> getLogin(SpaLogin spaLogin) throws InterruptedException, ExecutionException {
+    public Future<SpaLogin> getLogin(SpaLogin spaLogin)
+            throws InterruptedException, ExecutionException {
         Promise<SpaLogin> promise = Promise.promise();
         spaLogin.setStatus("0");
 
-        DocumentReference docRef = dbf.collection("login").document(String.format("%s%s",spaLogin.getName(), spaLogin.getPassword()));
+        DocumentReference docRef = dbf.collection("login")
+                .document(String.format("%s%s", spaLogin.getName(), spaLogin.getPassword()));
 
         ApiFuture<DocumentSnapshot> apiFuture = docRef.get();
         DocumentSnapshot document = apiFuture.get();
@@ -50,12 +49,13 @@ public abstract class DbFirebaseBase {
             promise.complete(spaLogin);
             return promise.future();
         }
-	}
+    }
 
-	public Future<SpaLogin> addLogin(SpaLogin spaLogin) throws InterruptedException, ExecutionException {
+    public Future<SpaLogin> addLogin(SpaLogin spaLogin)
+            throws InterruptedException, ExecutionException {
         Promise<SpaLogin> promise = Promise.promise();
         Map<String, Object> spaLoginMap = new ConcurrentHashMap<>();
-		
+
         spaLogin.setId(UUID.randomUUID());
         spaLogin.setLastLogin(Timestamp.now().toDate());
         spaLogin.setStatus("0");
@@ -69,62 +69,67 @@ public abstract class DbFirebaseBase {
 
         CollectionReference logins = dbf.collection("login");
 
-        ApiFuture<WriteResult> loginDoc = logins
-            .document(String.format("%s%s", spaLogin.getName(), spaLogin.getPassword())).set(spaLoginMap);
-        
+        ApiFuture<WriteResult> loginDoc =
+                logins.document(String.format("%s%s", spaLogin.getName(), spaLogin.getPassword()))
+                        .set(spaLoginMap);
+
         loginDoc.get(); // blocking
-        
-        if(loginDoc.isDone()) {
+
+        if (loginDoc.isDone()) {
             promise.complete(spaLogin);
-        } else if(loginDoc.isCancelled()) {
+        } else if (loginDoc.isCancelled()) {
             spaLogin.setStatus("-1");
             spaLogin.setId("");
             promise.complete(spaLogin);
         }
-		return promise.future();
-	}
+        return promise.future();
+    }
 
     public SpaLogin updateLogin(SpaLogin spaLogin, DocumentReference docRef)
-			throws InterruptedException, ExecutionException {
+            throws InterruptedException, ExecutionException {
         spaLogin.setLastLogin(Timestamp.now().toDate());
-        
+
         ApiFuture<WriteResult> apiFuture = docRef.update("lastlogin", spaLogin.getLastLogin());
 
-        apiFuture.get();  // blocking
+        apiFuture.get(); // blocking
 
         return spaLogin;
-	}
+    }
 
-	public Future<SpaLogin> removeLogin(SpaLogin spaLogin) throws InterruptedException, ExecutionException {
-		// app does not remove logins - used for testing
+    public Future<SpaLogin> removeLogin(SpaLogin spaLogin)
+            throws InterruptedException, ExecutionException {
+        // app does not remove logins - used for testing
         Promise<SpaLogin> promise = Promise.promise();
-        if(spaLogin.getId() == null) {
+        if (spaLogin.getId() == null) {
             spaLogin.setId("");
         }
         spaLogin.setLastLogin(Timestamp.now().toDate());
         spaLogin.setStatus("1");
         try {
-            ApiFuture<WriteResult> writeResult = dbf.collection("login").document(String.format("%s%s", spaLogin.getName(), spaLogin.getPassword())).delete();
+            ApiFuture<WriteResult> writeResult = dbf.collection("login")
+                    .document(String.format("%s%s", spaLogin.getName(), spaLogin.getPassword()))
+                    .delete();
             writeResult.get();
 
             promise.complete(spaLogin);
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             // deleting a non-existing document throws a NULL exception
-            logger.error("Error deleting login: {} - {}{}", ex.getMessage(), spaLogin.getName(), spaLogin.getPassword());
+            logger.error("Error deleting login: {} - {}{}", ex.getMessage(), spaLogin.getName(),
+                    spaLogin.getPassword());
             promise.complete(spaLogin);
         }
-		return promise.future();
-	}
+        return promise.future();
+    }
 
     public void setDbf(Firestore dbf) {
         this.dbf = dbf;
     }
 
-	public Vertx getVertx() {
-		return vertx;
-	}
+    public Vertx getVertx() {
+        return vertx;
+    }
 
-	public void setVertx(Vertx vertx) {
-		this.vertx = vertx;
-	}
+    public void setVertx(Vertx vertx) {
+        this.vertx = vertx;
+    }
 }

@@ -7,34 +7,29 @@ import static org.jooq.impl.DSL.insertInto;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
 import static org.jooq.impl.DSL.update;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Date;
-
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.reactivex.db2client.DB2Pool;
-import io.vertx.reactivex.jdbcclient.JDBCPool;
-import io.vertx.reactivex.mysqlclient.MySQLPool;
-import io.vertx.reactivex.pgclient.PgPool;
-import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.Row;
-import io.vertx.reactivex.sqlclient.RowSet;
-import io.vertx.reactivex.sqlclient.SqlConnection;
-import io.vertx.reactivex.sqlclient.Tuple;
+import io.vertx.rxjava3.db2client.DB2Pool;
+import io.vertx.rxjava3.jdbcclient.JDBCPool;
+import io.vertx.rxjava3.mysqlclient.MySQLPool;
+import io.vertx.rxjava3.pgclient.PgPool;
+import io.vertx.rxjava3.sqlclient.Pool;
+import io.vertx.rxjava3.sqlclient.Row;
+import io.vertx.rxjava3.sqlclient.Tuple;
 
 public abstract class SqlBuilder {
     private static final Logger logger = LoggerFactory.getLogger(SqlBuilder.class.getName());
@@ -66,7 +61,8 @@ public abstract class SqlBuilder {
             pool = (JDBCPool) pool4;
         }
 
-        Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx4/Postgres
+        Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible
+                                                                            // with Vertx4/Postgres
 
         create = DSL.using(DodexUtil.getSqlDialect(), settings);
         // qmark? setupAllUsers().replaceAll("\\$\\d", "?"): setupAllUsers();
@@ -76,12 +72,15 @@ public abstract class SqlBuilder {
         GETREMOVELOGIN = setupRemoveLogin().replaceAll("\\$\\d", "?");
         GETLOGINBYID = qmark ? setupLoginById().replaceAll("\\$\\d", "?") : setupLoginById();
         GETUPDATELOGIN = qmark ? setupUpdateLogin().replaceAll("\\$\\d*", "?") : setupUpdateLogin();
-        GETSQLITEUPDATELOGIN = qmark ? setupSqliteUpdateLogin().replaceAll("\\$\\d*", "?") : setupSqliteUpdateLogin();
+        GETSQLITEUPDATELOGIN = qmark ? setupSqliteUpdateLogin().replaceAll("\\$\\d*", "?")
+                : setupSqliteUpdateLogin();
     }
 
     private static String setupLoginByNamePassword() {
-        return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-                .from(table("LOGIN")).where(field("NAME").eq("$")).and(field("PASSWORD").eq("$")));
+        return create.renderNamedParams(
+                select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                        .from(table("LOGIN")).where(field("NAME").eq("$"))
+                        .and(field("PASSWORD").eq("$")));
     }
 
     public String getLoginByNamePassword() {
@@ -89,8 +88,9 @@ public abstract class SqlBuilder {
     }
 
     private static String setupLoginByName() {
-        return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-                .from(table("LOGIN")).where(field("NAME").eq("$")));
+        return create.renderNamedParams(
+                select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                        .from(table("LOGIN")).where(field("NAME").eq("$")));
     }
 
     public String getUserByName() {
@@ -98,8 +98,9 @@ public abstract class SqlBuilder {
     }
 
     private static String setupLoginById() {
-        return create.renderNamedParams(select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-                .from(table("LOGIN")).where(field("NAME").eq("$")));
+        return create.renderNamedParams(
+                select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                        .from(table("LOGIN")).where(field("NAME").eq("$")));
     }
 
     public String getUserById() {
@@ -107,9 +108,9 @@ public abstract class SqlBuilder {
     }
 
     private static String setupInsertLogin() {
-        return create.renderNamedParams(
-                insertInto(table("LOGIN")).columns(field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-                        .values("$", "$", "$").returning(field("ID")));
+        return create.renderNamedParams(insertInto(table("LOGIN"))
+                .columns(field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
+                .values("$", "$", "$").returning(field("ID")));
     }
 
     public String getInsertLogin() {
@@ -118,7 +119,7 @@ public abstract class SqlBuilder {
 
     private static String setupUpdateLogin() {
         return create.renderNamedParams(update(table("LOGIN")).set(field("LAST_LOGIN"), "$")
-            .where(field("ID").eq("$")).returning());
+                .where(field("ID").eq("$")).returning());
     }
 
     public String getUpdateLogin() {
@@ -134,8 +135,8 @@ public abstract class SqlBuilder {
     }
 
     private static String setupRemoveLogin() {
-        return create
-                .renderNamedParams(deleteFrom(table("LOGIN")).where(field("NAME").eq("$"), field("PASSWORD").eq("$")));
+        return create.renderNamedParams(
+                deleteFrom(table("LOGIN")).where(field("NAME").eq("$"), field("PASSWORD").eq("$")));
     }
 
     public String getRemoveLogin() {
@@ -150,14 +151,11 @@ public abstract class SqlBuilder {
         SpaLogin resultLogin = createSpaLogin();
         resultLogin.setStatus("0");
 
-        pool.getConnection(c -> {
-            SqlConnection conn = c.result();
+        pool.rxGetConnection().doOnSuccess(conn -> {
 
-            conn.query(create.query(getLoginByNamePassword(), spaLogin.getName(), spaLogin.getPassword()).toString())
-                .execute(ar -> {
-                    if (ar.succeeded()) {
-                        RowSet<Row> rows = ar.result();
-
+            conn.query(create
+                    .query(getLoginByNamePassword(), spaLogin.getName(), spaLogin.getPassword())
+                    .toString()).rxExecute().doOnSuccess(rows -> {
                         if (rows.size() == 0) {
                             if (!(spaLogin.getPassword().equals(resultLogin.getPassword()))) {
                                 resultLogin.setStatus("-1");
@@ -175,7 +173,7 @@ public abstract class SqlBuilder {
                                     resultLogin.setName(row.getString(1));
                                     resultLogin.setPassword(row.getString(2));
                                     resultLogin.setLastLogin(row.getValue(3));
-                                } catch(Exception e) {
+                                } catch (Exception e) {
                                     e.printStackTrace();
                                 }
                             }
@@ -185,7 +183,7 @@ public abstract class SqlBuilder {
                             Future<Integer> future = null;
                             try {
                                 future = updateCustomLogin(resultLogin, "date");
-                            } catch (/*InterruptedException | SQLException*/ Exception e) {
+                            } catch (/* InterruptedException | SQLException */ Exception e) {
                                 e.printStackTrace();
                             }
                             future.onSuccess(result2 -> {
@@ -204,16 +202,16 @@ public abstract class SqlBuilder {
                             conn.close();
                             promise.complete(resultLogin);
                         }
-                    } else {
+                    }).doOnError(err -> {
                         conn.close();
                         resultLogin.setStatus("-99");
                         promise.complete(resultLogin);
-                        logger.error(String.format("%sError retrieving user: %s -- %s%s", ColorUtilConstants.RED,
-                                spaLogin.getName(), ar.cause().getMessage(), ColorUtilConstants.RESET));
-                    }
-                });
-        });
-        
+                        logger.error(String.format("%sError retrieving user: %s -- %s%s",
+                                ColorUtilConstants.RED, spaLogin.getName(),
+                                err.getCause().getMessage(), ColorUtilConstants.RESET));
+                    }).subscribe();
+        }).subscribe();
+
         return promise.future();
     }
 
@@ -226,9 +224,8 @@ public abstract class SqlBuilder {
 
         spaLogin.setStatus("0");
 
-        pool.getConnection(c -> {
+        pool.rxGetConnection().doOnSuccess(conn -> {
             Tuple parameters = Tuple.of(spaLogin.getName(), spaLogin.getPassword(), lastLogin);
-            SqlConnection conn = c.result();
 
             conn.preparedQuery(getInsertLogin()).rxExecute(parameters).doOnSuccess(rows -> {
                 for (Row row : rows) {
@@ -241,18 +238,18 @@ public abstract class SqlBuilder {
             }).doOnError(err -> {
                 conn.close();
                 spaLogin.setStatus("-4");
-                logger.error(String.format("%sError adding login: %s%s", ColorUtilConstants.RED, err,
-                        ColorUtilConstants.RESET));
+                logger.error(String.format("%sError adding login: %s%s", ColorUtilConstants.RED,
+                        err, ColorUtilConstants.RESET));
             }).subscribe(rows -> {
                 //
             }, err -> {
                 conn.close();
                 spaLogin.setStatus("-4");
                 promise.complete(spaLogin);
-                logger.error(String.format("%sError adding login: %s%s", ColorUtilConstants.RED, err,
-                        ColorUtilConstants.RESET));
+                logger.error(String.format("%sError adding login: %s%s", ColorUtilConstants.RED,
+                        err, ColorUtilConstants.RESET));
             });
-        });
+        }).subscribe();
 
         return promise.future();
     }
@@ -260,106 +257,103 @@ public abstract class SqlBuilder {
     public Future<SpaLogin> removeLogin(SpaLogin spaLogin) {
         Promise<SpaLogin> promise = Promise.promise();
 
-        
-        pool.getConnection(c-> {
-            SqlConnection conn = c.result();
-            String query = create.query(getRemoveLogin(), spaLogin.getName(), spaLogin.getPassword()).toString();
 
-            conn.query(query).rxExecute()
-                .doOnSuccess(rows -> {
-                    for(Row row : rows) {
-                        spaLogin.setId(row.getLong(0));
-                    }
-                    Integer count = Integer.valueOf(rows.rowCount());
+        pool.rxGetConnection().doOnSuccess(conn -> {
+            String query = create
+                    .query(getRemoveLogin(), spaLogin.getName(), spaLogin.getPassword()).toString();
 
-                    spaLogin.setStatus(count.toString());
-                    if (spaLogin.getId() == null) {
-                        spaLogin.setId(-1l);
-                    }
-                    if (spaLogin.getLastLogin() == null) {
-                        spaLogin.setLastLogin(new Date());
-                    }
-                    promise.complete(spaLogin);
+            conn.query(query).rxExecute().doOnSuccess(rows -> {
+                for (Row row : rows) {
+                    spaLogin.setId(row.getLong(0));
+                }
+                Integer count = Integer.valueOf(rows.rowCount());
 
-                    conn.close();
-                }).doOnError(err -> {
-                    logger.error(String.format("%sError deleting login: %s%s", ColorUtilConstants.RED,
-                            err, ColorUtilConstants.RESET));
-                    spaLogin.setStatus("-4");
-                    promise.complete(spaLogin);
-                }).subscribe(rows -> {
+                spaLogin.setStatus(count.toString());
+                if (spaLogin.getId() == null) {
+                    spaLogin.setId(-1l);
+                }
+                if (spaLogin.getLastLogin() == null) {
+                    spaLogin.setLastLogin(new Date());
+                }
+                promise.complete(spaLogin);
 
-                }, err -> {
-                    spaLogin.setStatus("-4");
-                    promise.complete(spaLogin);
-                    err.printStackTrace();
-                });
-        });
-        
+                conn.close();
+            }).doOnError(err -> {
+                logger.error(String.format("%sError deleting login: %s%s", ColorUtilConstants.RED,
+                        err, ColorUtilConstants.RESET));
+                spaLogin.setStatus("-4");
+                promise.complete(spaLogin);
+            }).subscribe(rows -> {
+
+            }, err -> {
+                spaLogin.setStatus("-4");
+                promise.complete(spaLogin);
+                err.printStackTrace();
+            });
+        }).subscribe();
+
         return promise.future();
     }
 
     public Future<Integer> updateCustomLogin(SpaLogin spaLogin, String type) {
         Promise<Integer> promise = Promise.promise();
 
-        pool.getConnection(c -> {
-            SqlConnection conn = c.result();
+        pool.rxGetConnection().doOnSuccess(conn -> {
             Timestamp timeStamp = new Timestamp(new Date().getTime());
             OffsetDateTime time = OffsetDateTime.now();
             Long date = new Date().getTime();
             String sql = getUpdateLogin();
             LocalDateTime lTime = LocalDateTime.now();
 
-            Object dateTime = DbConfiguration.isUsingIbmDB2()? lTime: 
-                DbConfiguration.isUsingSqlite3()? date: DbConfiguration.isUsingCubrid()? timeStamp: time;
+            Object dateTime = DbConfiguration.isUsingIbmDB2() ? lTime
+                    : DbConfiguration.isUsingSqlite3() ? date
+                            : DbConfiguration.isUsingCubrid() ? timeStamp : time;
 
             spaLogin.setLastLogin(timeStamp);
 
             if (DbConfiguration.isUsingCubrid()) {
                 // Cubrid fails with NullPointer using "preparedQuery"
-                String query = create.query(getSqliteUpdateLogin(), dateTime, spaLogin.getId()).toString();
+                String query =
+                        create.query(getSqliteUpdateLogin(), dateTime, spaLogin.getId()).toString();
 
-                conn.query(query)
-                    .rxExecute()
-                    .doOnSuccess(rows -> {
-                        conn.close();
-                        promise.complete(rows.rowCount());
-                    }).doOnError(err -> {
-                        logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
-                                    err, ColorUtilConstants.RESET));
-                    }).subscribe(rows -> {
-                        //
-                    }, err -> {
-                        logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
-                                    err, ColorUtilConstants.RESET));
-                        err.printStackTrace();
-                        conn.close();
-                        promise.complete(-99);
-                        err.printStackTrace();
-                    });
-            } else {
-                conn.preparedQuery(sql)
-                    .rxExecute(Tuple.of(dateTime, spaLogin.getId()))
-                    .doOnSuccess(rows -> {
-                        conn.close();
-                        promise.complete(rows.rowCount());
-            
+                conn.query(query).rxExecute().doOnSuccess(rows -> {
+                    conn.close();
+                    promise.complete(rows.rowCount());
                 }).doOnError(err -> {
-                    logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
-                                err, ColorUtilConstants.RESET));
-                    // conn.close();
+                    logger.error(String.format("%sError Updating login: %s%s",
+                            ColorUtilConstants.RED, err, ColorUtilConstants.RESET));
                 }).subscribe(rows -> {
                     //
                 }, err -> {
-                    logger.error(String.format("%sError Updating login: %s%s", ColorUtilConstants.RED,
-                                err, ColorUtilConstants.RESET));
+                    logger.error(String.format("%sError Updating login: %s%s",
+                            ColorUtilConstants.RED, err, ColorUtilConstants.RESET));
                     err.printStackTrace();
                     conn.close();
                     promise.complete(-99);
                     err.printStackTrace();
                 });
+            } else {
+                conn.preparedQuery(sql).rxExecute(Tuple.of(dateTime, spaLogin.getId()))
+                        .doOnSuccess(rows -> {
+                            conn.close();
+                            promise.complete(rows.rowCount());
+
+                        }).doOnError(err -> {
+                            logger.error(String.format("%sError Updating login: %s%s",
+                                    ColorUtilConstants.RED, err, ColorUtilConstants.RESET));
+                            // conn.close();
+                        }).subscribe(rows -> {
+                            //
+                        }, err -> {
+                            logger.error(String.format("%sError Updating login: %s%s",
+                                    ColorUtilConstants.RED, err, ColorUtilConstants.RESET));
+                            err.printStackTrace();
+                            conn.close();
+                            promise.complete(-99);
+                            err.printStackTrace();
+                        });
             }
-        });
+        }).subscribe();
 
         return promise.future();
     }

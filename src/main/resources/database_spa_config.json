@@ -55,7 +55,7 @@
         "dev": { 
             "credentials": {
                 "user": "dba",
-                "password": "password",
+                "password": "albatross",
                 "ssl": "false"
             },
             "config": {
@@ -82,8 +82,8 @@
     "mariadb": {
         "dev": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "daveo",
+                "password": "Stuff*V4",
                 "ssl": "false"
             },
             "config": {
@@ -115,7 +115,7 @@
         "dev": { 
             "credentials": {
                 "user": "db2inst1",
-                "password": "password",
+                "password": "albatross",
                 "ssl": "false"
             },
             "config": {

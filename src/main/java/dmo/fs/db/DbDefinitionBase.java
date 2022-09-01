@@ -7,7 +7,6 @@ import static org.jooq.impl.DSL.insertInto;
 import static org.jooq.impl.DSL.notExists;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
-
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -18,32 +17,28 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import io.reactivex.functions.Action;
+import io.reactivex.rxjava3.functions.Action;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.http.ServerWebSocket;
-import io.vertx.reactivex.db2client.DB2Pool;
-import io.vertx.reactivex.jdbcclient.JDBCPool;
-import io.vertx.reactivex.mysqlclient.MySQLClient;
-import io.vertx.reactivex.mysqlclient.MySQLPool;
-import io.vertx.reactivex.pgclient.PgPool;
-import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.Row;
-import io.vertx.reactivex.sqlclient.RowSet;
-import io.vertx.reactivex.sqlclient.SqlConnection;
-import io.vertx.reactivex.sqlclient.Tuple;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.http.ServerWebSocket;
+import io.vertx.rxjava3.db2client.DB2Pool;
+import io.vertx.rxjava3.jdbcclient.JDBCPool;
+import io.vertx.rxjava3.mysqlclient.MySQLClient;
+import io.vertx.rxjava3.mysqlclient.MySQLPool;
+import io.vertx.rxjava3.pgclient.PgPool;
+import io.vertx.rxjava3.sqlclient.Pool;
+import io.vertx.rxjava3.sqlclient.Row;
+import io.vertx.rxjava3.sqlclient.Tuple;
 
 public abstract class DbDefinitionBase {
     private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
@@ -239,10 +234,10 @@ public abstract class DbDefinitionBase {
     private static String setupRemoveMessage() {
         return create
                 .renderNamedParams(
-                    deleteFrom(table("MESSAGES")).where(create.renderNamedParams(field("ID").eq("$1")
-                        .and(create.renderNamedParams(notExists(select().from(table("MESSAGES"))
-                            .join(table("UNDELIVERED")).on(field("ID").eq(field("MESSAGE_ID")))
-                            .and(field("ID").eq("$2"))))))));
+                        deleteFrom(table("MESSAGES")).where(create.renderNamedParams(field("ID").eq("$1")
+                                .and(create.renderNamedParams(notExists(select().from(table("MESSAGES"))
+                                        .join(table("UNDELIVERED")).on(field("ID").eq(field("MESSAGE_ID")))
+                                        .and(field("ID").eq("$2"))))))));
     }
 
     public String getRemoveMessage() {
@@ -272,8 +267,8 @@ public abstract class DbDefinitionBase {
     private static String setupUserUndelivered() {
         return create.renderNamedParams(select(field("USER_ID"), field("MESSAGE_ID"), field("MESSAGE"),
                 field("POST_DATE"), field("FROM_HANDLE")).from(table("USERS")).join(table("UNDELIVERED"))
-                        .on(field("USERS.ID").eq(field("USER_ID")).and(field("USERS.ID").eq("$")))
-                        .join(table("MESSAGES")).on(field("MESSAGES.ID").eq(field("MESSAGE_ID"))));
+                .on(field("USERS.ID").eq(field("USER_ID")).and(field("USERS.ID").eq("$")))
+                .join(table("MESSAGES")).on(field("MESSAGES.ID").eq(field("MESSAGE_ID"))));
     }
 
     public String getUserUndelivered() {
@@ -352,10 +347,9 @@ public abstract class DbDefinitionBase {
 
         Object lastLogin = DbConfiguration.isUsingPostgres() ? time : current;
 
-        pool.getConnection(c -> {
+        pool.rxGetConnection().doOnSuccess(conn -> {
             Tuple parameters = Tuple.of(messageUser.getName(), messageUser.getPassword(), messageUser.getIp(),
                     lastLogin);
-            SqlConnection conn = c.result();
             String sql = getInsertUser();
 
             if (DbConfiguration.isUsingMariadb()) {
@@ -385,7 +379,7 @@ public abstract class DbDefinitionBase {
                         ColorUtilConstants.RESET));
                 err.printStackTrace();
             });
-        });
+        }).subscribe();
 
         return promise.future();
     }
@@ -394,9 +388,7 @@ public abstract class DbDefinitionBase {
             throws InterruptedException, SQLException {
         Promise<Integer> promise = Promise.promise();
 
-        pool.getConnection(c -> {
-            SqlConnection conn = c.result();
-
+        pool.rxGetConnection().doOnSuccess(conn -> {
             Tuple parameters = getTupleParameters(messageUser);
 
             String sql = DbConfiguration.isUsingIbmDB2() || DbConfiguration.isUsingSqlite3()
@@ -417,7 +409,7 @@ public abstract class DbDefinitionBase {
                         ColorUtilConstants.RESET));
                 err.printStackTrace();
             });
-        });
+        }).subscribe();
 
         return promise.future();
     }
@@ -446,9 +438,8 @@ public abstract class DbDefinitionBase {
             throws InterruptedException, SQLException {
         Promise<Long> promise = Promise.promise();
 
-        pool.getConnection(c -> {
+        pool.getConnection().doOnSuccess(conn -> {
             Tuple parameters = Tuple.of(messageUser.getName(), messageUser.getPassword());
-            SqlConnection conn = c.result();
 
             String sql = getDeleteUser();
             if (DbConfiguration.isUsingMariadb()) {
@@ -481,7 +472,7 @@ public abstract class DbDefinitionBase {
                     err.printStackTrace();
                 }
             });
-        });
+        }).subscribe();
         return promise.future();
     }
 
@@ -495,48 +486,42 @@ public abstract class DbDefinitionBase {
         Object postDate = DbConfiguration.isUsingPostgres() ? time : current;
         Tuple parameters = Tuple.of(message, messageUser.getName(), postDate);
 
-        pool.getConnection(ar -> {
-            if (ar.succeeded()) {
-                SqlConnection conn = ar.result();
-
-                String sql = getAddMessage();
-                if (DbConfiguration.isUsingIbmDB2()) {
-                    sql = String.format("%s%s%s", "SELECT id FROM FINAL TABLE (", getAddMessage(), ")");
-                } else if (DbConfiguration.isUsingMariadb()) {
-                    sql = getMariaAddMessage();
-                }
-
-                conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {
-                    Long id = 0L;
-                    for (Row row : rows) {
-                        id = row.getLong(0);
-                    }
-                    if (DbConfiguration.isUsingMariadb()) {
-                        id = rows.property(MySQLClient.LAST_INSERTED_ID);
-                    } else if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingCubrid()) {
-                        id = rows.property(JDBCPool.GENERATED_KEYS).getLong(0);
-                    }
-                    conn.close();
-                    promise.complete(id);
-                }).doOnError(err -> {
-                    logger.error(String.format("%sError adding messaage: %s%s", ColorUtilConstants.RED, err,
-                            ColorUtilConstants.RESET));
-                    ws.writeTextMessage(err.toString());
-                    conn.close();
-                }).subscribe(rows -> {
-                    //
-                }, err -> {
-                    if (err != null && err.getMessage() != null) {
-                        err.printStackTrace();
-                    }
-                });
-            } 
-            
-            if(ar.failed()) {
-                logger.error(String.format("%sError Adding Message: - %s%s", ColorUtilConstants.RED,
-                        ar.cause().getMessage(), ColorUtilConstants.RESET));
+        pool.rxGetConnection().doOnSuccess(conn -> {
+            String sql = getAddMessage();
+            if (DbConfiguration.isUsingIbmDB2()) {
+                sql = String.format("%s%s%s", "SELECT id FROM FINAL TABLE (", getAddMessage(), ")");
+            } else if (DbConfiguration.isUsingMariadb()) {
+                sql = getMariaAddMessage();
             }
-        });
+
+            conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {
+                Long id = 0L;
+                for (Row row : rows) {
+                    id = row.getLong(0);
+                }
+                if (DbConfiguration.isUsingMariadb()) {
+                    id = rows.property(MySQLClient.LAST_INSERTED_ID);
+                } else if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingCubrid()) {
+                    id = rows.property(JDBCPool.GENERATED_KEYS).getLong(0);
+                }
+                conn.close();
+                promise.complete(id);
+            }).doOnError(err -> {
+                logger.error(String.format("%sError adding messaage: %s%s", ColorUtilConstants.RED, err,
+                        ColorUtilConstants.RESET));
+                ws.writeTextMessage(err.toString());
+                conn.close();
+            }).subscribe(rows -> {
+                //
+            }, err -> {
+                if (err != null && err.getMessage() != null) {
+                    err.printStackTrace();
+                }
+            });
+        }).doOnError(err -> {
+            logger.error(String.format("%sError Adding Message: - %s%s", ColorUtilConstants.RED,
+                    err.getCause().getMessage(), ColorUtilConstants.RESET));
+        }).subscribe();
 
         return promise.future();
     }
@@ -545,20 +530,16 @@ public abstract class DbDefinitionBase {
         Promise<Void> promise = Promise.promise();
 
         Tuple parameters = Tuple.of(userId, messageId);
-        pool.getConnection(c -> {
-            SqlConnection conn = c.result();
-
-            conn.preparedQuery(getAddUndelivered()).execute(parameters, ar -> {
-                if (ar.succeeded()) {
-                    conn.close();
-                    promise.complete();
-                } else {
-                    logger.error(String.format("%sAdd Undelivered Error: %s%s", ColorUtilConstants.RED,
-                            ar.cause().getMessage(), ColorUtilConstants.RESET));
-                    conn.close();
-                }
-            });
-        });
+        pool.rxGetConnection().doOnSuccess(conn -> {
+            conn.preparedQuery(getAddUndelivered()).rxExecute(parameters).doOnSuccess(rows -> {
+                conn.close();
+                promise.complete();
+            }).doOnError(err -> {
+                logger.error(String.format("%sAdd Undelivered Error: %s%s", ColorUtilConstants.RED,
+                        err.getCause().getMessage(), ColorUtilConstants.RESET));
+                conn.close();
+            }).subscribe();
+        }).subscribe();
 
         return promise.future();
     }
@@ -588,25 +569,20 @@ public abstract class DbDefinitionBase {
     public Future<Long> getUserIdByName(String name) throws InterruptedException {
         Promise<Long> promise = Promise.promise();
 
-        pool.getConnection(c -> {
-            SqlConnection conn = c.result();
-        
-            conn.preparedQuery(getUserByName()).execute(Tuple.of(name), ar -> {
-                if (ar.succeeded()) {
-                    RowSet<Row> rows = ar.result();
-                    Long id = 0L;
-                    for (Row row : rows) {
-                        id = row.getLong(0);
-                    }
-                    conn.close();
-                    promise.complete(id);
-                } else {
-                    logger.error(String.format("%sError finding user by name: %s - %s%s", ColorUtilConstants.RED,
-                            name, ar.cause().getMessage(), ColorUtilConstants.RESET));
-                    conn.close();
+        pool.rxGetConnection().doOnSuccess(conn -> {
+            conn.preparedQuery(getUserByName()).rxExecute(Tuple.of(name)).doOnSuccess(rows -> {
+                Long id = 0L;
+                for (Row row : rows) {
+                    id = row.getLong(0);
                 }
-            });
-        });
+                conn.close();
+                promise.complete(id);
+            }).doOnError(err -> {
+                logger.error(String.format("%sError finding user by name: %s - %s%s", ColorUtilConstants.RED,
+                        name, err.getCause().getMessage(), ColorUtilConstants.RESET));
+                conn.close();
+            }).subscribe();
+        }).subscribe();
         return promise.future();
     }
 
@@ -619,94 +595,83 @@ public abstract class DbDefinitionBase {
 
         Tuple parameters = Tuple.of(messageUser.getName(), messageUser.getPassword());
 
-        pool.getConnection(c -> {
-            SqlConnection conn = c.result();
+        pool.rxGetConnection().doOnSuccess(conn -> {
+            conn.preparedQuery(getUserById()).rxExecute(parameters).doOnSuccess(rows -> {
+                Future<Integer> future1 = null;
 
-            
-            conn.preparedQuery(getUserById()).execute(parameters, ar -> {
-                if (ar.succeeded()) {
-                    Future<Integer> future1 = null;
-                    RowSet<Row> rows = ar.result();
+                if (rows.size() == 0) {
+                    try {
+                        Future<MessageUser> future2 = addUser(ws, messageUser);
 
-                    if (rows.size() == 0) {
-                        try {
-                            Future<MessageUser> future2 = addUser(ws, messageUser);
-
-                            future2.onComplete(handler -> {
-                                MessageUser result = future2.result();
-                                resultUser.setId(result.getId());
-                                resultUser.setName(result.getName());
-                                resultUser.setPassword(result.getPassword());
-                                resultUser.setIp(result.getIp());
-                                resultUser.setLastLogin(result.getLastLogin() == null ? new Date().getTime()
-                                        : result.getLastLogin());
-                                promise.complete(resultUser);
-                            });
-                        } catch (InterruptedException | SQLException e) {
-                            e.printStackTrace();
-                        } catch (Exception ex) {
-                            ex.getCause().getMessage();
-                        }
-                    } else {
-                        for (Row row : rows) {
-                            resultUser.setId(row.getLong(0));
-                            resultUser.setName(row.getString(1));
-                            resultUser.setPassword(row.getString(2));
-                            resultUser.setIp(row.getString(3));
-                            resultUser.setLastLogin(row.getValue(4));
-                        }
-                    }
-
-                    if (rows.size() > 0) {
-                        try {
-                            conn.close();
-                            future1 = updateUser(ws, resultUser);
+                        future2.onComplete(handler -> {
+                            MessageUser result = future2.result();
+                            resultUser.setId(result.getId());
+                            resultUser.setName(result.getName());
+                            resultUser.setPassword(result.getPassword());
+                            resultUser.setIp(result.getIp());
+                            resultUser.setLastLogin(result.getLastLogin() == null ? new Date().getTime()
+                                    : result.getLastLogin());
                             promise.complete(resultUser);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    }
-
-                    if (rows.size() > 0) {
-                        future1.onComplete(v -> {
-                            // logger.info(String.format("%sLogin Time Changed: %s%s",
-                            // ColorUtilConstants.BLUE,
-                            // resultUser.getName(), ColorUtilConstants.RESET));
                         });
+                    } catch (InterruptedException | SQLException e) {
+                        e.printStackTrace();
+                    } catch (Exception ex) {
+                        ex.getCause().getMessage();
                     }
                 } else {
-                    logger.error(String.format("%sError selecting user: %s%s", ColorUtilConstants.RED,
-                            ar.cause().getMessage(), ColorUtilConstants.RESET));
-                    conn.close();
+                    for (Row row : rows) {
+                        resultUser.setId(row.getLong(0));
+                        resultUser.setName(row.getString(1));
+                        resultUser.setPassword(row.getString(2));
+                        resultUser.setIp(row.getString(3));
+                        resultUser.setLastLogin(row.getValue(4));
+                    }
                 }
-            });
-        });
+
+                if (rows.size() > 0) {
+                    try {
+                        conn.close();
+                        future1 = updateUser(ws, resultUser);
+                        promise.complete(resultUser);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+
+                if (rows.size() > 0) {
+                    future1.onComplete(v -> {
+                        // logger.info(String.format("%sLogin Time Changed: %s%s",
+                        // ColorUtilConstants.BLUE,
+                        // resultUser.getName(), ColorUtilConstants.RESET));
+                    });
+                }
+            }).doOnError(err -> {
+                logger.error(String.format("%sError selecting user: %s%s", ColorUtilConstants.RED,
+                        err.getCause().getMessage(), ColorUtilConstants.RESET));
+                conn.close();
+            }).subscribe();
+        }).subscribe();
         return promise.future();
     }
 
     public Future<StringBuilder> buildUsersJson(MessageUser messageUser) throws InterruptedException, SQLException {
         Promise<StringBuilder> promise = Promise.promise();
 
-        pool.getConnection(c -> {
-            SqlConnection conn = c.result();
+        pool.rxGetConnection().doOnSuccess(conn -> {
+            conn.preparedQuery(getAllUsers()).rxExecute(Tuple.of(messageUser.getName())).doOnSuccess(rows -> {
+                JsonArray ja = new JsonArray();
 
-            conn.preparedQuery(getAllUsers()).execute(Tuple.of(messageUser.getName()), ar -> {
-                if (ar.succeeded()) {
-                    RowSet<Row> rows = ar.result();
-                    JsonArray ja = new JsonArray();
-
-                    for (Row row : rows) {
-                        ja.add(new JsonObject().put("name", row.getString(1)));
-                    }
-                    conn.close();
-                    promise.complete(new StringBuilder(ja.toString()));
-                } else {
-                    logger.error(String.format("%sError build user json: %s%s", ColorUtilConstants.RED,
-                            ar.cause().getMessage(), ColorUtilConstants.RESET));
-                    conn.close();
+                for (Row row : rows) {
+                    ja.add(new JsonObject().put("name", row.getString(1)));
                 }
-            });
-        });
+                conn.close();
+                promise.complete(new StringBuilder(ja.toString()));
+            }).doOnError(err -> {
+                logger.error(String.format("%sError build user json: %s%s", ColorUtilConstants.RED,
+                        err.getCause().getMessage(), ColorUtilConstants.RESET));
+                conn.close();
+            }).subscribe();
+        }).subscribe();
 
         return promise.future();
     }
@@ -718,53 +683,49 @@ public abstract class DbDefinitionBase {
         CompletePromise completePromise = new CompletePromise();
 
         removeUndelivered.setUserId(messageUser.getId());
-
         /*
          * Get all undelivered messages for current user
          */
         Future<Void> future = Future.future(promise -> {
             completePromise.setPromise(promise);
-            
+
             Tuple parameters = Tuple.of(messageUser.getId());
 
             pool.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
-                tx -> conn.preparedQuery(getUserUndelivered()).rxExecute(parameters).doOnSuccess(rows -> {
-                    for (Row row : rows) {
-                        DateFormat formatDate = DateFormat.getDateInstance(DateFormat.DEFAULT,
-                                Locale.getDefault());
+                    tx -> conn.preparedQuery(getUserUndelivered()).rxExecute(parameters).doOnSuccess(rows -> {
+                        for (Row row : rows) {
+                            DateFormat formatDate = DateFormat.getDateInstance(DateFormat.DEFAULT,
+                                    Locale.getDefault());
 
-                        String message = row.getString(2);
-                        String handle = row.getString(4);
-                        messageUser.setLastLogin(row.getValue(3));
+                            String message = row.getString(2);
+                            String handle = row.getString(4);
+                            messageUser.setLastLogin(row.getValue(3));
 
-                        // Send messages back to client
-                        ws.writeTextMessage(
-                                handle + formatDate.format(messageUser.getLastLogin()) + " " + message);
-                        removeUndelivered.getMessageIds().add(row.getLong(1));
-                        removeMessage.getMessageIds().add(row.getLong(1));
-                    }
-                }).doOnError(err -> {
-                    logger.info(String.format("%sRetriveing Messages Error: %s%s", ColorUtilConstants.RED,
-                            err.getMessage(), ColorUtilConstants.RESET));
-                    err.printStackTrace();
-                }).flatMapCompletable(
-                        res -> tx.rxCommit().doFinally(completePromise).doOnSubscribe(onSubscribe -> {
-                            tx.completion(x -> {
-                                if (x.failed()) {
+                            // Send messages back to client
+                            ws.writeTextMessage(
+                                    handle + formatDate.format(messageUser.getLastLogin()) + " " + message);
+                            removeUndelivered.getMessageIds().add(row.getLong(1));
+                            removeMessage.getMessageIds().add(row.getLong(1));
+                        }
+                    }).doOnError(err -> {
+                        logger.info(String.format("%sRetriveing Messages Error: %s%s", ColorUtilConstants.RED,
+                                err.getMessage(), ColorUtilConstants.RESET));
+                        err.printStackTrace();
+                    }).flatMapCompletable(
+                            res -> tx.rxCommit().doFinally(completePromise).doOnSubscribe(onSubscribe -> {
+                                tx.rxCompletion().doOnError(err -> {
                                     tx.rollback();
                                     logger.error(
-                                        String.format("%sMessages Transaction Error: %s%s",
-                                            ColorUtilConstants.RED, x.cause(), ColorUtilConstants.RESET));
-                                }
-                                // conn.close();
-                            });
-                        })))
-                .doOnError(err -> {
-                    logger.info(String.format("%sDatabase for Messages Error: %s%s", ColorUtilConstants.RED,
-                            err.getMessage(), ColorUtilConstants.RESET));
-                    err.printStackTrace();
-                    conn.close();
-                })).subscribe();
+                                            String.format("%sMessages Transaction Error: %s%s",
+                                                    ColorUtilConstants.RED, err.getCause(), ColorUtilConstants.RESET));
+                                });
+                            })))
+                    .doOnError(err -> {
+                        logger.info(String.format("%sDatabase for Messages Error: %s%s", ColorUtilConstants.RED,
+                                err.getMessage(), ColorUtilConstants.RESET));
+                        err.printStackTrace();
+                        conn.close();
+                    })).subscribe();
         });
 
         future.compose(v -> {
@@ -827,19 +788,13 @@ public abstract class DbDefinitionBase {
 
             for (Long messageId : messageIds) {
                 Tuple parameters = Tuple.of(userId, messageId);
-                pool.getConnection(c -> {
-                    SqlConnection conn = c.result();
-
-                    conn.preparedQuery(getRemoveUndelivered()).execute(parameters, ar -> {
-                        if (ar.succeeded()) {
-                            RowSet<Row> rows = ar.result();
-                            for (Row row : rows) {
-                                System.out.println(row.toJson().toString());
-                            }
-                            count += rows.rowCount() == 0 ? 1 : rows.rowCount();
-                        } else {
-                            logger.error("Deleting Undelivered: " + ar.cause().getMessage());
+                pool.rxGetConnection().doOnSuccess(conn -> {
+                    conn.preparedQuery(getRemoveUndelivered()).rxExecute(parameters).doOnSuccess(rows -> {
+                        for (Row row : rows) {
+                            System.out.println(row.toJson().toString());
                         }
+                        count += rows.rowCount() == 0 ? 1 : rows.rowCount();
+
                         if (messageIds.size() == count) {
                             try {
                                 conn.close();
@@ -850,8 +805,10 @@ public abstract class DbDefinitionBase {
                             counts.put("messages", count);
                             promise2.complete(counts);
                         }
-                    });
-                });
+                    }).doOnError(err -> {
+                        logger.error("Deleting Undelivered: " + err.getCause().getMessage());
+                    }).subscribe();
+                }).subscribe();
             }
         }
 
@@ -915,7 +872,7 @@ public abstract class DbDefinitionBase {
                     }
                 }
 
-                pool.getConnection(c -> {
+                pool.rxGetConnection().doOnSuccess(conn -> {
                     Tuple parameters = Tuple.of(messageId, messageId);
                     String sql = null;
                     if (DbConfiguration.isUsingIbmDB2() || DbConfiguration.isUsingMariadb()
@@ -925,7 +882,6 @@ public abstract class DbDefinitionBase {
                         parameters = Tuple.of(messageId);
                         sql = getRemoveMessage();
                     }
-                    SqlConnection conn = c.result();
 
                     conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {
                         count += rows.rowCount() == 0 ? 1 : rows.rowCount();
@@ -936,10 +892,11 @@ public abstract class DbDefinitionBase {
                     }).doOnError(err -> {
                         logger.error(String.format("%sDeleting Message2: %s%s", ColorUtilConstants.RED, err,
                                 ColorUtilConstants.RESET));
-                    }).doFinally(completePromise).subscribe(rows -> {
-                    }, err -> {
-                        err.printStackTrace();
-                    });
+                    }).doFinally(completePromise)
+                            .subscribe(rows -> {
+                            }, err -> {
+                                err.printStackTrace();
+                            });
                 });
             }
         }

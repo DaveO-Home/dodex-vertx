@@ -6,12 +6,9 @@ import java.net.URLDecoder;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
-
-import com.google.cloud.firestore.Firestore;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import com.google.cloud.firestore.Firestore;
 import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaUtil;
@@ -20,17 +17,17 @@ import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.http.HttpServer;
-import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.web.Route;
-import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.ext.web.Session;
-import io.vertx.reactivex.ext.web.handler.BodyHandler;
-import io.vertx.reactivex.ext.web.handler.CorsHandler;
-import io.vertx.reactivex.ext.web.handler.SessionHandler;
-import io.vertx.reactivex.ext.web.sstore.LocalSessionStore;
-import io.vertx.reactivex.ext.web.sstore.SessionStore;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.http.HttpServer;
+import io.vertx.rxjava3.core.http.HttpServerResponse;
+import io.vertx.rxjava3.ext.web.Route;
+import io.vertx.rxjava3.ext.web.Router;
+import io.vertx.rxjava3.ext.web.Session;
+import io.vertx.rxjava3.ext.web.handler.BodyHandler;
+import io.vertx.rxjava3.ext.web.handler.CorsHandler;
+import io.vertx.rxjava3.ext.web.handler.SessionHandler;
+import io.vertx.rxjava3.ext.web.sstore.LocalSessionStore;
+import io.vertx.rxjava3.ext.web.sstore.SessionStore;
 
 public class SpaRoutes {
     private static final Logger logger = LoggerFactory.getLogger(SpaRoutes.class.getName());
@@ -81,7 +78,8 @@ public class SpaRoutes {
                     HttpServerResponse response = routingContext.response();
                     response.putHeader("content-type", "application/json");
 
-                    final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
+                    final Optional<String> queryData =
+                            Optional.ofNullable(routingContext.request().query());
 
                     if (queryData.isPresent()) {
                         try {
@@ -97,22 +95,25 @@ public class SpaRoutes {
                             });
 
                             future.onFailure(failed -> {
-                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Add Login Failed: ",
-                                        failed.getMessage(), ColorUtilConstants.RESET));
+                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                        "Add Login Failed: ", failed.getMessage(),
+                                        ColorUtilConstants.RESET));
                                 response.end(FAILURE);
                             });
 
-                        } catch (UnsupportedEncodingException | InterruptedException | SQLException e) {
+                        } catch (UnsupportedEncodingException | InterruptedException
+                                | SQLException e) {
                             logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                    "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+                                    "Context Configuration failed...: ", e.getMessage(),
+                                    ColorUtilConstants.RESET));
 
                         } catch (Exception exception) {
                             exception.printStackTrace();
                         }
                     }
                 }).onFailure(err -> {
-                    logger.error(String.format("%sError Setting up Database: %s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
-                            err, ColorUtilConstants.RESET));
+                    logger.error(String.format("%sError Setting up Database: %s%s",
+                            ColorUtilConstants.RED_BOLD_BRIGHT, err, ColorUtilConstants.RESET));
                     err.printStackTrace();
                 });
 
@@ -149,16 +150,19 @@ public class SpaRoutes {
                     HttpServerResponse response = routingContext.response();
                     response.putHeader("content-type", "application/json");
 
-                    final Optional<String> bodyData = Optional.ofNullable(routingContext.getBodyAsString());
+                    final Optional<String> bodyData =
+                            Optional.ofNullable(routingContext.body().asString()); //getBodyAsString());
 
                     if (bodyData.isPresent()) {
                         try {
                             SpaLogin spaLogin = SpaUtil.createSpaLogin();
-                            spaLogin = SpaUtil.parseBody(URLDecoder.decode(routingContext.getBodyAsString(), "UTF-8"),
+                            spaLogin = SpaUtil.parseBody(
+                                    URLDecoder.decode(routingContext.body().asString(), "UTF-8"),
                                     spaLogin);
 
                             JsonObject jsonObject = new JsonObject(spaLogin.getMap());
-                            Future<SpaLogin> futureLogin = spaApplication.getLogin(jsonObject.encode());
+                            Future<SpaLogin> futureLogin =
+                                    spaApplication.getLogin(jsonObject.encode());
 
                             futureLogin.onSuccess(result -> {
                                 if ("0".equals(result.getStatus())) {
@@ -167,8 +171,10 @@ public class SpaRoutes {
                                 } else {
                                     Future<SpaLogin> future = null;
                                     try {
-                                        future = new SpaApplication().addLogin(routingContext.getBodyAsString());
-                                    } catch (InterruptedException | SQLException | IOException | ExecutionException e) {
+                                        future = new SpaApplication()
+                                                .addLogin(routingContext.body().asString());
+                                    } catch (InterruptedException | SQLException | IOException
+                                            | ExecutionException e) {
                                         e.printStackTrace();
                                     }
 
@@ -178,7 +184,8 @@ public class SpaRoutes {
                                     });
 
                                     future.onFailure(failed -> {
-                                        logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                        logger.error(String.join("",
+                                                ColorUtilConstants.RED_BOLD_BRIGHT,
                                                 "Add Login failed...: ", failed.getMessage(),
                                                 ColorUtilConstants.RESET));
                                         response.end(FAILURE);
@@ -189,13 +196,15 @@ public class SpaRoutes {
 
                             futureLogin.onFailure(failed -> {
                                 logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                        "Add Login failed...: ", failed.getMessage(), ColorUtilConstants.RESET));
+                                        "Add Login failed...: ", failed.getMessage(),
+                                        ColorUtilConstants.RESET));
                                 response.end(FAILURE);
                             });
 
                         } catch (InterruptedException | SQLException e) {
                             logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                    "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+                                    "Context Configuration failed...: ", e.getMessage(),
+                                    ColorUtilConstants.RESET));
 
                         } catch (Exception exception) {
                             exception.printStackTrace();
@@ -230,13 +239,15 @@ public class SpaRoutes {
             HttpServerResponse response = routingContext.response();
             response.putHeader("content-type", "application/json");
 
-            final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
+            final Optional<String> queryData =
+                    Optional.ofNullable(routingContext.request().query());
             if (queryData.isPresent()) {
                 try {
                     data = String.join("", "{\"status\":\"", status, "\"}");
                 } catch (Exception e) {
                     logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                            "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+                            "Context Configuration failed...: ", e.getMessage(),
+                            ColorUtilConstants.RESET));
                 }
             }
 
@@ -249,7 +260,8 @@ public class SpaRoutes {
 
     public void setUnregisterLoginRoute() {
         SessionHandler sessionHandler = SessionHandler.create(sessionStore);
-        Route route = router.route(HttpMethod.DELETE, "/userlogin/unregister").handler(sessionHandler);
+        Route route =
+                router.route(HttpMethod.DELETE, "/userlogin/unregister").handler(sessionHandler);
 
         if ("dev".equals(DodexUtil.getEnv())) {
             route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.DELETE));
@@ -257,7 +269,6 @@ public class SpaRoutes {
 
         route.handler(routingContext -> {
             try {
-
                 SpaApplication spaApplication = new SpaApplication();
 
                 spaApplication.setVertx(vertx);
@@ -272,8 +283,9 @@ public class SpaRoutes {
 
                     HttpServerResponse response = routingContext.response();
                     response.putHeader("content-type", "application/json");
-                    
-                    final Optional<String> queryData = Optional.ofNullable(routingContext.request().query());
+
+                    final Optional<String> queryData =
+                            Optional.ofNullable(routingContext.request().query());
                     if (queryData.isPresent()) {
                         try {
 
@@ -286,14 +298,16 @@ public class SpaRoutes {
                             });
 
                             future.onFailure(failed -> {
-                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, "Unregister Login failed...: ",
-                                        failed.getMessage(), ColorUtilConstants.RESET));
+                                logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
+                                        "Unregister Login failed...: ", failed.getMessage(),
+                                        ColorUtilConstants.RESET));
                                 response.end(FAILURE);
                             });
 
                         } catch (Exception e) {
                             logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
-                                    "Context Configuration failed...: ", e.getMessage(), ColorUtilConstants.RESET));
+                                    "Context Configuration failed...: ", e.getMessage(),
+                                    ColorUtilConstants.RESET));
                             e.printStackTrace();
                         }
                     }

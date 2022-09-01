@@ -1,5 +1,6 @@
 package dmo.fs.vertx;
 
+import static org.junit.Assert.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,10 +15,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.rules.Timeout;
 
 import dmo.fs.router.Routes;
-import io.vertx.reactivex.core.Vertx;
+import io.vertx.rxjava3.core.Vertx;
 import io.vertx.junit5.VertxExtension;
 import io.vertx.junit5.VertxTestContext;
-import io.vertx.reactivex.ext.web.Route;
+import io.vertx.rxjava3.ext.web.Route;
 
 @Disabled("Disabled until VertxExtension works with reactivex")
 @ExtendWith(VertxExtension.class)
@@ -29,9 +30,9 @@ public class TestMainVerticle {
 
   @BeforeEach
   void deployVerticle(Vertx vertx, VertxTestContext testContext) {
-    vertx.deployVerticle(server, testContext.succeeding(id -> {
-      testContext.completeNow();
-    }));
+    vertx.deployVerticle(server).doOnSuccess(val -> {
+      assertNotNull(val);
+    });
   }
 
   @Test

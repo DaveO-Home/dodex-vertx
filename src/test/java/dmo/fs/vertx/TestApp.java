@@ -30,14 +30,14 @@ import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.DodexDatabaseSqlite3;
 import dmo.fs.db.MessageUser;
 import dmo.fs.utils.DodexUtil;
-import io.reactivex.Single;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.sqlclient.Pool;
-import io.vertx.reactivex.sqlclient.Row;
-import io.vertx.reactivex.sqlclient.SqlConnection;
-import io.vertx.reactivex.sqlclient.Tuple;
+import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.sqlclient.Pool;
+import io.vertx.rxjava3.sqlclient.Row;
+import io.vertx.rxjava3.sqlclient.SqlConnection;
+import io.vertx.rxjava3.sqlclient.Tuple;
 
 class AppTest {
     Logger logger = LoggerFactory.getLogger(AppTest.class.getName());
@@ -161,7 +161,9 @@ class DbTest /* extends DbDefinitionBase */ {
     @Test
     void databaseSetup() {
         assertNotEquals(dodexDatabase, null, "dodexDatabase should be created");
-        assertEquals(pool.rxGetConnection().test().assertNoErrors().errorCount(), 0, "database pool should exist");
+        pool.rxGetConnection().doOnSuccess(value -> {
+            assertNotNull(value, "database pool should exist");
+        });
     }
 
     @Test

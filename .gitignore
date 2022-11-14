@@ -27,6 +27,5 @@ node_modules
 *.log
 *.db
 bin/main
-logs/*
 cp*.sh
 scripts/*.java

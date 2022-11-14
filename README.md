@@ -160,7 +160,7 @@ Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
 
 ### Kotlin, gRPC Web Application
 
-    This web application can be used to maintain golfer played courses and scores and to calculate a handicap index. The application has many moving parts from the `envoy` proxy server to `kotlin`, `protobuf`, `gRPC`, `jooq`, `bootstrap`, `webpack`, `esbuild`, `gradle`, `java` and `javascript`.
+* This web application can be used to maintain golfer played courses and scores and to calculate a handicap index. The application has many moving parts from the `envoy` proxy server to `kotlin`, `protobuf`, `gRPC`, `jooq`, `bootstrap`, `webpack`, `esbuild`, `gradle`, `java` and `javascript`.
 
     See documentation at; <https://github.com/DaveO-Home/dodex-vertx/blob/master/handicap/README.md>
 

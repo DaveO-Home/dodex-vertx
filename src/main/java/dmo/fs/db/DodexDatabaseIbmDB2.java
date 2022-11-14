@@ -19,182 +19,163 @@ import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
 
 public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
-    private final static Logger logger =
-            LoggerFactory.getLogger(DodexDatabaseIbmDB2.class.getName());
-    protected Disposable disposable;
-    protected Properties dbProperties = new Properties();
-    protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
-    protected Map<String, String> dbMap = new ConcurrentHashMap<>();
-    protected JsonNode defaultNode;
-    protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
-    protected DodexUtil dodexUtil = new DodexUtil();
-    protected DB2Pool pool4;
+  private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseIbmDB2.class.getName());
+  protected Disposable disposable;
+  protected Properties dbProperties = new Properties();
+  protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
+  protected Map<String, String> dbMap = new ConcurrentHashMap<>();
+  protected JsonNode defaultNode;
+  protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
+  protected DodexUtil dodexUtil = new DodexUtil();
+  protected DB2Pool pool4;
 
-    public DodexDatabaseIbmDB2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
-            throws InterruptedException, IOException, SQLException {
-        super();
+  public DodexDatabaseIbmDB2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+      throws InterruptedException, IOException, SQLException {
+    super();
 
-        defaultNode = dodexUtil.getDefaultNode();
+    defaultNode = dodexUtil.getDefaultNode();
 
-        webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
+    webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
-        dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
-        dbProperties = dodexUtil.mapToProperties(dbMap);
+    dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
+    dbProperties = dodexUtil.mapToProperties(dbMap);
 
-        if (dbOverrideProps != null) {
-            this.dbProperties = dbOverrideProps;
-        }
-        if (dbOverrideMap != null) {
-            this.dbOverrideMap = dbOverrideMap;
-        }
-
-        DbConfiguration.mapMerge(dbMap, dbOverrideMap);
-        databaseSetup();
+    if (dbOverrideProps != null) {
+      this.dbProperties = dbOverrideProps;
+    }
+    if (dbOverrideMap != null) {
+      this.dbOverrideMap = dbOverrideMap;
     }
 
-    public DodexDatabaseIbmDB2() throws InterruptedException, IOException, SQLException {
-        super();
+    DbConfiguration.mapMerge(dbMap, dbOverrideMap);
+    databaseSetup();
+  }
 
-        defaultNode = dodexUtil.getDefaultNode();
-        webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
+  public DodexDatabaseIbmDB2() throws InterruptedException, IOException, SQLException {
+    super();
 
-        dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
-        dbProperties = dodexUtil.mapToProperties(dbMap);
+    defaultNode = dodexUtil.getDefaultNode();
+    webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
-        databaseSetup();
-    }
+    dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
+    dbProperties = dodexUtil.mapToProperties(dbMap);
 
-    private void databaseSetup() throws InterruptedException, SQLException {
-        // Override default credentials
-        // dbProperties.setProperty("user", "myUser");
-        // dbProperties.setProperty("password", "myPassword");
-        // dbProperties.setProperty("ssl", "false");
+    databaseSetup();
+  }
 
-        PoolOptions poolOptions =
-                new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
+  private void databaseSetup() throws InterruptedException, SQLException {
+    // Override default credentials
+    // dbProperties.setProperty("user", "myUser");
+    // dbProperties.setProperty("password", "myPassword");
+    // dbProperties.setProperty("ssl", "false");
 
-        DB2ConnectOptions connectOptions;
+    PoolOptions poolOptions =
+        new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
-        connectOptions = new DB2ConnectOptions().setHost(dbMap.get("host2"))
-                .setPort(Integer.valueOf(dbMap.get("port")))
-                .setUser(dbProperties.getProperty("user").toString())
-                .setPassword(dbProperties.getProperty("password").toString())
-                .setDatabase(dbMap.get("database"))
-                .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
-        //        .setIdleTimeout(1) // You might need this to release connections 
-        // "db2 force applications all"
-        //        .setCachePreparedStatements(true)
-        ;
+    DB2ConnectOptions connectOptions;
 
-        pool4 = DB2Pool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    connectOptions = new DB2ConnectOptions().setHost(dbMap.get("host2"))
+        .setPort(Integer.valueOf(dbMap.get("port")))
+        .setUser(dbProperties.getProperty("user").toString())
+        .setPassword(dbProperties.getProperty("password").toString())
+        .setDatabase(dbMap.get("database")).setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
+    // .setIdleTimeout(1) // You might need this to release connections
+    // "db2 force applications all"
+    // .setCachePreparedStatements(true)
+    ;
 
-        Completable completable =
-                pool4.rxGetConnection()
-                        .flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(tx -> conn
-                                .query(CHECKUSERSQL.replace("DB2INST1", dbMap.get("tabschema")))
-                                .rxExecute().doOnSuccess(rows -> {
-                                    if (rows.size() == 0) {
-                                        final String usersSql = getCreateTable("USERS");
+    pool4 = DB2Pool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
 
-                                        Single<RowSet<Row>> crow =
-                                                conn.query(usersSql).rxExecute().doOnError(err -> {
-                                                    logger.info(
-                                                            String.format("Users Table Error: %s",
-                                                                    err.getMessage()));
-                                                }).doOnSuccess(result -> {
-                                                    logger.info("Users Table Added.");
-                                                });
+    Completable completable = pool4.rxGetConnection()
+        .flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
+            tx -> conn.query(CHECKUSERSQL.replace("DB2INST1", dbMap.get("tabschema"))).rxExecute()
+                .doOnSuccess(rows -> {
+                  if (rows.size() == 0) {
+                    final String usersSql = getCreateTable("USERS");
 
-                                        crow.subscribe(result -> {
-                                            //
-                                        }, err -> {
-                                            logger.info(String.format("Users Table Error: %s",
-                                                    err.getMessage()));
-                                        });
-                                    }
-                                }).doOnError(err -> {
-                                    logger.info(String.format("Users Table Error: %s",
-                                            err.getMessage()));
+                    Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute().doOnError(err -> {
+                      logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                    }).doOnSuccess(result -> {
+                      logger.info("Users Table Added.");
+                    });
 
-                                })
-                                .flatMap(result -> conn
-                                        .query(CHECKMESSAGESQL.replace("DB2INST1",
-                                                dbMap.get("tabschema")))
-                                        .rxExecute().doOnSuccess(rows -> {
-                                            if (rows.size() == 0) {
-                                                final String sql = getCreateTable("MESSAGES");
+                    crow.subscribe(result -> {
+                      //
+                    }, err -> {
+                      logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                    });
+                  }
+                }).doOnError(err -> {
+                  logger.info(String.format("Users Table Error: %s", err.getMessage()));
 
-                                                Single<RowSet<Row>> crow = conn.query(sql)
-                                                        .rxExecute().doOnError(err -> {
-                                                            logger.info(String.format(
-                                                                    "Messages Table Error: %s",
-                                                                    err.getMessage()));
-                                                        }).doOnSuccess(row2 -> {
-                                                            logger.info("Messages Table Added.");
-                                                        });
+                })
+                .flatMap(result -> conn
+                    .query(CHECKMESSAGESQL.replace("DB2INST1", dbMap.get("tabschema"))).rxExecute()
+                    .doOnSuccess(rows -> {
+                      if (rows.size() == 0) {
+                        final String sql = getCreateTable("MESSAGES");
 
-                                                crow.subscribe(res -> {
-                                                    //
-                                                }, err -> {
-                                                    logger.info(String.format(
-                                                            "Messages Table Error: %s",
-                                                            err.getMessage()));
-                                                });
-                                            }
-                                        }).doOnError(err -> {
-                                            logger.info(String.format("Messages Table Error: %s",
-                                                    err.getMessage()));
+                        Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
+                          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                        }).doOnSuccess(row2 -> {
+                          logger.info("Messages Table Added.");
+                        });
 
-                                        }))
-                                .flatMap(result -> conn
-                                        .query(CHECKUNDELIVEREDSQL.replace("DB2INST1",
-                                                dbMap.get("tabschema")))
-                                        .rxExecute().doOnSuccess(rows -> {
-                                            if (rows.size() == 0) {
-                                                final String sql = getCreateTable("UNDELIVERED");
+                        crow.subscribe(res -> {
+                          //
+                        }, err -> {
+                          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                        });
+                      }
+                    }).doOnError(err -> {
+                      logger.info(String.format("Messages Table Error: %s", err.getMessage()));
 
-                                                Single<RowSet<Row>> crow = conn.query(sql)
-                                                        .rxExecute().doOnError(err -> {
-                                                            logger.info(String.format(
-                                                                    "Undelivered Table Error: %s",
-                                                                    err.getMessage()));
-                                                        }).doOnSuccess(row2 -> {
-                                                            logger.info("Undelivered Table Added.");
-                                                        });
+                    }))
+                .flatMap(result -> conn
+                    .query(CHECKUNDELIVEREDSQL.replace("DB2INST1", dbMap.get("tabschema")))
+                    .rxExecute().doOnSuccess(rows -> {
+                      if (rows.size() == 0) {
+                        final String sql = getCreateTable("UNDELIVERED");
 
-                                                crow.subscribe(result2 -> {
-                                                    //
-                                                }, err -> {
-                                                    logger.info(String.format(
-                                                            "Messages Table Error: %s",
-                                                            err.getMessage()));
-                                                });
-                                            }
-                                        }).doOnError(err -> {
-                                            logger.info(
-                                                    String.format("Messages Table Error: %s", err));
-                                        }))
-                                .flatMapCompletable(res -> tx.rxCommit())));
+                        Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
+                          logger
+                              .info(String.format("Undelivered Table Error: %s", err.getMessage()));
+                        }).doOnSuccess(row2 -> {
+                          logger.info("Undelivered Table Added.");
+                        });
 
-        completable.subscribe(() -> {
-            try {
-                setupSql(pool4);
-            } catch (SQLException e) {
-                e.printStackTrace();
-            }
-        }, err -> {
-            logger.info(String.format("Tables Create Error: %s", err.getMessage()));
-        });
-    }
+                        crow.subscribe(result2 -> {
+                          //
+                        }, err -> {
+                          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                        });
+                        tx.commit();
+                        conn.close();
+                      }
+                    }).doOnError(err -> {
+                      logger.info(String.format("Messages Table Error: %s", err));
+                    }))
+                .flatMapCompletable(res -> Completable.complete())));
 
-    @Override
-    @SuppressWarnings("unchecked")
-    public <T> T getPool4() {
-        return (T) pool4;
-    }
+    completable.subscribe(() -> {
+      try {
+        setupSql(pool4);
+      } catch (SQLException e) {
+        e.printStackTrace();
+      }
+    }, err -> {
+      logger.info(String.format("Tables Create Error: %s", err.getMessage()));
+    });
+  }
 
-    @Override
-    public MessageUser createMessageUser() {
-        return new MessageUserImpl();
-    }
+  @Override
+  @SuppressWarnings("unchecked")
+  public <T> T getPool4() {
+    return (T) pool4;
+  }
+
+  @Override
+  public MessageUser createMessageUser() {
+    return new MessageUserImpl();
+  }
 }

@@ -68,12 +68,12 @@ The basic idea is to build a single page(spa) production application ensuring co
 1. Start the Vertx test server `cd <install>` and execute `gradlew run`.
 2. `cd <install>/src/spa-react/devl`. This is the directory used for building the front-end and testing the application(both front-end and back-end).
 3. Execute `gulp prod` or `npx gulp prod` if you do not have Gulp installed globally. This should run all tests and if successful will produce the production bundle and static content in `src/main/resources/static/dist/react-fusebox`.
-   __Note;__ the javascript linting uses `eslint:recommended` which forces double-quoted strings and semi-colon statement endings etc. This can be changed in `<install>/src/spa-react/devl/.eslintrc.js`.
+   __Note:__ the javascript linting uses `eslint:recommended` which forces double-quoted strings and semi-colon statement endings etc. This can be changed in `<install>/src/spa-react/devl/.eslintrc.js`.
 4. View the application using the production bundle at `localhost:8087/dist/react-fusebox/appl/testapp.html`.
 5. You can run `gulp prd` to bypass the testing.
 6. Executing `gulp prd -l` will produce a local version in `<install>/src/dist/react-fusebox` for viewing with Node without the Java back-end. Execute `node koa` from the `devl` directory and view in a browser at `localhost:3088/dist/react-fusebox/appl/testapp.html`.
 
-    __Note;__ see dodex-vertx for building the production jar.
+    __Note:__ see dodex-vertx for building the production jar.
 
     __Important:__ the test directory `dist_test` is removed from the vertx server during the production build. Execute `gulp rebuild` or `gulp test` to rebuild the test front-end application.
 
@@ -91,7 +91,7 @@ After setting the database to `cassandra`, co-ordination among `Akka`, `Vertx` a
 
 ### Test Tasks
 
-Run these commands from `src/spa-react/devl`. __Note;__ If `gulp` is not installed globally, you and execute `npx gulp`. 
+Run these commands from `src/spa-react/devl`. __Note:__ If `gulp` is not installed globally, you and execute `npx gulp`. 
 
 1. `gulp test`
     * default, run once with headless browser
@@ -224,7 +224,7 @@ SUMMARY:
 
 [Top](#react-integration-testing-with-karma-jasmine-and-vertx)
 
-A test and development scenario for ***Dodex-Vertx***. __Note;__ If `gulp` is not installed globally, you and execute `npx gulp`. 
+A test and development scenario for ***Dodex-Vertx***. __Note:__ If `gulp` is not installed globally, you and execute `npx gulp`. 
 
 1. Open a desktop terminal window
 2. `cd <dodex-vertx install>`, make sure ***Dodex*** is installed `npm install` in src/main/resources/static

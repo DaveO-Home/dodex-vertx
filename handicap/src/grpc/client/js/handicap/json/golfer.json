@@ -1,0 +1,60 @@
+{
+  "nested": {
+    "handicap": {
+      "nested": {
+        "GolferMessage": {
+          "fields": {
+            "pin": {
+              "type": "string",
+              "id": 1
+            },
+            "firstName": {
+              "type": "string",
+              "id": 2
+            },
+            "lastName": {
+              "type": "string",
+              "id": 3
+            },
+            "country": {
+              "type": "string",
+              "id": 4
+            },
+            "state": {
+              "type": "string",
+              "id": 5
+            },
+            "overlap": {
+              "type": "bool",
+              "id": 6
+            },
+            "public": {
+              "type": "bool",
+              "id": 7
+            },
+            "status": {
+              "type": "int32",
+              "id": 8
+            },
+            "lastLogin": {
+              "type": "int64",
+              "id": 9           
+            },
+            "course": {
+              "type": "string",
+              "id": 10
+            },
+            "tee": {
+              "type": "string",
+              "id": 11
+            },
+            "teeDate": {
+              "type": "int64",
+              "id": 12
+            }
+          }
+        }
+      }
+    }
+  }
+}

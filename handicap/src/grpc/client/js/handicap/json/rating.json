@@ -1,0 +1,56 @@
+{
+  "nested": {
+    "handicap": {
+      "nested": {
+        "RatingMessage": {
+          "fields": {
+            "pin": {
+              "type": "string",
+              "id": 1
+            },
+            "courseName": {
+              "type": "string",
+              "id": 2
+            },
+            "tee": {
+              "type": "int32",
+              "id": 3
+            },
+            "country": {
+              "type": "string",
+              "id": 4
+            },
+            "state": {
+              "type": "string",
+              "id": 5
+            },
+            "color": {
+              "type": "string",
+              "id": 6
+            },
+            "rating": {
+              "type": "string",
+              "id": 7
+            },
+            "slope": {
+              "type": "int32",
+              "id": 8            
+            },
+            "par": {
+              "type": "int32",
+              "id": 9
+            },
+            "status": {
+              "type": "int32",
+              "id": 10
+            },
+            "seq": {
+              "type": "int32",
+              "id": 11
+            }
+          }
+        }
+      }
+    }
+  }
+}

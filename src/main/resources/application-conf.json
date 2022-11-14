@@ -15,5 +15,13 @@
   "dodex.events.partitions": 2,
   "dodex.events.topic": "dodex-events",
   "dodex.events.limit": 25,
-  "dodex.events.remove": false
+  "dodex.events.remove": false,
+  "vertx.disableFileCPResolving": true,
+  "vertx.fileResolverCachingEnabled": false,
+  "vertx.disableFileCaching": true,
+  "handicap.enableHandicap": false,
+  "handicap.enableAdmin": false,
+  "handicap.adminPin": "hand!cap",
+  "handicap.port": 8888,
+  "prod.handicap.port": 8889
 }

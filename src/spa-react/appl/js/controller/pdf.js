@@ -1,4 +1,4 @@
-/* Note; this is being handled in  the PdfC component */
+/* Note: this is being handled in  the PdfC component */
 import App from "../app";
 import Base from "../utils/base.control";
 Base.init();

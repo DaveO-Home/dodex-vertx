@@ -20,6 +20,7 @@ import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Promise;
+import io.vertx.core.Verticle;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.BridgeOptions;
@@ -38,11 +39,11 @@ public class Server extends AbstractVerticle {
 
 
   public Server() {
-    Locale.setDefault(new Locale("US"));
+    Locale.setDefault(Locale.forLanguageTag("US"));
   }
 
   public Server(int startupPort) {
-    Locale.setDefault(new Locale("US"));
+    Locale.setDefault(Locale.forLanguageTag("US"));
     this.startupPort = startupPort;
   }
 
@@ -126,7 +127,7 @@ public class Server extends AbstractVerticle {
 
     server.requestHandler(allRoutes.getRouter());
 
-    // Note; development = "prod" in production mode
+    // Note: development = "prod" in production mode
     // Can override port at execution time with env variable "VERTX_PORT"
 
     String overridePort = System.getenv("VERTX_PORT") == null ? development + ".http.port"
@@ -155,6 +156,11 @@ public class Server extends AbstractVerticle {
         } catch (Exception e) {
           logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
               ColorUtilConstants.RESET);
+        }
+
+        if (golf.handicap.vertx.MainVerticle.getEnableHandicap()) {
+          Verticle handicapVerticle = new golf.handicap.vertx.MainVerticle();
+          vertx.deployVerticle(handicapVerticle);
         }
       }).doOnError(err -> {
         logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
@@ -192,7 +198,7 @@ public class Server extends AbstractVerticle {
   }
 
   private void setupEventBridge() {
-    // Note; development has the value of "prod" when in production
+    // Note: development has the value of "prod" when in production
     Integer bridgePort = config.getInteger(development + ".bridge.port");
     EventBus eb = EventBus.create("localhost", bridgePort == null ? 7032 : bridgePort);
     SpaApplication.setEb(eb);

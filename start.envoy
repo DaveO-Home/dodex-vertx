@@ -1,0 +1,3 @@
+#!/usr/bin/bash
+
+envoy --log-path ./logs/logfile.log --enable-fine-grain-logging  -l info -c ./handicap/handicap.yaml

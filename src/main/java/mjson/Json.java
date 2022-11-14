@@ -1428,6 +1428,7 @@ public class Json implements java.io.Serializable, Iterable<Json>
 	 * @deprecated This method is both problematic and rarely if every used and
 	 * it will be removed in 2.0. 
 	 */	
+	@Deprecated
 	public final Json up() { return enclosing; }
 	
 	/**
@@ -2952,7 +2953,7 @@ public class Json implements java.io.Serializable, Iterable<Json>
 	                } 
 	                else 
 	                {
-	                    Object value = escapes.get(new Character(c));
+	                    Object value = escapes.get(Character.valueOf(c)); // new Character(c));
 	                    if (value != null) 
 	                    {
 	                        add(((Character) value).charValue());

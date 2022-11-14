@@ -1,5 +1,15 @@
 # Changelog
 
+## [v2.5.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.5.0) (2022-11-15)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.4.0...v2.5.0)
+
+* Upgraded to vertx 4.3.4 final
+* Upgraded java/javascript dependencies
+* Added a web application using "kotlin", "protobuf", "gRPC", "envoy", "javascript/tools", "jooq" code generation
+* Major modification to "gradle" configuration for new application
+* Upgraded gradle to 7.5, requires Java17 or greater
+
 ## [v2.4.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.4.0) (2022-9-1)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.3.0...v2.4.0)

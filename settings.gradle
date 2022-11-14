@@ -8,3 +8,6 @@
  */
 
 rootProject.name = 'dodex-vertx'
+
+include "handicap"
+includeBuild "./handicap/generate"

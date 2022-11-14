@@ -1,4 +1,4 @@
-// Note; Menulinks was loaded in entry.js
+// Note: Menulinks was loaded in entry.js
 import { HashRouter } from "react-router-dom";
 import { createMemoryHistory } from 'history'
 import { render } from '@testing-library/react'

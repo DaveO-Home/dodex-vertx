@@ -1,0 +1,196 @@
+@import url(../node_modules/bootstrap/dist/css/bootstrap.min.css);
+/* @import "~date-time-picker-component/dist/css/date-time-picker-component.min.css"; */
+
+@media only screen and (min-width : 700px) {
+
+  .container {
+    width: 600px;
+  }
+
+  .w-7-c {
+    width: 700px;
+  }
+
+  /*
+Put in bootstrap scss file
+@include media-breakpoint-up(xl) {
+  .container {
+      max-width: 1440px;
+  }
+}
+*/
+}
+
+.h-40 {
+  height: 40% !important;
+}
+
+.h-rem {
+  height: 1.65rem !important;
+}
+
+.form-control-c {
+  padding: 0.375rem;
+  /*0.75rem;*/
+  font-size: .9rem;
+  border: 1pt solid #6d6f72;
+  /* #ced4da */
+  border-radius: 0rem;
+  box-shadow: none !important;
+}
+
+.btn-c {
+  font-weight: 700;
+  line-height: 1;
+  color: #212529;
+  background-color: rgb(182, 172, 172);
+  /*transparent;*/
+  border: 1px solid;
+  padding: 0;
+  margin: 0;
+  font-size: .9rem;
+  border-radius: .3rem;
+}
+
+.p1-c {
+  padding: 2px;
+}
+
+.form-select-c {
+  padding: 0rem;
+  padding-left: .1rem;
+  margin: 0rem;
+  font-size: .9rem;
+  /* font-weight: 700; */
+  border: 1px solid;
+  /* #ced4da; */
+  border-radius: 0rem;
+}
+
+.ul-style-c {
+  list-style-type: none;
+}
+
+.check-box-c {
+  border: 1px solid;
+}
+
+.form-bg-c {
+  background-color: rgb(204, 255, 204);
+}
+
+.page-bg-c {
+  background-color: rgb(189, 238, 255);
+}
+
+.ms-6-c {
+  margin-left: 0rem !important;
+}
+
+.form-check-input:checked {
+  background-color: rgb(182, 172, 172);
+  border-color: rgb(182, 172, 172);
+}
+
+body {
+  padding: 0;
+  margin: 0;
+  background-color: #eee;
+}
+
+.border-grey {
+  border: 1px solid;
+  border-end-start-radius: 5px;
+  border-end-end-radius: 5px;
+  border-top: none;
+  border-color: #dee2e6;
+}
+
+.active {
+  background-color: rgb(189, 238, 255);
+  /* white; */
+}
+
+#myTab {
+  background-color: #dee2e6;
+}
+
+.nav-link {
+  color: #666;
+}
+
+.hrem-40 {
+  height: 40rem !important;
+}
+
+.login-display {
+  /* border:2px solid #F70B0B !important; */
+  background-color: #F70B0B ;
+}
+
+.gg-check-o {
+  box-sizing: border-box;
+  position: relative;
+  display: block;
+  transform: scale(var(--ggs,1));
+  width: 22px;
+  height: 22px;
+  border: 2px solid;
+  border-radius: 100px
+ }
+ 
+ .gg-check-o::after {
+  content: "";
+  display: block;
+  box-sizing: border-box;
+  position: absolute;
+  left: 3px;
+  top: -1px;
+  width: 6px;
+  height: 10px;
+  border-color: currentColor;
+  border-width: 0 2px 2px 0;
+  border-style: solid;
+  transform-origin: bottom left;
+  transform: rotate(45deg)
+ }
+
+ .messagePopup {
+  display: none;
+  position: fixed;
+  left: 80%;
+  top: 5%;
+  transform: translate(-50%, 5%);
+  z-index: 9;
+}
+
+.messageBorder {
+  border-radius: 10px;
+}
+
+body {
+  /* background-image: url('./golf01.jpg'); */
+  /* background-repeat: no-repeat; */
+  background-size: cover;
+}
+
+.dodex-footer {
+  background-color: #f5f5f5;
+  bottom: 0;
+  height: 15px;
+  line-height: 10px;
+  position: absolute;
+  width: 100%;
+}
+
+.editor {
+  bottom: 0;
+  height: 400px;
+  left: 0;
+  position: fixed;
+  width: 80%;
+}
+
+.pointer {
+  cursor: pointer;
+}

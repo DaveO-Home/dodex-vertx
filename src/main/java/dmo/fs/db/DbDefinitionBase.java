@@ -39,6 +39,8 @@ import io.vertx.rxjava3.pgclient.PgPool;
 import io.vertx.rxjava3.sqlclient.Pool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.Tuple;
+import golf.handicap.db.*;
+import golf.handicap.vertx.*;
 
 public abstract class DbDefinitionBase {
     private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
@@ -117,6 +119,15 @@ public abstract class DbDefinitionBase {
         GETCUSTOMDELETEMESSAGES = setupCustomDeleteMessage();
         GETCUSTOMDELETEUSERS = setupCustomDeleteUsers();
         GETMESSAGEIDBYHANDLEDATE = qmark ? setupMessageByHandleDate().replaceAll("\\$\\d", "?") : setupRemoveUsers();
+        if(MainVerticle.getEnableHandicap()) {
+            PopulateGolfer.setQMark(qmark);
+            PopulateGolfer.setSqlPool(pool);
+            PopulateGolfer.setDslContext(create);
+            PopulateGolfer.buildSql();
+            PopulateCourse.buildSql();
+            PopulateScore.buildSql();
+            PopulateGolferScores.buildSql();
+        }
     }
 
     private static String setupAllUsers() {

@@ -6,7 +6,7 @@
             "credentials": {
             },
             "config": {
-                "filename": "build/dodex_tests.db",
+                "filename": "dodex_tests.db",
                 "url": "jdbc:sqlite:"
             }
         },
@@ -14,7 +14,7 @@
             "credentials": {
             },
             "config": {
-                "filename": "dodex.db",
+                "filename": "db/dodex.db",
                 "url": "jdbc:sqlite:"
             }
         }

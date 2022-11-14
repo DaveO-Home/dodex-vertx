@@ -1,4 +1,8 @@
 # Ignore Gradle project-specific cache directory
+.project
+.settings
+.idea
+.vscode
 target
 .bloop
 deploy

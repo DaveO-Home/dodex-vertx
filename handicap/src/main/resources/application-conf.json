@@ -1,0 +1,12 @@
+{
+    "vertx.disableFileCPResolving": true,
+    "vertx.fileResolverCachingEnabled": false,
+    "vertx.disableFileCaching": true,
+    "handicap.enableHandicap": true,
+    "handicap.enableAdmin": false,
+    "handicap.adminPin": "hand!cap",
+    "handicap.port": 8888,
+    "prod.handicap.port": 8889,
+    "grpc:port": 15001,
+    "prod:grpc:port": 15001
+}

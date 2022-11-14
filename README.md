@@ -3,9 +3,11 @@
 ## Install Assumptions
 
 1. Using Vertx4 @ <https://vertx.io/introduction-to-vertx-and-reactive/>
-2. Java 8 or higher installed with JAVA_HOME set.
-3. Gradle 7+ installed. If you have sdkman installed, execute ```sdk install gradle 7.1.1```
+2. Java 17 or higher installed with JAVA_HOME set.
+3. Gradle 7+ installed. If you have sdkman installed, execute ```sdk install gradle 7.5```
 4. npm javascript package manager installed.
+
+__Important Note:__ The `./gradlew run` is much more complex out of the box. The `kotlin, gRPC` web applicaion requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.
 
 ## Getting Started
 
@@ -25,7 +27,7 @@
 1. Execute ```gradlew tasks``` to view all tasks.
 2. Execute ```gradlew shadowJar``` to build the production fat jar.
 3. Execute ```java -jar build/libs/dodex-vertx-3.8.5.jar``` to startup the production server.
-4. Execute url ```http://localhost:8080/dodex``` or ```.../dodex/bootstrap.html``` in a browser. __Note;__ This is a different port and url than development. Also __Note;__ The default database on the backend is "Sqlite3", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See ```<install directory>/dodex-vertx/src/main/resources/static/database_config.json``` for configuration.
+4. Execute url ```http://localhost:8080/dodex``` or ```.../dodex/bootstrap.html``` in a browser. __Note:__ This is a different port and url than development. Also __Note:__ The default database on the backend is "Sqlite3", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See ```<install directory>/dodex-vertx/src/main/resources/static/database_config.json``` for configuration.
 5. Swapping among databases; Use environment variable ```DEFAULT_DB``` by setting it to either ```sqlite3``` ,```postgres```, ```cubrid```, ```mariadb```, ```ibmdb2```, ```cassandra```, ```firebase``` or set the default database in ```database_config.json```.
 6. The environment variable ```VERTXWEB_ENVIRONMENT``` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.
 7. When Dodex-vertx is configured for the Cubrid database, the database must be created using UTF-8. For example ```cubrid createdb dodex en_US.utf8```.
@@ -73,7 +75,7 @@
   6. In your dodex-vertx directory execute the dodexvm8 or dodexvm11 shell program. This should create an executable named ```io.vertx.core.Launcher```.
   7. Execute the production server with ```io.vertx.core.Launcher```.
 
-   __Note;__ dodex-vertx will not build as a stand alone, therefore, if you move the executeable to different directory, you must also move the shadowJar to the same directory with structure `build\libs`.
+   __Note:__ dodex-vertx will not build as a stand alone, therefore, if you move the executeable to different directory, you must also move the shadowJar to the same directory with structure `build\libs`.
 
 ### Single Page React Application to demo Development and Integration Testing
 
@@ -95,13 +97,13 @@
 * Create an account: <https://firebase.google.com>
 * Getting started: <https://firebase.google.com/docs/admin/setup#java>
 * Make sure you create a `Service-Account-Key.json` file as instructed. Dodex-Vertx uses the environment variable option to set the service-account - `GOOGLE_APPLICATION_CREDENTIALS`. See gradle.build as one way to set it.
-* You will need to login to the `Firebase` console and create the `dodex-firebase` project. See `src/main/java/dmo/fs/router/FirebaseRouter.java` for usage of the project-id and Google Credentials. __Note;__ The `Firebase` rules are not used, so they should be set to `allow read, write:  if false;` which may be the default.
+* You will need to login to the `Firebase` console and create the `dodex-firebase` project. See `src/main/java/dmo/fs/router/FirebaseRouter.java` for usage of the project-id and Google Credentials. __Note:__ The `Firebase` rules are not used, so they should be set to `allow read, write:  if false;` which may be the default.
 * You only need the `Authentication` and `Firestore` extensions.
 * If you want a different project name, change `.firebaserc`.
 
   #### Testing
 
-  * To make sure your project is created and the setup works, you should run the tests. __Note;__ They are written in Typescript.
+  * To make sure your project is created and the setup works, you should run the tests. __Note:__ They are written in Typescript.
   * cd `../dodex-vertx/src/firebase` and run `npm install`
   * execute `npm run emulators` to startup the emulators for testing.
   * To test the model and rules after starting the emulators, in a different terminal window, run `npm test`.
@@ -154,7 +156,13 @@ Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
     * as dodex messaging executes the events should be recorded.
     * in the browser's `developer tools` console execute `stop();` and `start();` to stop/start the polling. Polling is started by default.
     
-    __Note;__ you can open the messaging dialog with `ctrl-doubleclick` on the dials
+    __Note:__ you can open the messaging dialog with `ctrl-doubleclick` on the dials
+
+### Kotlin, gRPC Web Application
+
+    This web application can be used to maintain golfer played courses and scores and to calculate a handicap index. The application has many moving parts from the `envoy` proxy server to `kotlin`, `protobuf`, `gRPC`, `jooq`, `bootstrap`, `webpack`, `esbuild`, `gradle`, `java` and `javascript`.
+
+    See documentation at; <https://github.com/DaveO-Home/dodex-vertx/blob/master/handicap/README.md>
 
 ## ChangeLog
 

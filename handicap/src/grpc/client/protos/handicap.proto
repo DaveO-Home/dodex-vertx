@@ -1,0 +1,60 @@
+syntax = "proto3";
+option java_multiple_files = true;
+option java_package = "handicap.grpc";
+option java_outer_classname = "HandicapProto";
+package handicap.grpc;
+
+service HandicapIndex {
+ rpc ListCourses(Command) returns (ListCoursesResponse) {}
+ rpc AddRating(Command) returns (HandicapData) {}
+ rpc AddScore(Command) returns (HandicapData) {}
+ rpc RemoveScore(Command) returns (HandicapData) {}
+ rpc GolferScores(Command) returns (HandicapData) {}
+ rpc GetGolfer (HandicapSetup) returns (HandicapData) {}
+ rpc ListGolfers (Command) returns (ListPublicGolfers) {}
+}
+
+message HandicapSetup {
+  int32 cmd = 1;
+  string json = 2;
+  string message = 3;
+}
+
+message HandicapData {
+  int32 cmd = 1;
+  string json = 2;
+  string message = 3;
+}
+
+message Rating {
+  int32 tee = 1;
+  string rating = 2;
+  int32 slope = 3;
+  int32 par = 4;
+  string color = 5;
+  int32 seq = 6;
+}
+
+message Course {
+    int32 id = 1;
+    string name = 2;
+    repeated Rating ratings = 3;
+  }
+
+message ListCoursesResponse {
+    repeated Course courses = 1;
+  }
+
+message Golfer {
+  string name = 1;
+}
+
+message ListPublicGolfers {
+  repeated Golfer golfer = 1;
+}
+
+message Command {
+    int32 cmd = 1;
+    string key = 2;
+    string json = 3;
+}

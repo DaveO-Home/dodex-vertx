@@ -1,0 +1,72 @@
+{
+  "nested": {
+    "handicap": {
+      "nested": {
+        "ScoreMessage": {
+          "fields": {
+            "grossScore": {
+              "type": "int32",
+              "id": 1
+            },
+            "netScore": {
+              "type": "float",
+              "id": 2
+            },
+            "adjustedScore": {
+              "type": "int32",
+              "id": 3
+            },
+            "status": {
+              "type": "int32",
+              "id": 10
+            },
+            "teeTime": {
+              "type": "string",
+              "id": 11
+            },
+            "golfer": {
+              "type": "golferType",
+              "id": 12
+            },
+            "course": {
+              "type": "courseType",
+              "id": 13
+            }
+          }
+        },
+        "golferType": {
+          "fields": {
+            "pin": {
+              "type": "string",
+              "id": 1
+            },
+            "handicap": {
+              "type": "string",
+              "id": 2
+            },
+            "overlap": {
+              "type": "bool",
+              "id": 5
+            },
+            "public": {
+              "type": "bool",
+              "id": 6
+            }
+          }
+        },
+        "courseType": {
+          "fields": {
+            "course_key": {
+              "type": "int32",
+              "id": 1
+            },
+            "teeId": {
+              "type": "int32",
+              "id": 2
+            }
+          }
+        }
+      }
+    }
+  }
+}

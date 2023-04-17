@@ -114,7 +114,7 @@
 
 * See <https://neo4j.com/docs/operations-manual/current/> for usage.
 * To use a container with `apoc` you can try: **Note:** this has `--privileged` set.
-    `
+    ```
     docker run \
     -p 7474:7474 -p 7687:7687 \
     -v $PWD/neo4j/data:/neo4j/data -v $PWD/neo4j/plugins:/neo4j/plugins \
@@ -127,7 +127,7 @@
     -e NEO4JLABS_PLUGINS=\[\"apoc\"\] \
     -e NEO4J_dbms_security_procedures_unrestricted=apoc.\\\* \
     neo4j:4.3
-    `
+    ```
 To restart and stop: `docker start neo4j-apoc` and `docker stop neo4j-apoc`
 
 The Neo4j was tested with the `apoc` install, however the database should work without it.

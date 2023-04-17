@@ -61,6 +61,7 @@ public class HandicapDatabasePostgres extends DbPostgres {
 
     dbProperties.setProperty("foreign_keys", "true");
 
+    assert dbOverrideMap != null;
     DbConfiguration.mapMerge(dbMap, dbOverrideMap);
     databaseSetup();
   }

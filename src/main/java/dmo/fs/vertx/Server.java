@@ -8,6 +8,7 @@ import java.net.URISyntaxException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
+import org.apache.http.client.methods.HttpOptions;
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,14 +71,15 @@ public class Server extends AbstractVerticle {
   @Override
   public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException,
       IOException, SQLException, NumberFormatException {
-    if (development == null || development.equals("")) {
+    if (development == null || "".equals(development) || development.toLowerCase().startsWith("prod")) {
       development = "prod";
     } else if ("dev".equalsIgnoreCase(development)) {
       port = startupPort == 0 ? 8087 : startupPort;
     } else if ("test".equalsIgnoreCase(development)) {
       port = startupPort == 0 ? 8089 : startupPort;
     }
-
+    HttpServerOptions options = new HttpServerOptions();
+    options.setLogActivity(true);
     config = Vertx.currentContext().config();
     if (config.getInteger("http.port") == null) {
       config = getAlternateConfig();
@@ -99,18 +101,14 @@ public class Server extends AbstractVerticle {
     }
 
     if (isUnix()) {
-      server = configureLinuxOptions(vertx, true, true, true, true);
+      server = configureLinuxOptions(vertx);
     } else {
-      server = vertx.createHttpServer();
+      server = vertx.createHttpServer(options);
     }
 
-    Routes routes = null;
-    SpaRoutes allRoutes = null;
-    List<Route> routesList = null;
-    routes = new Routes(vertx, server, vertxVersion);
+    Routes routes = new Routes(vertx, server, vertxVersion);
 
-    allRoutes = new SpaRoutes(vertx, server, routes.getRouter(), routes.getFirestore());
-    routesList = allRoutes.getRouter().getRoutes();
+    SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter(), routes.getFirestore());
 
     FileSystem fs = vertx.fileSystem();
     /* For BoxFuse - sqlite3 */
@@ -118,13 +116,14 @@ public class Server extends AbstractVerticle {
     // Runtime.getRuntime().exec("mount -t nfs4 -o
     // nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
     // <your-efs-id>.efs.<your-aws-region>.amazonaws.com:/ /efs").waitFor();
-
-    for (Route r : routesList) {
-      String path = parsePath(r);
-      String methods = path + (r.methods() == null ? "" : r.methods());
-      logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT, methods, ColorUtilConstants.RESET);
+    if(!"prod".equalsIgnoreCase(development)) {
+      List<Route> routesList = allRoutes.getRouter().getRoutes();
+      for (Route r : routesList) {
+        String path = parsePath(r);
+        String methods = path + (r.methods() == null ? "" : r.methods());
+        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT, methods, ColorUtilConstants.RESET);
+      }
     }
-
     server.requestHandler(allRoutes.getRouter());
 
     // Note: development = "prod" in production mode
@@ -132,7 +131,7 @@ public class Server extends AbstractVerticle {
 
     String overridePort = System.getenv("VERTX_PORT") == null ? development + ".http.port"
         : System.getenv("VERTX_PORT");
-    int secondaryPort = this.port == 0 ? 8080 : port;
+    int secondaryPort = this.port == 0 ? 8880 : port;
     try {
       port = System.getenv("VERTX_PORT") == null ? config.getInteger(overridePort, secondaryPort)
           : Integer.parseInt(System.getenv("VERTX_PORT"));
@@ -157,10 +156,9 @@ public class Server extends AbstractVerticle {
           logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
               ColorUtilConstants.RESET);
         }
-
-        if (golf.handicap.vertx.MainVerticle.getEnableHandicap()) {
+        if (Boolean.TRUE.equals(golf.handicap.vertx.MainVerticle.getEnableHandicap())) {
           Verticle handicapVerticle = new golf.handicap.vertx.MainVerticle();
-          vertx.deployVerticle(handicapVerticle);
+          vertx.deployVerticle(handicapVerticle).subscribe();
         }
       }).doOnError(err -> {
         logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
@@ -207,11 +205,10 @@ public class Server extends AbstractVerticle {
         "Dodex Connected to Event Bus Bridge%s", ColorUtilConstants.RESET);
   }
 
-  private HttpServer configureLinuxOptions(Vertx vertx, boolean fastOpen, boolean cork,
-      boolean quickAck, boolean reusePort) {
+  private HttpServer configureLinuxOptions(Vertx vertx) {
     // Available on Linux
-    return vertx.createHttpServer(new HttpServerOptions().setTcpFastOpen(fastOpen).setTcpCork(cork)
-        .setTcpQuickAck(quickAck).setReusePort(reusePort)
+    return vertx.createHttpServer(new HttpServerOptions().setTcpFastOpen(true).setTcpCork(true)
+        .setTcpQuickAck(true).setReusePort(true).setLogActivity(true)
     // https - generate and get signed your certificate
     // Self signed for testing, per;
     // sslshopper.com/article-most-common-java-keytool-keystore-commands.html
@@ -236,19 +233,19 @@ public class Server extends AbstractVerticle {
   }
 
   public static boolean isWindows() {
-    return OS.indexOf("win") >= 0;
+    return OS.contains("win");
   }
 
   public static boolean isMac() {
-    return OS.indexOf("mac") >= 0;
+    return OS.contains("mac");
   }
 
   public static boolean isUnix() {
-    return OS.indexOf("nix") >= 0 || OS.indexOf("nux") >= 0 || OS.indexOf("aix") > 0;
+    return OS.contains("nix") || OS.contains("nux") || OS.indexOf("aix") > 0;
   }
 
   public static boolean isSolaris() {
-    return OS.indexOf("sunos") >= 0;
+    return OS.contains("sunos");
   }
 
   public JsonObject getAlternateConfig() throws IOException {
@@ -267,6 +264,6 @@ public class Server extends AbstractVerticle {
   }
 
   public static Boolean getUseKafka() {
-    return useKafka == null? false: Boolean.valueOf(useKafka);
+    return Boolean.parseBoolean(useKafka);
   }
 }

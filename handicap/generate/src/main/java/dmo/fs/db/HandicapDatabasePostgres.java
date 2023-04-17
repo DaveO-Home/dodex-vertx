@@ -268,20 +268,35 @@ public class HandicapDatabasePostgres extends DbPostgres {
                                             }).doOnSuccess(row4 -> {
                                               if (!names.contains("scores")) {
                                                 logger.warn("Scores Table Added.");
-                                                tx.commit();
                                               }
                                               finalPromise.complete(isCreateTables.toString());
                                               if (isCreateTables) {
                                                 returnPromise.complete(isCreateTables.toString());
                                               }
-                                            }).subscribe(res -> conn.close());
+                                                  String sql5 = getCreateTable("LOGIN").replaceAll("dummy",
+                                                          dbProperties.get("user").toString());
+                                                  if ((names.contains("login"))) {
+                                                    sql5 = SELECTONE;
+                                                  }
+                                                  conn.query(sql5).rxExecute().doOnError(err -> {
+                                                    logger.error(String.format("Login Table Error: %s", err.getMessage()));
+                                                  }).doOnSuccess(row5 -> {
+                                                    if (!names.contains("login")) {
+                                                      logger.warn("Login Table Added.");
+                                                    }
+                                                    tx.commit();
+                                                    finalPromise.complete(isCreateTables.toString());
+                                                    if (isCreateTables) {
+                                                      returnPromise.complete(isCreateTables.toString());
+                                                    }
+                                                  }).subscribe(res -> conn.close());
+                                            }).subscribe();
                                       }).subscribe();
                                 }).subscribe();
                           }).subscribe();
                     }))
-            .flatMapCompletable(res -> tx.rxCommit()).doOnSubscribe(sub -> {
-              conn.rxClose();
-            })));
+            .flatMapCompletable(res -> tx.rxCommit()).doOnSubscribe(sub -> conn.rxClose())
+        ));
 
     completable.subscribe(() -> {
       finalPromise.future().onComplete(c -> {

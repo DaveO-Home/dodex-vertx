@@ -145,7 +145,6 @@ public class DodexUtil {
         String defaultdbProp = System.getProperty("DEFAULT_DB");
         String defaultdbEnv = System.getenv("DEFAULT_DB");
         defaultDb = node.get("defaultdb").textValue();
-
         /*
          * use environment variable first, if set, than properties and then from config
          * json

@@ -105,10 +105,10 @@ public class HandicapDatabaseMariadb extends DbMariadb {
     }
 
     MySQLConnectOptions connectOptions = new MySQLConnectOptions()
-        .setPort(Integer.valueOf(dbMap.get("port"))).setHost(dbMap.get("host2"))
+        .setPort(Integer.parseInt(dbMap.get("port"))).setHost(dbMap.get("host2"))
         .setDatabase(dbMap.get("database")).setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
+        .setSsl(Boolean.parseBoolean(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
         .setCharset("utf8mb4");
 
     // Pool options

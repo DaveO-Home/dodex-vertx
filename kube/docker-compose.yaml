@@ -1,0 +1,10 @@
+version: "3.9"
+services:
+  web:
+    image: dufferdo2/dodex-vertx
+    build: .
+    ports:
+      - "8880:8880"
+      - "8890:8890"
+      - "9901:9901"
+    container_name: "dodex_vertx"

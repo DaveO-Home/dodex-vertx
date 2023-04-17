@@ -9,7 +9,7 @@ import dmo.fs.utils.DodexUtil;
 
 public abstract class DbConfiguration {
 
-    private static Map<String, String> map = new ConcurrentHashMap<>();
+    private static final Map<String, String> map = new ConcurrentHashMap<>();
     protected static Properties properties = new Properties();
 
     private static Boolean isUsingSqlite3 = false;
@@ -21,7 +21,7 @@ public abstract class DbConfiguration {
     private static Boolean isUsingFirebase = false;
     private static Boolean isUsingNeo4j = false;
     private static String defaultDb = "sqlite3";
-    private static DodexUtil dodexUtil = new DodexUtil();
+    private static final DodexUtil dodexUtil = new DodexUtil();
     private static DodexDatabase dodexDatabase;
     private static DodexCassandra dodexCassandra;
     private static DodexFirebase dodexFirebase;
@@ -31,7 +31,7 @@ public abstract class DbConfiguration {
         POSTGRES("postgres"), SQLITE3("sqlite3"), CUBRID("cubrid"), MARIADB("mariadb"), IBMDB2(
                 "ibmdb2"), CASSANDRA("cassandra"), FIREBASE("firebase"), NEO4J("neo4j");
 
-        String db;
+        final String db;
 
         DbTypes(String db) {
             this.db = db;
@@ -106,6 +106,7 @@ public abstract class DbConfiguration {
         } catch (Exception exception) {
             throw exception;
         }
+
         return (T) dodexDatabase;
     }
 

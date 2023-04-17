@@ -17,6 +17,6 @@
     "dodex": "^1.4.1",
     "dodex-input": "^1.4.1",
     "dodex-mess": "^1.3.2",
-    "jsoneditor": "^9.9.2"
+    "jsoneditor": "^9.10.0"
   }
 }

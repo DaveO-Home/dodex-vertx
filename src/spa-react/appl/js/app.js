@@ -4,6 +4,7 @@ import capitalize from "lodash/capitalize";
 import "bootstrap";
 import "tablesorter";
 import { createPopper } from "@popperjs/core";
+import "bootstrap-icons/font/bootstrap-icons.css";
 /* develblock:start */
 // Specs can be inserted at initialization(before karma is started).
 if (typeof window.testit !== "undefined" && window.testit) {

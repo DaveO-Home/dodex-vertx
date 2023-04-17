@@ -22,7 +22,7 @@ public abstract class DbConfiguration {
     private static Boolean isUsingCassandra = false;
     private static Boolean isUsingFirebase = false;
     private static String defaultDb = "sqlite3";
-    private static DodexUtil dodexUtil = new DodexUtil();
+    private static final DodexUtil dodexUtil = new DodexUtil();
     private static HandicapDatabase handicapDatabase;
 
     private enum DbTypes {

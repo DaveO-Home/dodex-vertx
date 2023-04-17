@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
 
+import io.vertx.core.impl.logging.Logger;
+import io.vertx.core.impl.logging.LoggerFactory;
 import org.jooq.codegen.GenerationTool;
 import org.jooq.meta.jaxb.Configuration;
 import org.jooq.meta.jaxb.Database;
@@ -12,8 +14,6 @@ import org.jooq.meta.jaxb.Generator;
 import org.jooq.meta.jaxb.Jdbc;
 import org.jooq.meta.jaxb.Logging;
 import org.jooq.meta.jaxb.Target;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -65,10 +65,7 @@ public class JooqGenerate {
       // ForcedType ft = new ForcedType();
       // ft.setName("BLOB");
       // ft.withIncludeExpression("SEQ|NAME");
-      Boolean generateSequences = false;
-      if("org.jooq.meta.postgres.PostgresDatabase".equals(jooqMetaName)) {
-        generateSequences = true;
-      }
+      boolean generateSequences = "org.jooq.meta.postgres.PostgresDatabase".equals(jooqMetaName);
       Configuration configuration = new Configuration()
           .withJdbc(new Jdbc()
               // .withDriver("org.sqlite.JDBC")

@@ -1,0 +1,4 @@
+#!/usr/bin/bash
+
+minikube kubectl -- delete services vertx-grpc vertx-service
+minikube kubectl -- delete deployments vertx-deploy

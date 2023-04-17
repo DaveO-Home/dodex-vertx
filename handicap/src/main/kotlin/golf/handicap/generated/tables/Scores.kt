@@ -5,22 +5,14 @@ package golf.handicap.generated.tables
 
 
 import golf.handicap.generated.DefaultSchema
-import golf.handicap.generated.keys.SCORES__FK_SCORES_PK_COURSE
-import golf.handicap.generated.keys.SCORES__FK_SCORES_PK_GOLFER
 import golf.handicap.generated.tables.records.ScoresRecord
-
-import java.util.function.Function
-
-import kotlin.collections.List
 
 import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.Name
 import org.jooq.Record
-import org.jooq.Records
 import org.jooq.Row9
 import org.jooq.Schema
-import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -128,39 +120,8 @@ open class Scores(
 
     constructor(child: Table<out Record>, key: ForeignKey<out Record, ScoresRecord>): this(Internal.createPathAlias(child, key), child, key, SCORES, null)
     override fun getSchema(): Schema? = if (aliased()) null else DefaultSchema.DEFAULT_SCHEMA
-    override fun getReferences(): List<ForeignKey<ScoresRecord, *>> = listOf(SCORES__FK_SCORES_PK_GOLFER, SCORES__FK_SCORES_PK_COURSE)
-
-    private lateinit var _golfer: Golfer
-    private lateinit var _course: Course
-
-    /**
-     * Get the implicit join path to the <code>GOLFER</code> table.
-     */
-    fun golfer(): Golfer {
-        if (!this::_golfer.isInitialized)
-            _golfer = Golfer(this, SCORES__FK_SCORES_PK_GOLFER)
-
-        return _golfer;
-    }
-
-    val golfer: Golfer
-        get(): Golfer = golfer()
-
-    /**
-     * Get the implicit join path to the <code>COURSE</code> table.
-     */
-    fun course(): Course {
-        if (!this::_course.isInitialized)
-            _course = Course(this, SCORES__FK_SCORES_PK_COURSE)
-
-        return _course;
-    }
-
-    val course: Course
-        get(): Course = course()
     override fun `as`(alias: String): Scores = Scores(DSL.name(alias), this)
     override fun `as`(alias: Name): Scores = Scores(alias, this)
-    override fun `as`(alias: Table<*>): Scores = Scores(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -172,24 +133,8 @@ open class Scores(
      */
     override fun rename(name: Name): Scores = Scores(name, null)
 
-    /**
-     * Rename this table
-     */
-    override fun rename(name: Table<*>): Scores = Scores(name.getQualifiedName(), null)
-
     // -------------------------------------------------------------------------
     // Row9 type methods
     // -------------------------------------------------------------------------
     override fun fieldsRow(): Row9<String?, Int?, Float?, Int?, String?, Float?, Int?, Int?, String?> = super.fieldsRow() as Row9<String?, Int?, Float?, Int?, String?, Float?, Int?, Int?, String?>
-
-    /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
-     */
-    fun <U> mapping(from: (String?, Int?, Float?, Int?, String?, Float?, Int?, Int?, String?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
-
-    /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Class,
-     * Function)}.
-     */
-    fun <U> mapping(toType: Class<U>, from: (String?, Int?, Float?, Int?, String?, Float?, Int?, Int?, String?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
 }

@@ -5,7 +5,8 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapData
 	public final static String CHECKUSERSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='users'";
 	protected final static String CHECKMESSAGESSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='messages'";
 	protected final static String CHECKUNDELIVEREDSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='undelivered'";
-	protected final static String CHECKHANDICAPSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name in ('GOLFER', 'COURSE', 'SCORES', 'RATINGS')";
+	protected final static String CHECKLOGINSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='login'";
+	protected final static String CHECKHANDICAPSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name in ('GOLFER', 'COURSE', 'SCORES', 'RATINGS', 'login')";
 
 	private enum CreateTable {
 		CREATEUSERS(
@@ -15,7 +16,7 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapData
 		CREATEUNDELIVERED(
 				"create table undelivered (user_id integer, message_id integer, CONSTRAINT undelivered_user_id_foreign FOREIGN KEY (user_id) REFERENCES users (id), CONSTRAINT undelivered_message_id_foreign FOREIGN KEY (message_id) REFERENCES messages (id))"),
 		CREATELOGIN(
-				"create table login (id integer primary key, name text not null unique, password text not null, last_login DATETIME not null)"),
+				"create table IF NOT EXISTS login (id integer primary key, name text not null unique, password text not null, last_login DATETIME not null)"),
 		CREATEGOLFER("CREATE TABLE IF NOT EXISTS GOLFER (" +
 				"PIN CHARACTER(8) primary key NOT NULL," +
 				"FIRST_NAME VARCHAR(32) NOT NULL," +
@@ -23,8 +24,8 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapData
 				"HANDICAP FLOAT(4,1) DEFAULT 0.0," +
 				"COUNTRY CHARACTER(2) DEFAULT 'US' NOT NULL," +
 				"STATE CHARACTER(2) DEFAULT 'NV' NOT NULL," +
-				"OVERLAP_YEARS INTEGER DEFAULT 1," +
-				"PUBLIC INTEGER DEFAULT 0," +
+				"OVERLAP_YEARS BOOLEAN DEFAULT 1," +
+				"PUBLIC BOOLEAN DEFAULT 0," +
 				"LAST_LOGIN NUMERIC)"),
 		CREATECOURSE("CREATE TABLE IF NOT EXISTS COURSE (" +
 				"COURSE_SEQ INTEGER primary key autoincrement NOT NULL," +

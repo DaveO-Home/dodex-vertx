@@ -19,27 +19,27 @@ import org.jooq.impl.UpdatableRecordImpl
 @Suppress("UNCHECKED_CAST")
 open class RatingsRecord() : UpdatableRecordImpl<RatingsRecord>(Ratings.RATINGS), Record6<Int?, Int?, String?, Float?, Int?, Int?> {
 
-    open var courseSeq: Int?
+    var courseSeq: Int?
         set(value): Unit = set(0, value)
         get(): Int? = get(0) as Int?
 
-    open var tee: Int?
+    var tee: Int?
         set(value): Unit = set(1, value)
         get(): Int? = get(1) as Int?
 
-    open var teeColor: String?
+    var teeColor: String?
         set(value): Unit = set(2, value)
         get(): String? = get(2) as String?
 
-    open var teeRating: Float?
+    var teeRating: Float?
         set(value): Unit = set(3, value)
         get(): Float? = get(3) as Float?
 
-    open var teeSlope: Int?
+    var teeSlope: Int?
         set(value): Unit = set(4, value)
         get(): Int? = get(4) as Int?
 
-    open var teePar: Int?
+    var teePar: Int?
         set(value): Unit = set(5, value)
         get(): Int? = get(5) as Int?
 

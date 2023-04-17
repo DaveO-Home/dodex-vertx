@@ -1,45 +1,37 @@
 // Note: Menulinks was loaded in entry.js
-import { HashRouter } from "react-router-dom";
-import { createMemoryHistory } from 'history'
-import { render } from '@testing-library/react'
-import React from 'react'
+import { render, screen, act } from "@testing-library/react";
+import React from "react";
+import Tools, { getToolsComp } from "../components/ToolsC";
 import Pdf from "../components/PdfC";
-import Tools from "../components/ToolsC";
-import ErrorBoundary from "../components/ErrorBoundary";
-
-export default function (type) {
+export default function (type, timer) {
     if (window.testit !== undefined && window.testit) {
         describe("Testing Menulinks Router", () => {
-            const history = createMemoryHistory();
-            let route = "";
-            it(`is ${type} loaded from router component`, (done) => {
+            it(`is ${type} loaded from router component`, done => {
                 switch (type) {
                     case "table":
-                        route = "#/table/tools";
-                        history.push(route)
-                        render(
-                            <HashRouter history={history}>
-                                <ErrorBoundary>
-                                    <Tools />
-                                </ErrorBoundary>
-                            </HashRouter>
-                        )
-                        setTimeout(function () {
-                            expect($("tbody > tr[role=\"row\"]").length > 65).toBe(true);  // default page size
-                            done();
-                        }, 750);
+                        act(() => {
+                            render(<Tools/>);
+                        });
+
+                        act(() => {
+                            screen.getAllByText("Tabular View")[0].click();
+                        });
+
+                       const numbers = timer(50, 50);
+                       const observable = numbers.subscribe(timer => {
+                           if ($('tbody > tr[role="row"]').length != 0 || timer === 25) {
+                               expect($('tbody > tr[role="row"]').length > 65).toBe(true);  // default page size
+                               observable.unsubscribe();
+                               done();
+                           }
+                       });
                         break;
                     case "pdf":
-                        route = '#/pdf/test'
-                        history.push(route)
-                        render(
-                            <HashRouter history={history}>
-                                <ErrorBoundary>
-                                    <Pdf />
-                                </ErrorBoundary>
-                            </HashRouter>
-                        )
-                        expect($("#main_container > iframe[name=\"pdfDO\"]").length > 0).toBe(true);
+                        render(<Pdf/>);
+                        act(() => {
+                            screen.getAllByText("PDF View")[0].click();
+                        })
+                        expect($('#main_container > iframe[name="pdfDO"]').length > 0).toBe(true);
                         done();
                         break;
                     default:

@@ -4,6 +4,7 @@ if [ -z $1 ]; then
   echo "Enter proto file, e.g.; protos/handicap"
   exit 1
 fi
-protoc -I=. ${1}.proto \
+npx protoc -I=. ${1}.proto \
   --js_out=import_style=commonjs:./js/handicap \
-  --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./js/handicap
+  --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./js/handicap \
+  --plugin=protoc-gen-grpc-web=./node_modules/.bin/protoc-gen-grpc-web

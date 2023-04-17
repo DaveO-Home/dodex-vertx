@@ -1,5 +1,4 @@
 import React, { Component } from "react";
-import ReactDOM from "react-dom";
 import App from "../js/app";
 import Setup from "../js/utils/setup";
 import Helpers from "../js/utils/helpers";
@@ -107,16 +106,17 @@ class Contact extends Component {
 }
 
 function setData() {
-    ReactDOM.render(
-        contactHtml,
-        document.getElementById("main_container")
-    );
+    if(window.main) {
+        window.main.render(
+            contactHtml
+        );
+    }
 }
 
 function getContact() {
     setData();
     return new Promise((resolve, reject) => {
-        Helpers.isResolved(resolve, reject, ReactDOM, "main_container", 0, 0);
+        Helpers.isResolved(resolve, reject, null, "main_container", 0, 0);
     }).catch(rejected => {
         fail(`Contact Page did not load within limited time: ${rejected}`);
     }).then(() => {

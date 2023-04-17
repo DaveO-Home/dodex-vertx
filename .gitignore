@@ -16,6 +16,8 @@ allure*
 my*
 dodexvmX*
 src/main/resources/static/dist*
+handicap/src/main/resources/static/dist*
+jsoneditor-icons-STGDAB4I.svg
 src/dist*
 .gradle
 io.vertx.core.Launcher
@@ -25,6 +27,8 @@ lib
 node_modules
 *.class
 *.log
+*.lck
+*.swp
 *.db
 bin/main
 cp*.sh

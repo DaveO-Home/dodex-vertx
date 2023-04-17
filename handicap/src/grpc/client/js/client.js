@@ -22,9 +22,25 @@ countryState("US");
 
 /* Use protobuf to generate/validate message */
 const useProtobuf = true;
-const port = "8070";
 
-const client = new HandicapIndexClient("http://" + window.location.hostname + ":" + port, null, null);
+/*
+    For tunneling with `localtunnel` the grpc hostname must be app --subdomain value + "2"
+    as described in the README.
+*/
+const locaLt = ".loca.lt";
+const locaLt2 = "2" + locaLt;
+const loopSite = ".loophole.site";
+const loopSite2 = "2" + loopSite;
+let port = isNaN(window.location.hostname.split(".").join("")) ? ":8070" : ":30070"; // for minikube
+port = location.hostname === "127.0.0.1" ? ":8070" : port;
+let grpcHost = location.hostname.replace(locaLt, locaLt2);
+if(!grpcHost.endsWith(locaLt)) {
+    grpcHost = location.hostname.replace(loopSite, loopSite2);
+}
+const host = location.hostname.endsWith(locaLt) | location.hostname.endsWith(loopSite) ? grpcHost : location.hostname;
+port = grpcHost.endsWith(locaLt2) | grpcHost.endsWith(loopSite2) ? "" : port;
+
+const client = new HandicapIndexClient(location.protocol + "//" + host + port, null, null);
 
 const login = new HandicapSetup();
 const command = new Command();
@@ -51,6 +67,34 @@ let formatter = Intl.DateTimeFormat(
     visible: true
   }
 );
+/* Uncomment once you have a token, this fetch will set the form's default country/state */
+const ipInfo = "https://ipinfo.io/json?token=";
+const infoToken = ""; // insert you token
+//fetch(ipInfo + infoToken)
+//    .then(response => response.json())
+//    .then(jsonResponse => {
+//        if(jsonResponse.country !== document.querySelector("#country").value) {
+//            countryState(jsonResponse.country);
+//        }
+//        setStateCode(jsonResponse.region);
+//    })
+//    .catch((data, status) => {
+//        console.warn("Country/Region lookup failed", data, status);
+//    });
+
+const setStateCode = filter => {
+  let txtValue;
+  const input = document.querySelector("#state");
+  const options = input.querySelectorAll("option");
+
+  for (const option of options) {
+    txtValue = option.innerHTML || option.innerText || option.textContent;
+    if (txtValue.toUpperCase().includes(filter.toUpperCase())) {
+      input.value = option.value;
+      break;
+    }
+  }
+}
 
 function selectedTee() {
   let selectedTee;
@@ -174,7 +218,7 @@ const submitAddCourse = async (event) => {
 
   await client.addRating(command, {}, (err, response) => {
     if (err) {
-      console.log(`Unexpected error for add Rating: code = ${err.code}` +
+      console.error(`Unexpected error for add Rating: code = ${err.code}` +
         `, message = "${err.message}"`);
       popupMessage("Course Tees Add Failed", "alert-danger");
     } else {
@@ -206,7 +250,7 @@ const submitAddScore = async (event) => {
 
   await client.addScore(command, {}, (err, response) => {
     if (err) {
-      console.log(`Unexpected error for addScore: code = ${err.code}` +
+      console.error(`Unexpected error for addScore: code = ${err.code}` +
         `, message = "${err.message}"`);
         popupMessage("Score Add Failed", "alert-danger");
       } else {
@@ -242,7 +286,7 @@ const submitGolferScores = async (event) => {
 
   await client.golferScores(command, {}, (err, response) => {
     if (err) {
-      console.log(`Unexpected error for golfer scores: code = ${err.code}` +
+      console.error(`Unexpected error for golfer scores: code = ${err.code}` +
         `, message = "${err.message}"`);
     } else {
       const responseJson = JSON.parse(response.getJson());
@@ -265,7 +309,7 @@ const submitGetGolfers = async (event) => {
   
   await client.listGolfers(command, {}, (err, response) => {
     if (err) {
-      console.log(`Unexpected error for get golfers: code = ${err.code}` +
+      console.error(`Unexpected error for get golfers: code = ${err.code}` +
         `, message = "${err.message}"`);
     } else {
       const list = document.querySelectorAll("#golfers > option")
@@ -304,7 +348,7 @@ const submitRemoveScore = async (event) => {
 
   await client.removeScore(command, {}, (err, response) => {
     if (err) {
-      console.log(`Unexpected error for removeScore: code = ${err.code}` +
+      console.error(`Unexpected error for removeScore: code = ${err.code}` +
         `, message = "${err.message}"`);
         popupMessage("Removal Failed", "alert-danger")
   } else {
@@ -570,7 +614,7 @@ function resetForm() {
   delete window.pin;
   delete window.cmd;
 }
-
+/* Startup the client */
 (() => {
   var images = ['golf01.jpg', 'golf02.jpg', 'golf03.jpg', 'golf04.jpg', 'golf05.jpg',
                 'golf06.jpg', 'golf07.jpg', 'golf08.jpg', 'golf09.jpg', 'golf10.jpg', 'golf11.jpg'];
@@ -591,8 +635,6 @@ function resetForm() {
       radioColor[idx].addEventListener("change", setTees);
     }
   }
-  const state = document.getElementById("state");
-  state.addEventListener("change", getCourses);
 
   const removeLast = document.getElementById("remove-last");
   removeLast.addEventListener("click", submitRemoveScore);
@@ -615,6 +657,9 @@ function resetForm() {
 
   // For webpack bundler
   setTimeout(function () {
+    const state = document.getElementById("state");
+    state.addEventListener("change", getCourses);
+
     const table = window.$("#table")
     $(function () {
       table.bootstrapTable({ data: defaultData() })

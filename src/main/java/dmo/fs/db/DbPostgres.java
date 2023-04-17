@@ -53,8 +53,8 @@ public abstract class DbPostgres extends DbDefinitionBase implements DodexDataba
 					"HANDICAP NUMERIC(3,1) DEFAULT 0.0," +
 					"COUNTRY CHARACTER(2) DEFAULT 'US' NOT NULL," +
 					"STATE CHARACTER(2) DEFAULT 'NV' NOT NULL," +
-					"OVERLAP_YEARS INTEGER DEFAULT 1," +
-					"PUBLIC INTEGER DEFAULT 0," +
+					"OVERLAP_YEARS BOOL DEFAULT true," +
+					"PUBLIC BOOL DEFAULT false," +
 					"LAST_LOGIN BIGINT," +
 					"CONSTRAINT golfer_pkey UNIQUE (PIN)," +
 					"CONSTRAINT golfer_names_unique UNIQUE (LAST_NAME, FIRST_NAME))" +

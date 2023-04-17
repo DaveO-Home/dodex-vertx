@@ -64,6 +64,7 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
 
     dbProperties.setProperty("foreign_keys", "true");
 
+    assert dbOverrideMap != null;
     DbConfiguration.mapMerge(dbMap, dbOverrideMap);
     databaseSetup();
   }
@@ -82,7 +83,7 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
   }
 
   public HandicapDatabaseSqlite3(Boolean isCreateTables)
-      throws InterruptedException, IOException, SQLException {
+      throws IOException {
     super();
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
@@ -99,14 +100,13 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
     return returnPromise.future();
   }
 
-  private void databaseSetup() throws InterruptedException, SQLException {
+  private void databaseSetup() {
     Promise<String> finalPromise = Promise.promise();
     if ("dev".equals(webEnv)) {
       DbConfiguration.configureTestDefaults(dbMap, dbProperties);
     } else {
       DbConfiguration.configureDefaults(dbMap, dbProperties); // Using prod (./dodex.db)
     }
-
     PoolOptions poolOptions =
         new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 

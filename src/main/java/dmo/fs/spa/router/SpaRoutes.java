@@ -3,6 +3,7 @@ package dmo.fs.spa.router;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -58,7 +59,7 @@ public class SpaRoutes {
         Route route = router.route(HttpMethod.GET, "/userlogin").handler(sessionHandler);
 
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.GET));
+            route.handler(CorsHandler.create().allowedMethod(HttpMethod.GET));
         }
 
         route.handler(routingContext -> {
@@ -84,11 +85,11 @@ public class SpaRoutes {
                     if (queryData.isPresent()) {
                         try {
                             Future<SpaLogin> future = spaApplication
-                                    .getLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
+                                    .getLogin(URLDecoder.decode(queryData.get(), StandardCharsets.UTF_8));
 
                             future.onSuccess(result -> {
                                 if (result.getId() == null) {
-                                    result.setId(0l);
+                                    result.setId(0L);
                                 }
                                 session.put("login", new JsonObject(result.getMap()));
                                 response.end(new JsonObject(result.getMap()).encode());
@@ -101,8 +102,8 @@ public class SpaRoutes {
                                 response.end(FAILURE);
                             });
 
-                        } catch (UnsupportedEncodingException | InterruptedException
-                                | SQLException e) {
+                        } catch (InterruptedException
+                                 | SQLException e) {
                             logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT,
                                     "Context Configuration failed...: ", e.getMessage(),
                                     ColorUtilConstants.RESET));
@@ -128,7 +129,7 @@ public class SpaRoutes {
         Route route = router.route(HttpMethod.PUT, "/userlogin").handler(sessionHandler);
 
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.PUT));
+            route.handler(CorsHandler.create().allowedMethod(HttpMethod.PUT));
         }
 
         route.handler(BodyHandler.create()).handler(routingContext -> {
@@ -155,10 +156,10 @@ public class SpaRoutes {
 
                     if (bodyData.isPresent()) {
                         try {
-                            SpaLogin spaLogin = SpaUtil.createSpaLogin();
-                            spaLogin = SpaUtil.parseBody(
-                                    URLDecoder.decode(routingContext.body().asString(), "UTF-8"),
-                                    spaLogin);
+                            SpaLogin spaLoginCreated = SpaUtil.createSpaLogin();
+                            SpaLogin spaLogin = SpaUtil.parseBody(
+                                    URLDecoder.decode(routingContext.body().asString(), StandardCharsets.UTF_8),
+                                    spaLoginCreated);
 
                             JsonObject jsonObject = new JsonObject(spaLogin.getMap());
                             Future<SpaLogin> futureLogin =
@@ -178,6 +179,7 @@ public class SpaRoutes {
                                         e.printStackTrace();
                                     }
 
+                                    assert future != null;
                                     future.onSuccess(result2 -> {
                                         session.put("login", new JsonObject(result2.getMap()));
                                         response.end(new JsonObject(result2.getMap()).encode());
@@ -221,7 +223,7 @@ public class SpaRoutes {
         SessionHandler sessionHandler = SessionHandler.create(sessionStore);
         Route route = router.route(HttpMethod.DELETE, "/userlogin").handler(sessionHandler);
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.DELETE));
+            route.handler(CorsHandler.create().allowedMethod(HttpMethod.DELETE));
         }
 
         route.handler(routingContext -> {
@@ -264,7 +266,7 @@ public class SpaRoutes {
                 router.route(HttpMethod.DELETE, "/userlogin/unregister").handler(sessionHandler);
 
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create("*").allowedMethod(HttpMethod.DELETE));
+            route.handler(CorsHandler.create().allowedMethod(HttpMethod.DELETE));
         }
 
         route.handler(routingContext -> {
@@ -290,7 +292,7 @@ public class SpaRoutes {
                         try {
 
                             Future<SpaLogin> future = spaApplication
-                                    .unregisterLogin(URLDecoder.decode(queryData.get(), "UTF-8"));
+                                    .unregisterLogin(URLDecoder.decode(queryData.get(), StandardCharsets.UTF_8));
 
                             future.onSuccess(result -> {
                                 session.destroy();

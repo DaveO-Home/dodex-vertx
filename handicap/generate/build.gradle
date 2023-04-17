@@ -1,3 +1,5 @@
+import nu.studer.gradle.jooq.JooqEdition
+
 /* Composite build for jooq object generator (JooqGenerater.java) */
 
 plugins {
@@ -18,39 +20,39 @@ group = "dmo.fs.utils"
 version = "0.0.1"
 
 ext {
-  vertxVersion = "4.3.4"
+  vertxVersion = "4.4.0"
 }
 
 def jooqClasspath
 def javaTargetVersion = 11
 
 jooq {
-  version = "3.17.5"
-  edition = nu.studer.gradle.jooq.JooqEdition.OSS
+  version = "3.18.0"
+  edition = JooqEdition.OSS
 }
 
-task copyDatabaseConfig(type: Copy) {
-    from("src/main/resources/database_config.json") 
+tasks.register('copyDatabaseConfig', Copy) {
+    from("src/main/resources/database_config.json")
     into new File("build", "resources/main")
     doLast {
-      compileJava
+        compileJava
     }
 }
 /*
   Using a java class to generate jooq objects - allows for multiple db's - see ./generate directory
   Composite build - implementation("dmo.fs.utils:generate:0.0.1") - this avoids the circular dependancy error
 */
-task jooqGenerate(type: JavaExec) {
-  doFirst {
-    defaultTasks 'clean'
-    classpath = sourceSets.main.runtimeClasspath
-  }
-  environment.remove("DEFAULT_DB")
-  environment "VERTXWEB_ENVIRONMENT", "dev"
-  mainClass = "dmo.fs.utils.JooqGenerate"
-  args = ["dev"]
-  ignoreExitValue true
-  dependsOn copyDatabaseConfig
+tasks.register('jooqGenerate', JavaExec) {
+    doFirst {
+        defaultTasks 'clean'
+        classpath = sourceSets.main.runtimeClasspath
+    }
+    environment.remove("DEFAULT_DB")
+    environment "VERTXWEB_ENVIRONMENT", "dev"
+    mainClass = "dmo.fs.utils.JooqGenerate"
+    args = ["dev"]
+    ignoreExitValue true
+    dependsOn copyDatabaseConfig
 }
 
 sourceCompatibility = "$javaTargetVersion"
@@ -62,14 +64,15 @@ dependencies {
     implementation("io.vertx:vertx-config:$vertxVersion")
     implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
     implementation("io.vertx:vertx-jdbc-client:$vertxVersion")
-    implementation("org.slf4j:slf4j-jcl:1.7.36")
-    implementation("io.agroal:agroal-pool:2.0")
-    implementation("org.xerial:sqlite-jdbc:3.31.1")
+    implementation group: "org.slf4j", name: "slf4j-reload4j", version: "2.0.0"
+    implementation('io.agroal:agroal-pool:2.1')
+    implementation('org.xerial:sqlite-jdbc:3.40.1.0')
     implementation("io.vertx:vertx-mysql-client:$vertxVersion")
+//    implementation group: "org.postgresql", name: "postgres", version: "42.6.0"
     implementation("io.vertx:vertx-pg-client:$vertxVersion")
-    implementation("org.jooq:jooq:3.17.5")
-    implementation("org.jooq:jooq-codegen-maven:3.17.5")
-    implementation("org.jooq:jooq-meta:3.17.5")
+    implementation("org.jooq:jooq:3.18.0")
+    implementation("org.jooq:jooq-codegen-maven:3.18.0")
+    implementation('org.jooq:jooq-meta:3.18.0')
     implementation("javax.annotation:javax.annotation-api:1.3.2")
     implementation("com.google.guava:guava:31.1-jre")
 }

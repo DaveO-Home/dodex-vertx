@@ -108,12 +108,12 @@ public class FirebaseRouter {
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                     final MessageUser messageUser = dodexFirebase.createMessageUser();
                     try {
-                        wsChatSessions.put(ws.textHandlerID(),
+                        wsChatSessions.put(ws.remoteAddress().toString(),
                                 URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
                     } catch (final UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                    clients.put(ws.textHandlerID(), ws);
+                    clients.put(ws.remoteAddress().toString(), ws);
                     if(ke != null) {
                         ke.setValue("sessions", wsChatSessions.size());
                     }
@@ -122,8 +122,8 @@ public class FirebaseRouter {
                             logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
                                     "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
                         }
-                        wsChatSessions.remove(ws.textHandlerID());
-                        clients.remove(ws.textHandlerID());
+                        wsChatSessions.remove(ws.remoteAddress().toString());
+                        clients.remove(ws.remoteAddress().toString());
                         if(ke != null) {
                             ke.setValue("sessions", wsChatSessions.size());
                         }
@@ -171,7 +171,7 @@ public class FirebaseRouter {
                                         for (final String websocket : websockets) {
                                             final ServerWebSocket webSocket = clients.get(websocket);
                                             if (!webSocket.isClosed()) {
-                                                if (!websocket.equals(ws.textHandlerID())) {
+                                                if (!websocket.equals(ws.remoteAddress().toString())) {
                                                     // broadcast message
                                                     query = ParseQueryUtilHelper
                                                             .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
@@ -241,7 +241,7 @@ public class FirebaseRouter {
                     String id = "";
                     Map<String, String> query = null;
 
-                    query = ParseQueryUtilHelper.getQueryMap(wsChatSessions.get(ws.textHandlerID()));
+                    query = ParseQueryUtilHelper.getQueryMap(wsChatSessions.get(ws.remoteAddress().toString()));
 
                     handle = query.get("handle");
                     id = query.get("id");

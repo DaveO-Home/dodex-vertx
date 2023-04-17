@@ -177,14 +177,9 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
 
                         if (rows.size() > 0) {
                             future1.onComplete(v -> {
-                                // logger.info(String.format("%sLogin Time Changed: %s%s",
-                                // ColorUtilConstants.BLUE,
-                                // resultUser.getName(), ColorUtilConstants.RESET));
+                                //
                             });
                         }
-                        // } else {
-
-                        // }
                     }).doOnError(err -> {
                         logger.error(String.format("%sError selecting user: %s%s",
                                 ColorUtilConstants.RED, err.getCause().getMessage(),
@@ -201,12 +196,8 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         Promise<StringBuilder> promise = Promise.promise();
 
         pool.rxGetConnection().doOnSuccess(conn -> {
-            // SqlConnection conn = c.result();
-
             conn.query(create.query(getAllUsers(), messageUser.getName()).toString()).rxExecute()
                     .doOnSuccess(rows -> {
-                        // if (ar.succeeded()) {
-                        // RowSet<Row> rows = ar.result();
                         JsonArray ja = new JsonArray();
 
                         for (Row row : rows) {
@@ -214,9 +205,6 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                         }
                         conn.close();
                         promise.complete(new StringBuilder(ja.toString()));
-                        // } else {
-
-                        // }
                     }).doOnError(err -> {
                         logger.error(String.format("%sError build user json: %s%s",
                                 ColorUtilConstants.RED, err.getCause().getMessage(),
@@ -323,20 +311,15 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
 
             for (Long messageId : messageIds) {
                 pool.rxGetConnection().doOnSuccess(conn -> {
-                    // SqlConnection conn = c.result();
                     String query =
                             create.query(getRemoveUndelivered(), userId, messageId).toString();
 
                     conn.query(query).rxExecute().doOnSuccess(rows -> {
-                        // if (ar.succeeded()) {
-                        // RowSet<Row> rows = ar.result();
                         for (Row row : rows) {
                             logger.info(row.toJson().toString());
                         }
                         count += rows.rowCount() == 0 ? 1 : rows.rowCount();
-                        // } else {
 
-                        // }
                         if (messageIds.size() == count) {
                             try {
                                 conn.close();
@@ -366,14 +349,9 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                 pool.rxGetConnection().doOnSuccess(conn -> {
                     String sql = null;
 
-                    // SqlConnection conn = c.result();
-
                     sql = create.query(getRemoveMessage(), messageId, messageId).toString();
 
                     conn.query(sql).rxExecute().doOnSuccess(rows -> {
-                        // if (ar.succeeded()) {
-                        // RowSet<Row> rows = ar.result();
-
                         count += rows.rowCount() == 0 ? 1 : rows.rowCount();
                         if (messageIds.size() == count) {
                             try {
@@ -383,9 +361,6 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                                 e.printStackTrace();
                             }
                         }
-                        // } else {
-
-                        // }
                     }).doOnError(err -> {
                         logger.error(
                                 String.format("%sDeleting Message: %s%s", ColorUtilConstants.RED,
@@ -406,9 +381,6 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         Object postDate = current;
 
         pool.rxGetConnection().doOnSuccess(conn -> {
-            // if (ar.succeeded()) {
-            // SqlConnection conn = ar.result();
-
             String query = create.query(getAddMessage(), message, messageUser.getName(), postDate)
                     .toString();
             conn.query(query).rxExecute().doOnSuccess(rows -> {
@@ -436,12 +408,6 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                     err.printStackTrace();
                 }
             });
-            // }
-
-            // if (ar.failed()) {
-            // logger.error(String.format("%sFailed Adding Message: - %s%s", ColorUtilConstants.RED,
-            // ar.cause().getMessage(), ColorUtilConstants.RESET));
-            // }
         }).doOnError(Throwable::printStackTrace).subscribe();
 
         return promise.future();

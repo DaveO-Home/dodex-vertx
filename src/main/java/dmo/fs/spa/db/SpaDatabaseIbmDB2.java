@@ -113,21 +113,21 @@ public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
                                         Single<RowSet<Row>> crow =
                                                 conn.query(usersSql).rxExecute().doOnError(err -> {
                                                     logger.info(
-                                                            String.format("Users Table Error: %s",
+                                                            String.format("Login Table Error: %s",
                                                                     err.getMessage()));
                                                 }).doOnSuccess(result -> {
-                                                    logger.info("Users Table Added.");
+                                                    logger.info("Login Table Added.");
                                                 });
 
                                         crow.subscribe(result -> {
                                             //
                                         }, err -> {
-                                            logger.info(String.format("Users Table Error: %s",
+                                            logger.info(String.format("Login Table Error: %s",
                                                     err.getMessage()));
                                         });
                                     }
                                 }).doOnError(err -> {
-                                    logger.info(String.format("Users Table Error: %s",
+                                    logger.info(String.format("Login Table Error: %s",
                                             err.getMessage()));
 
                                 }).flatMapCompletable(res -> tx.rxCommit())));

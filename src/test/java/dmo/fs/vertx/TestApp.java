@@ -114,8 +114,8 @@ class DbTest /* extends DbDefinitionBase */ {
             whichDb = System.getenv("DEFAULT_DB");
         }
         Properties props = new Properties();
-        props.setProperty("user", "user"); // <------- change to use
-        props.setProperty("password", "password"); // <------- change to use
+        props.setProperty("user", "dodex"); // <------- change to use
+        props.setProperty("password", "dodex"); // <------- change to use
         props.setProperty("ssl", "false");
 
         if ("sqlite3".equals(whichDb)) {
@@ -123,19 +123,19 @@ class DbTest /* extends DbDefinitionBase */ {
             pool = dodexDatabase.getPool4();
         } else if ("postgres".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
-            overrideMap.put("database", "database"); // <------- should match test/dev db
+            overrideMap.put("database", "dodex"); // <------- should match test/dev db
             dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
             pool = dodexDatabase.getPool4();
             checkSql = DbPostgres.CHECKUSERSQL;
         } else if ("mariadb".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
-            overrideMap.put("database", "database"); // <------- should match test/dev db
+            overrideMap.put("database", "dodex"); // <------- should match test/dev db
             dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
             pool = dodexDatabase.getPool4();
             checkSql = DbMariadb.CHECKUSERSQL;
         } else if ("cubrid".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
-            overrideMap.put("database", "database"); // <------- should match test/dev db
+            overrideMap.put("database", "dodex"); // <------- should match test/dev db
             dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
             pool = dodexDatabase.getPool4();
             checkSql = DbCubrid.CHECKUSERSQL;

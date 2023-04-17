@@ -6,6 +6,7 @@ package golf.handicap.generated.tables.references
 
 import golf.handicap.generated.tables.Course
 import golf.handicap.generated.tables.Golfer
+import golf.handicap.generated.tables.Login
 import golf.handicap.generated.tables.Ratings
 import golf.handicap.generated.tables.Scores
 
@@ -20,6 +21,11 @@ val COURSE: Course = Course.COURSE
  * The table <code>GOLFER</code>.
  */
 val GOLFER: Golfer = Golfer.GOLFER
+
+/**
+ * The table <code>login</code>.
+ */
+val LOGIN: Login = Login.LOGIN
 
 /**
  * The table <code>RATINGS</code>.

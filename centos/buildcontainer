@@ -3,6 +3,9 @@
 NAME=centos
 if [ -f "./Dockerfile" ]; then NAME=.; fi
 
-docker build -t vertx $NAME 
+docker stop test_vertx
+docker rm test_vertx
 
-docker run -ti --privileged -p 8087:8087 -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --name test_vertx vertx bash
+docker build -t dx-vertx $NAME
+
+docker run -ti --privileged -p 8087:8087 -p 8888:8888 -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix --name test_vertx dx-vertx bash

@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+
+import io.vertx.rxjava3.ext.web.RoutingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -94,8 +96,8 @@ public class Routes {
 			
 			response.sendFile(file);
 		});
-		route.failureHandler(ctx -> 
-			logger.error(String.format("%sFAILURE in /test/ route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+		route.failureHandler(ctx ->
+			logger.error(String.format("%sFAILURE in /test/ route: %d - %s - %s%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute(), ctx.body(), ColorUtilConstants.RESET))
 		  );
 	}
 
@@ -132,13 +134,14 @@ public class Routes {
                 staticHandler.handle(ctx);
             });
             
-		Route staticRoute = router.route("/*").handler(TimeoutHandler.create(2000));
+		Route staticRoute = router.route("/*").handler(TimeoutHandler.create(2000)).handler(RoutingContext::next);
 		if ("dev".equals(DodexUtil.getEnv())) {
-			staticRoute.handler(CorsHandler.create("*" /* Need ports 8087 & 9876 */ ).allowedMethod(HttpMethod.GET));
+			staticRoute.handler(CorsHandler.create().allowedMethod(HttpMethod.GET));  /* Need ports 8087 & 9876 */
 		}
+
 		staticRoute.handler(staticHandler);
-		staticRoute.failureHandler(ctx -> 
-			logger.error(String.format("%sFAILURE in static route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+		staticRoute.failureHandler(ctx ->
+			logger.error(String.format("%sFAILURE in static route: %d -- %s -- %s%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET))
 		  );
 	}
 

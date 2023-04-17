@@ -5,20 +5,17 @@ package golf.handicap.generated.tables
 
 
 import golf.handicap.generated.DefaultSchema
-import golf.handicap.generated.keys.GOLFER__PK_GOLFER
+import golf.handicap.generated.keys.GOLFER__
 import golf.handicap.generated.tables.records.GolferRecord
 
 import java.math.BigDecimal
-import java.util.function.Function
 
 import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.Name
 import org.jooq.Record
-import org.jooq.Records
 import org.jooq.Row9
 import org.jooq.Schema
-import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -95,12 +92,12 @@ open class Golfer(
     /**
      * The column <code>GOLFER.OVERLAP_YEARS</code>.
      */
-    val OVERLAP_YEARS: TableField<GolferRecord, Int?> = createField(DSL.name("OVERLAP_YEARS"), SQLDataType.INTEGER.defaultValue(DSL.field("1", SQLDataType.INTEGER)), this, "")
+    val OVERLAP_YEARS: TableField<GolferRecord, Boolean?> = createField(DSL.name("OVERLAP_YEARS"), SQLDataType.BOOLEAN.defaultValue(DSL.field("1", SQLDataType.BOOLEAN)), this, "")
 
     /**
      * The column <code>GOLFER.PUBLIC</code>.
      */
-    val PUBLIC: TableField<GolferRecord, Int?> = createField(DSL.name("PUBLIC"), SQLDataType.INTEGER.defaultValue(DSL.field("0", SQLDataType.INTEGER)), this, "")
+    val PUBLIC: TableField<GolferRecord, Boolean?> = createField(DSL.name("PUBLIC"), SQLDataType.BOOLEAN.defaultValue(DSL.field("0", SQLDataType.BOOLEAN)), this, "")
 
     /**
      * The column <code>GOLFER.LAST_LOGIN</code>.
@@ -127,10 +124,9 @@ open class Golfer(
 
     constructor(child: Table<out Record>, key: ForeignKey<out Record, GolferRecord>): this(Internal.createPathAlias(child, key), child, key, GOLFER, null)
     override fun getSchema(): Schema? = if (aliased()) null else DefaultSchema.DEFAULT_SCHEMA
-    override fun getPrimaryKey(): UniqueKey<GolferRecord> = GOLFER__PK_GOLFER
+    override fun getPrimaryKey(): UniqueKey<GolferRecord> = GOLFER__
     override fun `as`(alias: String): Golfer = Golfer(DSL.name(alias), this)
     override fun `as`(alias: Name): Golfer = Golfer(alias, this)
-    override fun `as`(alias: Table<*>): Golfer = Golfer(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -142,24 +138,8 @@ open class Golfer(
      */
     override fun rename(name: Name): Golfer = Golfer(name, null)
 
-    /**
-     * Rename this table
-     */
-    override fun rename(name: Table<*>): Golfer = Golfer(name.getQualifiedName(), null)
-
     // -------------------------------------------------------------------------
     // Row9 type methods
     // -------------------------------------------------------------------------
-    override fun fieldsRow(): Row9<String?, String?, String?, Float?, String?, String?, Int?, Int?, BigDecimal?> = super.fieldsRow() as Row9<String?, String?, String?, Float?, String?, String?, Int?, Int?, BigDecimal?>
-
-    /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
-     */
-    fun <U> mapping(from: (String?, String?, String?, Float?, String?, String?, Int?, Int?, BigDecimal?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
-
-    /**
-     * Convenience mapping calling {@link SelectField#convertFrom(Class,
-     * Function)}.
-     */
-    fun <U> mapping(toType: Class<U>, from: (String?, String?, String?, Float?, String?, String?, Int?, Int?, BigDecimal?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
+    override fun fieldsRow(): Row9<String?, String?, String?, Float?, String?, String?, Boolean?, Boolean?, BigDecimal?> = super.fieldsRow() as Row9<String?, String?, String?, Float?, String?, String?, Boolean?, Boolean?, BigDecimal?>
 }

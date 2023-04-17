@@ -1,8 +1,32 @@
 # Changelog
 
-## [v2.5.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.5.0) (2022-11-15)
+## [v3.0.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.0.0) (2023-04-17)
 
-[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.4.0...v2.5.0)
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.5.2..v3.0.0)
+
+* Upgraded to vertx 4.4.1 final
+* Upgraded to gradle 8.0.2
+* Upgraded java/javascript dependencies
+* Major upgrade of react to v18.2.0
+* Added docker config for grpc
+* Added minikube with exposure to internet
+* Cleaned up gradle warnings and dependency conflicts
+* Changed centos/Dockfile to handle latest dependencies
+* Added content to handicap dodex widget
+* Process Changes:
+  * Must run **./gradlew clean** before building production jar
+  * Must run **./gradlew shadowJar** or **./gradlew build** to build production jar
+  * Should set **USE_HANDICAP=true** before building the jar
+  * Making database changes and using **jooqGenerate**
+    * Set **DEFAULT_DB** to either **sqlite3** or **postgres** ("mariadb" handles booleans and floats differently)
+    * If using **sqlite3** remove **handicap/dodex_tests.db**(Assumes that DbSqlite3.java has been changed and all other used databases)
+      * **Note:** In **..../dodex-vertx** directory run for each database, **`find . -name DbSqlite3.java`** to find the db schema
+    * Optionally remove **handicap/src/main/kotlin/golf/handicap/generated** directory 
+    * Run **./gradlew jooqGenerate**
+
+## [v2.5.2](https://github.com/DaveO-Home/dodex-vertx/tree/v3.0.0) (2022-11-13)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.4.0...v2.5.2)
 
 * Upgraded to vertx 4.3.4 final
 * Upgraded java/javascript dependencies
@@ -128,7 +152,7 @@
 * Converted 'davidmoten:rxjava2-jdbc' library to 'io.vertx.reactivex.*'
 * Using Vertx4 PostgreSQL, MySQL, DB2 and JDBC clients
 
-__Just a note:__ 😞 Wondering if anyone tries this code out. __No Issues!!__ not even a 👍.
+**Just a note:** 😞 Wondering if anyone tries this code out. **No Issues!!** not even a 👍.
 
 ## [v1.9.1](https://github.com/DaveO-Home/dodex-vertx/tree/v1.9.1) (2020-12-07)
 

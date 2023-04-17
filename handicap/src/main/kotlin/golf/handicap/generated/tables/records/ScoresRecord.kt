@@ -18,39 +18,39 @@ import org.jooq.impl.TableRecordImpl
 @Suppress("UNCHECKED_CAST")
 open class ScoresRecord() : TableRecordImpl<ScoresRecord>(Scores.SCORES), Record9<String?, Int?, Float?, Int?, String?, Float?, Int?, Int?, String?> {
 
-    open var pin: String?
+    var pin: String?
         set(value): Unit = set(0, value)
         get(): String? = get(0) as String?
 
-    open var grossScore: Int?
+    var grossScore: Int?
         set(value): Unit = set(1, value)
         get(): Int? = get(1) as Int?
 
-    open var netScore: Float?
+    var netScore: Float?
         set(value): Unit = set(2, value)
         get(): Float? = get(2) as Float?
 
-    open var adjustedScore: Int?
+    var adjustedScore: Int?
         set(value): Unit = set(3, value)
         get(): Int? = get(3) as Int?
 
-    open var teeTime: String?
+    var teeTime: String?
         set(value): Unit = set(4, value)
         get(): String? = get(4) as String?
 
-    open var handicap: Float?
+    var handicap: Float?
         set(value): Unit = set(5, value)
         get(): Float? = get(5) as Float?
 
-    open var courseSeq: Int?
+    var courseSeq: Int?
         set(value): Unit = set(6, value)
         get(): Int? = get(6) as Int?
 
-    open var courseTees: Int?
+    var courseTees: Int?
         set(value): Unit = set(7, value)
         get(): Int? = get(7) as Int?
 
-    open var used: String?
+    var used: String?
         set(value): Unit = set(8, value)
         get(): String? = get(8) as String?
 

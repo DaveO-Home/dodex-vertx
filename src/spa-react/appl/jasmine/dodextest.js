@@ -1,5 +1,6 @@
+import { act } from "@testing-library/react";
 
-export default function (dodex, input, mess, content, Start, timer) {
+export default function (dodex, input, mess, content, Start, timer, React, createRoot, Dodexlink) {
     /* 
      * Test Dodex operation.
      */
@@ -22,6 +23,16 @@ export default function (dodex, input, mess, content, Start, timer) {
             if (!$(mainContainer)[0]) {
                 $("body").append("<div id=\"main_container\"><div class=\"loading-page\"></div></div>");
             }
+            if(!window.dodexRoot) {
+                const dodexContainer = document.querySelector(".dodex--ico");
+                window.dodexRoot = createRoot(dodexContainer);
+            }
+            act(() => {
+                window.dodexRoot.render(
+                    <Dodexlink />
+                );
+            })
+
             dodex.setContentFile("../dodex/data/content.js");
             dodex.init({
                 input: input,

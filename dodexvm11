@@ -6,4 +6,4 @@
 # Run "gradlew shadowJar" first
 #####
 
-~/installs/graalvm-ce-java11-21.1.0/bin/native-image io.vertx.core.Launcher -jar ./build/libs/dodex-vertx-4.1.2.jar  -cp ./build/classes/java/main --initialize-at-build-time=org.slf4j,org.apache.commons.logging -H:+ReportExceptionStackTraces 
+~/work/graalvm-ce-java17-22.3.1/bin/native-image io.vertx.core.Launcher -jar ./build/libs/dodex-vertx-3.0.0-prod.jar  -cp ./build/classes/java/main --initialize-at-build-time=org.slf4j,org.apache.commons.logging -H:+ReportExceptionStackTraces

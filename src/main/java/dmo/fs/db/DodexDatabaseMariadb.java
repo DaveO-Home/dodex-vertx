@@ -195,7 +195,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
             })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
               logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
             }).doOnSuccess(rows -> {
-              if (MainVerticle.getEnableHandicap()) {
+              if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
                 Set<String> names = new HashSet<>();
 
                 for (Row row : rows) {

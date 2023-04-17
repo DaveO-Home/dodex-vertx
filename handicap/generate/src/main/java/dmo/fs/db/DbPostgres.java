@@ -5,8 +5,9 @@ public abstract class DbPostgres extends DbDefinitionBase implements HandicapDat
 	protected final static String CHECKUSERSQL = "SELECT to_regclass('public.users')";
 	protected final static String CHECKMESSAGESSQL = "SELECT to_regclass('public.messages')";
 	protected final static String CHECKUNDELIVEREDSQL = "SELECT to_regclass('public.undelivered')";
-  	protected final static String CHECKHANDICAPSQL = "SELECT table_name FROM information_schema.tables WHERE table_name in ('golfer', 'course', 'scores', 'ratings');";
-	protected final static String SELECTONE = "SELECT 1;";
+  	protected final static String CHECKHANDICAPSQL = "SELECT table_name FROM information_schema.tables WHERE table_name in ('golfer', 'course', 'scores', 'ratings', 'login');";
+	protected final static String CHECKLOGINSQL = "SELECT to_regclass('public.login')";
+	  protected final static String SELECTONE = "SELECT 1;";
 	private enum CreateTable {
 		CREATEUSERS(
 				"CREATE SEQUENCE public.users_id_seq INCREMENT 1 START 19 MINVALUE 1 MAXVALUE 2147483647 CACHE 1; " +
@@ -44,6 +45,19 @@ public abstract class DbPostgres extends DbDefinitionBase implements HandicapDat
 						"ON UPDATE NO ACTION ON DELETE NO ACTION NOT VALID)" +
 						"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
 						"ALTER TABLE public.undelivered OWNER to dummy;"),
+		CREATELOGIN(
+				"CREATE SEQUENCE public.login_id_seq INCREMENT 1 START 19 MINVALUE 1 MAXVALUE 2147483647 CACHE 1; " +
+						"ALTER SEQUENCE public.login_id_seq OWNER TO dummy;" +
+						"CREATE TABLE public.login" +
+						"(id integer NOT NULL DEFAULT nextval('login_id_seq'::regclass)," +
+						"name character varying(255) COLLATE pg_catalog.\"default\"," +
+						"password character varying(255) COLLATE pg_catalog.\"default\"," +
+						"last_login timestamp with time zone," +
+						"CONSTRAINT login_pkey PRIMARY KEY (id)," +
+						"CONSTRAINT login_name_unique UNIQUE (name)," +
+						"CONSTRAINT login_password_unique UNIQUE (password))" +
+						"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
+						"ALTER TABLE public.login OWNER to dummy;"),
 		CREATEGOLFER(
 				"CREATE TABLE IF NOT EXISTS GOLFER (" +
 						"PIN VARCHAR(8) primary key NOT NULL," +
@@ -52,8 +66,8 @@ public abstract class DbPostgres extends DbDefinitionBase implements HandicapDat
 						"HANDICAP NUMERIC(3,1) DEFAULT 0.0," +
 						"COUNTRY CHARACTER(2) DEFAULT 'US' NOT NULL," +
 						"STATE CHARACTER(2) DEFAULT 'NV' NOT NULL," +
-						"OVERLAP_YEARS BOOL DEFAULT 1," +
-						"PUBLIC BOOL DEFAULT 0," +
+						"OVERLAP_YEARS BOOL DEFAULT true," +
+						"PUBLIC BOOL DEFAULT false," +
 						"LAST_LOGIN BIGINT," +
 						"CONSTRAINT golfer_pkey UNIQUE (PIN)," +
 						"CONSTRAINT golfer_names_unique UNIQUE (FIRST_NAME, LAST_NAME))" +

@@ -5,7 +5,7 @@
                 <div class="modal-title center">
                     <h5 id="modal_title">{{title}}</h5>
                 </div>
-            </div>﻿
+            </div>
             <div class="modal-body">
                 {{{body}}}
             </div>

@@ -6,7 +6,7 @@
     "handicap.enableAdmin": false,
     "handicap.adminPin": "hand!cap",
     "handicap.port": 8888,
-    "prod.handicap.port": 8889,
+    "prod.handicap.port": 8890,
     "grpc:port": 15001,
     "prod:grpc:port": 15001
 }

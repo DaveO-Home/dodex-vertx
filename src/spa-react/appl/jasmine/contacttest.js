@@ -1,6 +1,7 @@
-import { getContact } from "../components/ContactC";
+import Contact from "../components/ContactC";
+import { act } from "@testing-library/react";
 
-export default function (timer) {
+export default function (timer, React) {
     /*
      * Test Form validation and submission.
      */
@@ -12,28 +13,27 @@ export default function (timer) {
         let commentObject;
         const mainContainer = "#main_container";
 
-        it("Contact form - verify required fields", done => {
-
-            getContact().then(function () {
-                contact = $(`${mainContainer} form`);
-                nameObject = $("#inputName");
-                emailObject = $("#inputEmail");
-                commentObject = $("#inputComment");
-
-                expect(nameObject[0].validity.valueMissing).toBe(true);
-                expect(emailObject[0].validity.valueMissing).toBe(true);
-                expect(commentObject[0].validity.valueMissing).toBe(true);
-                expect(contact.find("input[type=checkbox]")[0].validity.valueMissing).toBe(false); // Not required
-
-                done();
+        it("Contact form - verify required fields", () => {
+            act(() => {
+                main.render(<Contact />);
             });
+
+            contact = $(`${mainContainer} form`);
+            nameObject = $("#inputName");
+            emailObject = $("#inputEmail");
+            commentObject = $("#inputComment");
+
+            expect(nameObject[0].validity.valueMissing).toBe(true);
+            expect(emailObject[0].validity.valueMissing).toBe(true);
+            expect(commentObject[0].validity.valueMissing).toBe(true);
+            expect(contact.find("input[type=checkbox]")[0].validity.valueMissing).toBe(false); // Not required
         });
 
         it("Contact form - validate populated fields, email mismatch.", done => {
             submitObject = contact.find("input[type=submit]");
 
             nameObject.val("me");
-            emailObject.val("notanemailaddress");
+            emailObject.val("not-an-email-address");
             commentObject.val("Stuff");
 
             submitObject.click();

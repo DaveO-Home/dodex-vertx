@@ -1,5 +1,5 @@
-import React, { Component } from "react";
-import ReactDOM from "react-dom";
+import React, { Component, useEffect } from "react";
+import { createRoot } from 'react-dom/client';
 import PropTypes from "prop-types";
 import App from "../js/app";
 import Setup from "../js/utils/setup";
@@ -26,7 +26,7 @@ const welcomeHtml = (
     {/* <link href="./App.css" rel="stylesheet" /> */}
     <div className="App-header">
       <img className="App-logo" src="../appl/assets/logo.svg" />
-      <h2>Hi -  
+      <h2>Hi -
       <span
           className="txt-rotate"
           data-period="2000"
@@ -43,28 +43,35 @@ const welcomeHtml = (
   </div>
 );
 
+function Carousel() {
+    useEffect(() => {
+        carousel();
+    });
+    return welcomeHtml;
+}
+
 class Welcome extends Component {
   componentDidMount() {
     setData();
+    if (App.controllers["Start"]) {
+      App.controllers["Start"].initMenu();
+    }
+    Setup.init();
   }
 
   render() {
-    {
-      if (App.controllers["Start"]) {
-        App.controllers["Start"].initMenu();
-      }
-      Setup.init();
-    }
     return (<span></span>);
   }
 }
 
 function setData() {
-  ReactDOM.render(
-    welcomeHtml,
-    document.getElementById("main_container"),
-    carousel
-  );
+    if(!window.main) {
+        const container = document.getElementById("main_container");
+        window.main = createRoot(container);
+    }
+    window.main.render(
+        <Carousel/>
+    );
 }
 
 export default Welcome;

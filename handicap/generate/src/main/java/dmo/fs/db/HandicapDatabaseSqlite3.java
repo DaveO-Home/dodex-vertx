@@ -58,6 +58,7 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
 
     dbProperties.setProperty("foreign_keys", "true");
 
+    assert dbOverrideMap != null;
     DbConfiguration.mapMerge(dbMap, dbOverrideMap);
     databaseSetup();
   }
@@ -223,12 +224,19 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
                   if (!names.contains("SCORES")) {
                     logger.warn("Scores Table Added.");
                   }
-                  tx.commit();
-                  conn.close();
-                  finalPromise.complete(isCreateTables.toString());
-                  if (isCreateTables) {
-                    returnPromise.complete(isCreateTables.toString());
-                  }
+                  conn.query(getCreateTable("LOGIN")).rxExecute().doOnError(err -> {
+                    logger.error(String.format("Login Table Error: %s", err.getMessage()));
+                  }).doOnSuccess(row5 -> {
+                    if (!names.contains("login")) {
+                      logger.warn("Login Table Added.");
+                    }
+                    tx.commit();
+                    conn.close();
+                    finalPromise.complete(isCreateTables.toString());
+                    if (isCreateTables) {
+                      returnPromise.complete(isCreateTables.toString());
+                    }
+                  }).subscribe();
                 }).subscribe();
               }).subscribe();
             }).subscribe();

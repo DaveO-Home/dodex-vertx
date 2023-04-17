@@ -1,0 +1,25 @@
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: vertx-pv
+spec:
+  storageClassName: standard
+  capacity:
+    storage: 50M
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/data/sqlite3"
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: vertx-pvc
+spec:
+  storageClassName: standard
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 50M

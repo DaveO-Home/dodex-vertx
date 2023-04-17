@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from 'react-dom/client';
 import Setup from "../js/utils/setup";
 import App from "../js/app";
 
@@ -13,12 +13,6 @@ const pdfIframe = (
 class Pdf extends Component {
   componentDidMount() { setPdfComp(); }
   render() {
-    {
-      if (App.controllers["Start"]) {
-        App.controllers["Start"].initMenu();
-      }
-      Setup.init();
-    }
     return (<span></span>);
   }
 }
@@ -28,10 +22,9 @@ function getPdfComp() {
 }
 
 function setPdfComp() {
-  ReactDOM.render(
-    pdfIframe,
-    document.getElementById("main_container")
-  );
+    window.main.render(
+        pdfIframe
+    );
 }
 
 export { getPdfComp };

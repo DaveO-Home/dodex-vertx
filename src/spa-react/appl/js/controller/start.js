@@ -123,8 +123,9 @@ export default App.controllers.Start ||
             };
             form.find("input[type=submit]", el).click(formFunction);
         },
+        // onclick="function doit(e) {window.location.hash = ''; console.log(e);}"
         footer: `<button type="submit" class="btn btn-sm btn-primary submit-modal mr-auto raised submit-login">{{submit}}</button>
-                 <button class="btn btn-sm close-modal raised" data-bs-dismiss="modal" aria-hidden="true">{{close}}</button>
+                 <button type="button" class="btn btn-sm close-modal raised" data-bs-dismiss="modal" aria-hidden="true">{{close}}</button>
                  <div class="ml-auto">
                     <input type="checkbox" class="align-middle checkbox" id="newLogin" name="newLogin">
                     <label class="f14" for="newLogin">New Login</label>

@@ -6,6 +6,7 @@ package golf.handicap.generated
 
 import golf.handicap.generated.tables.Course
 import golf.handicap.generated.tables.Golfer
+import golf.handicap.generated.tables.Login
 import golf.handicap.generated.tables.Ratings
 import golf.handicap.generated.tables.Scores
 
@@ -40,6 +41,11 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
     val GOLFER: Golfer get() = Golfer.GOLFER
 
     /**
+     * The table <code>login</code>.
+     */
+    val LOGIN: Login get() = Login.LOGIN
+
+    /**
      * The table <code>RATINGS</code>.
      */
     val RATINGS: Ratings get() = Ratings.RATINGS
@@ -54,6 +60,7 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
     override fun getTables(): List<Table<*>> = listOf(
         Course.COURSE,
         Golfer.GOLFER,
+        Login.LOGIN,
         Ratings.RATINGS,
         Scores.SCORES
     )

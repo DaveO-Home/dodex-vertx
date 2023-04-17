@@ -12,14 +12,14 @@ class Dodex extends Component {
 
   handleClick() {
     const credentials = sessionStorage.getItem("credentials");
-    
     if (typeof $("#top-nav").find(".alert-warning")[0] !== "undefined") {
       window.doDex.openDodex();
       return;
     }
     if (!credentials) {
-      window.doDex.openDodex(); // toggle close
       messageAlert($("#top-nav"), "<strong>Warning:</strong> You need to login for Dodex", "warning");
+      window.doDex.openDodex(); // toggle close
+      return;
     }
   }
 }

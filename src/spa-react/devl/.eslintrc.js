@@ -18,6 +18,8 @@ module.exports = {
         "semi": 1,
         "quotes": 1,
         'indent': 0,
+	"no-unused-vars": 1,
+        "no-undef": 1,
         "no-console": [2, { allow: ["warn", "error"] }],
         "no-case-declarations": 1,
         // allow async-await

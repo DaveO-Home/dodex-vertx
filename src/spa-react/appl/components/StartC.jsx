@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import ReactDOM from "react-dom";
+import { createRoot } from 'react-dom/client';
 import start from "../js/controller/start";
 import Setup from "../js/utils/setup";
 import Helpers from "../js/utils/helpers";
@@ -7,10 +7,13 @@ import Helpers from "../js/utils/helpers";
 class Start extends React.Component {
   componentDidMount() {
     getStartComp().then(function(StartComp){
-      ReactDOM.render(
-        <StartComp />,
-        document.getElementById("main_container")
-      );
+        if(!window.main) {
+            const container = document.getElementById("main_container");
+            window.main = createRoot(container);
+        }
+        window.main.render(
+            <StartComp />
+        );
     });   
   }
 

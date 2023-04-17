@@ -27,7 +27,7 @@ public abstract class DbCassandraBase {
 	public Future<mjson.Json> deleteUser(ServerWebSocket ws, EventBus eb, MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
-		mJsonPromises.put(ws.textHandlerID() + "deleteuser", promise);
+		mJsonPromises.put(ws.remoteAddress().toString() + "deleteuser", promise);
 		mjson.Json mess = setMessage("deleteuser", messageUser, ws);
 		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
 
@@ -41,7 +41,7 @@ public abstract class DbCassandraBase {
 			throws InterruptedException, SQLException {
 		Promise<mjson.Json> promise = Promise.promise();
 
-		mJsonPromises.put(ws.textHandlerID() + "addmessage", promise);
+		mJsonPromises.put(ws.remoteAddress().toString() + "addmessage", promise);
 		mjson.Json mess = setMessage("addmessage", messageUser, ws);
 
 		if (mess != null) {
@@ -60,7 +60,7 @@ public abstract class DbCassandraBase {
 		Promise<MessageUser> promise = Promise.promise();
 		// This promise will be completed in the eb.consumer listener - see
 		// setEbConsumer
-		mUserPromises.put(ws.textHandlerID() + "selectuser", promise);
+		mUserPromises.put(ws.remoteAddress().toString() + "selectuser", promise);
 
 		mjson.Json mess = setMessage("selectuser", messageUser, ws);
 		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
@@ -80,7 +80,7 @@ public abstract class DbCassandraBase {
 			MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
-		mJsonPromises.put(ws.textHandlerID() + "allusers", promise);
+		mJsonPromises.put(ws.remoteAddress().toString() + "allusers", promise);
 		mjson.Json mess = setMessage("allusers", messageUser, ws);
 		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
 
@@ -94,7 +94,7 @@ public abstract class DbCassandraBase {
 			MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
-		mJsonPromises.put(ws.textHandlerID() + "deletedelivered", promise);
+		mJsonPromises.put(ws.remoteAddress().toString() + "deletedelivered", promise);
 		mjson.Json mess = setMessage("deletedelivered", messageUser, ws);
 		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
 
@@ -108,7 +108,7 @@ public abstract class DbCassandraBase {
 			MessageUser messageUser) {
 		Promise<mjson.Json> promise = Promise.promise();
 
-		mJsonPromises.put(ws.textHandlerID() + "delivermess", promise);
+		mJsonPromises.put(ws.remoteAddress().toString() + "delivermess", promise);
 		mjson.Json mess = setMessage("delivermess", messageUser, ws);
 		mjson.Json jsonPayLoad = mjson.Json.object().set("msg", mess.getValue());
 
@@ -122,7 +122,7 @@ public abstract class DbCassandraBase {
 		try {
 			mess = mjson.Json.object().set("cmd", cmd).set("ip", messageUser.getIp())
 					.set("password", messageUser.getPassword()).set("name", messageUser.getName())
-					.set("ws", ws.textHandlerID() + cmd);
+					.set("ws", ws.remoteAddress().toString() + cmd);
 		} catch (Exception ex) {
 			ex.printStackTrace();
 		}

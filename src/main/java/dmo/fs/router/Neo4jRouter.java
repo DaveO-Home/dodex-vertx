@@ -83,7 +83,7 @@ public class Neo4jRouter {
 
         startupMessage = "dev".equals(DodexUtil.getEnv()) ? "In Development" : startupMessage;
         logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, startupMessage,
-                ColorUtilConstants.RESET);
+                ColorUtilConstants.RESET, "");
 
 
         Handler<ServerWebSocket> handler = new Handler<ServerWebSocket>() {
@@ -96,7 +96,7 @@ public class Neo4jRouter {
                             ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"),
                             StandardCharsets.UTF_8.name());
                     logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle,
-                            ColorUtilConstants.RESET);
+                            ColorUtilConstants.RESET, "");
                 } catch (final UnsupportedEncodingException e) {
                     logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
                             ColorUtilConstants.RESET));
@@ -109,12 +109,12 @@ public class Neo4jRouter {
                 } else {
                     final MessageUser messageUser = dodexNeo4j.createMessageUser();
                     try {
-                        wsChatSessions.put(ws.textHandlerID(), URLDecoder
+                        wsChatSessions.put(ws.remoteAddress().toString(), URLDecoder
                                 .decode(ws.uri().toString(), StandardCharsets.UTF_8.name()));
                     } catch (final UnsupportedEncodingException e) {
                         e.printStackTrace();
                     }
-                    clients.put(ws.textHandlerID(), ws);
+                    clients.put(ws.remoteAddress().toString(), ws);
                     if(ke != null) {
                         ke.setValue("sessions", clients.size());
                     }
@@ -123,8 +123,8 @@ public class Neo4jRouter {
                             logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
                                     "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
                         }
-                        wsChatSessions.remove(ws.textHandlerID());
-                        clients.remove(ws.textHandlerID());
+                        wsChatSessions.remove(ws.remoteAddress().toString());
+                        clients.remove(ws.remoteAddress().toString());
                         if(ke != null) {
                             ke.setValue("sessions", wsChatSessions.size());
                         }
@@ -141,7 +141,7 @@ public class Neo4jRouter {
                     Map<String, String> query = null;
 
                     query = ParseQueryUtilHelper
-                            .getQueryMap((String) wsChatSessions.get(ws.textHandlerID()));
+                            .getQueryMap((String) wsChatSessions.get(ws.remoteAddress().toString()));
 
                     handle = query.get("handle");
                     id = query.get("id");
@@ -246,7 +246,7 @@ public class Neo4jRouter {
                             for (final String websocket : websockets) {
                                 final ServerWebSocket webSocket = clients.get(websocket);
                                 if (!webSocket.isClosed()) {
-                                    if (!websocket.equals(ws.textHandlerID())) {
+                                    if (!websocket.equals(ws.remoteAddress().toString())) {
                                         // broadcast message
                                         query = ParseQueryUtilHelper.getQueryMap((String) wsChatSessions
                                                 .get(webSocket.textHandlerID()));
@@ -360,6 +360,6 @@ public class Neo4jRouter {
     }
 
     public static void removeWsChatSession(ServerWebSocket ws) {
-        wsChatSessions.remove(ws.textHandlerID());
+        wsChatSessions.remove(ws.remoteAddress().toString());
     }
 }

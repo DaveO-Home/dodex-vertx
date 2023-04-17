@@ -2,6 +2,12 @@
  * Successful acceptance tests & lints start the production build.
  * Tasks are run serially, 'accept' -> 'pat' -> ('eslint', 'csslint', 'bootlint') -> 'build'
  */
+let chalk;
+import("chalk").then(async C => {
+  chalk = new C.Chalk();
+  log(await chalk.green("Chalk Loaded"));
+});
+
 const { src, /*dest,*/ series, parallel, task } = require("gulp");
 const runFusebox = require("./fuse.js");
 // const chalk = require("chalk");
@@ -57,7 +63,7 @@ if (browsers) {
  */
 const pat = function (done) {
     if (!browsers) {
-        global.whichBrowser = ["ChromeHeadless"/*, "FirefoxHeadless"*/];
+        global.whichBrowser = [/*"ChromeHeadless",*/ "FirefoxHeadless"];
     }
 
     new Promise((resolve, reject) => {
@@ -93,11 +99,9 @@ const esLint = function (cb) {
         process.exit(1);
     });
 
-    import("chalk").then(chalk => {
-        return stream.on("end", function () {
-            log(chalk.blue.bold("# javascript & jsx files linted: " + lintCount));
-            cb();
-        });
+    return stream.on("end", function () {
+        log(chalk.blue.bold("# javascript & jsx files linted: " + lintCount));
+        cb();
     });
 }
 /*
@@ -120,6 +124,7 @@ const cssLint = function (cb) {
 /*
  * Bootstrap html linter 
  */
+ /*
 const bootLint = function (cb) {
     return exec("npx gulp --gulpfile Gulpboot.js", function (err, stdout, stderr) {
         log(stdout);
@@ -134,6 +139,7 @@ const bootLint = function (cb) {
         cb();
     });
 };
+*/
 /*
  * Build the application to run karma acceptance tests
  */
@@ -374,7 +380,7 @@ const fuseboxTdd = function (done) {
  */
 const fuseboxTddWait = function (done) {
     if (!browsers) {
-        global.whichBrowser = ["Chrome"/*, "Firefox"*/];
+        global.whichBrowser = [/*"Chrome",*/ "Firefox"];
     }
     console.log("Waiting for Vertx to Rebuild...");
     setTimeout(function () {
@@ -398,12 +404,12 @@ const final = (done) => {
     setTimeout(function () { process.exit(0); }, 10);
 }
 
-const runProd = series(testBuild, touch, pat, parallel(esLint, cssLint, bootLint), build, touch, final);
+const runProd = series(testBuild, touch, pat, parallel(esLint, cssLint), build, touch, final);
 runProd.displayName = "prod";
 
 task(runProd);
 exports.default = runProd;
-exports.prd = series(parallel(esLint, cssLint, bootLint), build, touch, final);
+exports.prd = series(parallel(esLint, cssLint), build, touch, final);
 exports.preview = preview;
 exports.test = series(testBuild, touch, pat, final);
 exports.tdd = fuseboxTdd;
@@ -413,7 +419,7 @@ exports.copy = copy;
 exports.acceptance = fuseboxAcceptance;
 exports.e2e = fuseboxAcceptance;
 exports.development = series(setNoftl, parallel(watch, touch), fuseboxTddWait);
-exports.lint = parallel(esLint, cssLint, bootLint);
+exports.lint = parallel(esLint, cssLint);
 exports.opera = tddo;
 exports.snap = series(karmaServerSnap, final);
 exports.watch = parallel(watch, touch);

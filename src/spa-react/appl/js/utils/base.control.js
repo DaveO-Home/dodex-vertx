@@ -55,21 +55,33 @@ export default {
                     css["margin-left"] = `${(100 - width) / 2}%`;
                 }
 
+                let togglePassword = document.querySelector("#togglePassword");
+                const password = document.querySelector("#inputPassword");
+
+                togglePassword.addEventListener("click", function () {
+                    // toggle the type attribute
+                    const type = password.getAttribute("type") === "password" ? "text" : "password";
+                    password.setAttribute("type", type);
+
+                    // toggle the icon
+                    this.classList.toggle("bi-eye");
+                });
+
                 const loginButton = $(".modal .submit-login");
                 loginButton.on("click", login(loginButton, true));
 
                 $("div .modal-footer .contact").on("click", this["div .modal-footer .contact click"]);
-                
+
                 $(el).on("show.bs.modal", () => {
                     if (options.fnLoad) {
                         options.fnLoad(el);
                     }
-                }).on("hide.bs.modal", () => {
+                }).on("hide.bs.modal", (e) => {
                     if (options.fnHide) {
                         options.fnHide(el);
                     }
-                }).on("hidden.bs.modal", function () {
-                    $(this).remove();
+                }).on("hidden.bs.modal", function (e) {
+                    $("#modalTemplate").remove();
                 }).modal("show").css(css).find("> .modal-dialog").addClass(options.widthClass);
             });
         });

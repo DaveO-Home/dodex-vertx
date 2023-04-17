@@ -1,4 +1,4 @@
-<form action="#" method="post" class="form-modal">  
+<form action="#" method="post" class="form-modal">
     <div class="form-group control-group" required>
         <label class="control-label" for="inputUsername">Username:</label>
         <div class="controls">
@@ -10,6 +10,7 @@
     <div class="form-group">
         <label class="control-label" for="inputPassword">Password:</label>
         <input pattern="(?=.*?[A-z])(?=.*?[0-9])(?=.*?[^\w\s]).{8,48}" name="password" id="inputPassword" class="form-control" required type="password" placeholder="Password"/>
+        <label class="control-label"><i class="bi bi-eye-slash" id="togglePassword"></i> Toggle Visibility</label>
         <!-- <input name="password" id="inputPassword" class="form-control" required type="password" placeholder="Password"/> -->
     </div>
     <div class="form-group" hidden>

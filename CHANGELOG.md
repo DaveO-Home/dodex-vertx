@@ -1,5 +1,15 @@
 # Changelog
 
+## [v3.0.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.0.0) (2023-05-12)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.0.0..v3.0.1)
+
+* Upgraded to vertx 4.4.2 final
+* Upgraded javascript dependencies
+* Fixed dodex-mess (grab credentials)
+* Added default generated javascript grpc scripts: handicap_grpc_web_pb.js, handicap_pb.js
+  * client can now be generated with just **`npm run webpack:build`** etc.
+
 ## [v3.0.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.0.0) (2023-04-17)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.5.2..v3.0.0)

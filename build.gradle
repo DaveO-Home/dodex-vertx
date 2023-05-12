@@ -43,7 +43,7 @@ repositories {
 version = "3.0.0"
 
 ext {
-    vertxVersion = "4.4.1"
+    vertxVersion = "4.4.2"
     junitJupiterEngineVersion = "5.4.0"
     jooqVersion = "3.18.0"
     protoVersion = "3.21.1"

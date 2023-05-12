@@ -14,6 +14,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
 import org.neo4j.driver.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,7 +116,7 @@ public class Neo4jRouter {
                         e.printStackTrace();
                     }
                     clients.put(ws.remoteAddress().toString(), ws);
-                    if(ke != null) {
+                    if (ke != null) {
                         ke.setValue("sessions", clients.size());
                     }
                     ws.closeHandler(ch -> {
@@ -125,7 +126,7 @@ public class Neo4jRouter {
                         }
                         wsChatSessions.remove(ws.remoteAddress().toString());
                         clients.remove(ws.remoteAddress().toString());
-                        if(ke != null) {
+                        if (ke != null) {
                             ke.setValue("sessions", wsChatSessions.size());
                         }
                     });
@@ -178,7 +179,7 @@ public class Neo4jRouter {
                                                     }
                                                     return Uni.createFrom().item(0);
                                                 }).onFailure().invoke(Throwable::printStackTrace)
-                                                        .subscribeAsCompletionStage();
+                                                .subscribeAsCompletionStage();
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
@@ -242,7 +243,7 @@ public class Neo4jRouter {
                             selectedUsers = returnObject.get("selectedUsers");
                             final Set<String> websockets = clients.keySet();
                             Map<String, String> query = null;
-                            
+
                             for (final String websocket : websockets) {
                                 final ServerWebSocket webSocket = clients.get(websocket);
                                 if (!webSocket.isClosed()) {
@@ -255,14 +256,14 @@ public class Neo4jRouter {
                                                 && command[0].length() == 0) {
                                             webSocket.writeTextMessage(messageUser.getName() + ": "
                                                     + computedMessage[0]);
-                                        // private message
+                                            // private message
                                         } else if (Arrays.stream(selectedUsers.split(",")).anyMatch(h -> {
-                                                    boolean isMatched = false;
-                                                    if (!isMatched) {
-                                                        isMatched = h.contains(handle);
-                                                    }
-                                                    return isMatched;
-                                                })) {
+                                            boolean isMatched = false;
+                                            if (!isMatched) {
+                                                isMatched = h.contains(handle);
+                                            }
+                                            return isMatched;
+                                        })) {
                                             webSocket.writeTextMessage(messageUser.getName() + ": "
                                                     + computedMessage[0]);
                                             // keep track of delivered messages
@@ -274,8 +275,8 @@ public class Neo4jRouter {
                                             ws.writeTextMessage("Private user not selected");
                                         } else {
                                             ws.writeTextMessage("ok");
-                                            if(ke != null) {
-                                                if(selectedUsers.length() > 0) {
+                                            if (ke != null) {
+                                                if (selectedUsers.length() > 0) {
                                                     ke.setValue("private", 1);
                                                 } else {
                                                     ke.setValue(1); // broadcast
@@ -322,7 +323,7 @@ public class Neo4jRouter {
          * Optional auto user cleanup - config in "application-conf.json". When client
          * changes handle when server is down, old users and undelivered messages will
          * be orphaned.
-         * 
+         *
          * Defaults: off - when turned on 1. execute on start up and every 7 days
          * thereafter. 2. remove users who have not logged in for 90 days.
          */

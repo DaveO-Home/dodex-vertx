@@ -7,8 +7,9 @@ const year = new Date().getFullYear();
 				content: `<span class="handicap-title text-center"><div> Administration</div></span
 				<br>
 				<pre><strong>Alert: </strong>
-    If the <strong>Add Tee</strong> button is disabled, please submit
-    the course\'s <strong>score card</strong> to: <strong>admin@domain.org<strong>
+    If the <strong>Add Tee</strong> button is disabled, please send
+    the course\'s <strong>score card</strong> to the <strong>dodex</strong> private
+    message handle <strong>daveo</strong>(ctrl+double-click on a dial)
 				</pre>
 				`
 			},

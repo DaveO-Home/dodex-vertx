@@ -1,17 +1,6 @@
 
 package dmo.fs.vertx;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Locale;
-import org.apache.http.client.methods.HttpOptions;
-import org.modellwerkstatt.javaxbus.EventBus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dmo.fs.router.CassandraRouter;
@@ -26,12 +15,23 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
+import io.vertx.ext.web.Route;
 import io.vertx.rxjava3.core.AbstractVerticle;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.file.FileSystem;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.ext.eventbus.bridge.tcp.TcpEventBusBridge;
-import io.vertx.rxjava3.ext.web.Route;
+import org.modellwerkstatt.javaxbus.EventBus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URISyntaxException;
+import java.sql.SQLException;
+import java.util.List;
+import java.util.Locale;
 
 public class Server extends AbstractVerticle {
   private static Logger logger;
@@ -67,28 +67,34 @@ public class Server extends AbstractVerticle {
   private static String useKafka = System.getenv("DODEX_KAFKA");
   private HttpServer server;
   private JsonObject config;
+  private JsonObject alternateConfig;
 
   @Override
   public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException,
       IOException, SQLException, NumberFormatException {
-    if (development == null || "".equals(development) || development.toLowerCase().startsWith("prod")) {
+    if (development == null || "".equals(development)
+        || development.toLowerCase().startsWith("prod")) {
       development = "prod";
     } else if ("dev".equalsIgnoreCase(development)) {
       port = startupPort == 0 ? 8087 : startupPort;
     } else if ("test".equalsIgnoreCase(development)) {
       port = startupPort == 0 ? 8089 : startupPort;
     }
+
     HttpServerOptions options = new HttpServerOptions();
     options.setLogActivity(true);
     config = Vertx.currentContext().config();
+    alternateConfig = getAlternateConfig();
+
     if (config.getInteger("http.port") == null) {
-      config = getAlternateConfig();
+      config = alternateConfig;
     }
-    if(useKafka == null) {
+    if (useKafka == null) {
       useKafka = config.getString("dodex.kafka");
     }
-    if("true".toLowerCase().equals(useKafka)) {
-      logger.info("{}Using Kafka - make sure it is running with ZooKeeper.{}", ColorUtilConstants.GREEN, ColorUtilConstants.RESET);
+    if ("true".toLowerCase().equals(useKafka)) {
+      logger.info("{}Using Kafka - make sure it is running with ZooKeeper.{}",
+          ColorUtilConstants.GREEN, ColorUtilConstants.RESET);
     }
     /* From application-conf.json - Vertx version defaults to 4 */
     Integer vertxVersion = config.getInteger(development + ".vertx.version",
@@ -108,23 +114,12 @@ public class Server extends AbstractVerticle {
 
     Routes routes = new Routes(vertx, server, vertxVersion);
 
-    SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter(), routes.getFirestore());
-
     FileSystem fs = vertx.fileSystem();
     /* For BoxFuse - sqlite3 */
     // fs.mkdir("/efs");
     // Runtime.getRuntime().exec("mount -t nfs4 -o
     // nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
     // <your-efs-id>.efs.<your-aws-region>.amazonaws.com:/ /efs").waitFor();
-    if(!"prod".equalsIgnoreCase(development)) {
-      List<Route> routesList = allRoutes.getRouter().getRoutes();
-      for (Route r : routesList) {
-        String path = parsePath(r);
-        String methods = path + (r.methods() == null ? "" : r.methods());
-        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT, methods, ColorUtilConstants.RESET);
-      }
-    }
-    server.requestHandler(allRoutes.getRouter());
 
     // Note: development = "prod" in production mode
     // Can override port at execution time with env variable "VERTX_PORT"
@@ -140,36 +135,55 @@ public class Server extends AbstractVerticle {
       throw ex;
     }
 
-    try {
-      server.rxListen(port).doOnSuccess(result -> {
-        logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT, "HTTP Started on port: ",
-            Integer.toString(port), ColorUtilConstants.RESET));
-        promise.complete();
-        try {
-          if ("dev".equalsIgnoreCase(development)) {
-            String fileStarted = "./server-started";
-            if (!fs.existsBlocking(fileStarted)) {
-              fs.createFileBlocking(fileStarted);
-            }
-          }
-        } catch (Exception e) {
-          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
+    // SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter(),
+    // routes.getFirestore());
+    routes.getRouter().onSuccess(router -> { // allRoutes.getRouter();
+      new SpaRoutes(vertx, server, router, routes.getFirestore());
+      // Router allRouter = router;
+
+      server.getDelegate().requestHandler(router);
+
+      if (!"prod".equalsIgnoreCase(development)) {
+        List<Route> routesList = router.getRoutes(); // allRoutes.getRouter().getRoutes();
+        for (Route r : routesList) {
+          String path = parsePath(r);
+          String methods = path + (r.methods() == null ? "" : r.methods());
+          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT, methods,
               ColorUtilConstants.RESET);
         }
-        if (Boolean.TRUE.equals(golf.handicap.vertx.MainVerticle.getEnableHandicap())) {
-          Verticle handicapVerticle = new golf.handicap.vertx.MainVerticle();
-          vertx.deployVerticle(handicapVerticle).subscribe();
-        }
-      }).doOnError(err -> {
-        logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
-            ColorUtilConstants.RESET);
-        promise.fail(err.getCause());
-      }).subscribe();
-    } catch (Exception e) {
-      logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
-          ColorUtilConstants.RESET);
-    }
+      }
 
+      try {
+        server.rxListen(port).doOnSuccess(result -> {
+          logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT,
+              "HTTP Started on port: ", Integer.toString(port), ColorUtilConstants.RESET));
+          promise.complete();
+          try {
+            if ("dev".equalsIgnoreCase(development)) {
+              String fileStarted = "./server-started";
+              if (!fs.existsBlocking(fileStarted)) {
+                fs.createFileBlocking(fileStarted);
+              }
+              checkInstallation(fs);
+            }
+          } catch (Exception e) {
+            logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
+                ColorUtilConstants.RESET);
+          }
+          if (Boolean.TRUE.equals(golf.handicap.vertx.MainVerticle.getEnableHandicap())) {
+            Verticle handicapVerticle = new golf.handicap.vertx.MainVerticle();
+            vertx.deployVerticle(handicapVerticle).subscribe();
+          }
+        }).doOnError(err -> {
+          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
+              ColorUtilConstants.RESET);
+          promise.fail(err.getCause());
+        }).subscribe();
+      } catch (Exception e) {
+        logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
+            ColorUtilConstants.RESET);
+      }
+    });
     String defaultDb = new DodexUtil().getDefaultDb();
     logger.info("{}{}{}{}{}", ColorUtilConstants.PURPLE_BOLD_BRIGHT, "Using ", defaultDb,
         " database", ColorUtilConstants.RESET);
@@ -193,6 +207,7 @@ public class Server extends AbstractVerticle {
             err.getCause().getMessage(), ColorUtilConstants.RESET));
       }).subscribe();
     }
+
   }
 
   private void setupEventBridge() {
@@ -219,6 +234,41 @@ public class Server extends AbstractVerticle {
     // .setPassword("apassword"))
     // .setSsl(true)
     );
+  }
+
+  private void checkInstallation (FileSystem fs) {
+      if ("dev".equalsIgnoreCase(development)) {
+        String fileDir = "./src/spa-react/node_modules/";
+        if (!fs.existsBlocking(fileDir)) {
+          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+          "To install the test spa application, execute 'npm install --legacy-peer-deps' in 'src/spa-react/'"
+          , ColorUtilConstants.RESET);
+        }
+        fileDir = "./src/main/resources/static/group/";
+        if (!fs.existsBlocking(fileDir)) {
+          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+              "To install the dodex group addon, execute 'npm run group:prod' in 'handicap/src/grpc/client/'"
+              , ColorUtilConstants.RESET);
+        }
+        fileDir = "./src/main/resources/static/node_modules/";
+        if (!fs.existsBlocking(fileDir)) {
+          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+              "To install dodex , execute 'npm install' in 'src/main/resources/static/'"
+              , ColorUtilConstants.RESET);
+        }
+        fileDir = "./src/firebase/node_modules/";
+        if (!fs.existsBlocking(fileDir)) {
+          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+              "To install the firebase client , execute 'npm install' in 'src/firebase/'"
+              , ColorUtilConstants.RESET);
+        }
+        fileDir = "./handicap/src/grpc/client/node_modules/";
+        if (!fs.existsBlocking(fileDir)) {
+          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+              "To install the gRPC client , execute 'npm install' and 'npm run esbuild:build' in 'handicap/src/grpc/client/'"
+              , ColorUtilConstants.RESET);
+        }
+      }
   }
 
   private String parsePath(Route route) {

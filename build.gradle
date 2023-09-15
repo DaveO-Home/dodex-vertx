@@ -40,16 +40,24 @@ repositories {
     }
 }
 
-version = "3.0.0"
+version = "3.1.0"
+sourceCompatibility = "11"
 
 ext {
-    vertxVersion = "4.4.2"
-    junitJupiterEngineVersion = "5.4.0"
-    jooqVersion = "3.18.0"
-    protoVersion = "3.21.1"
+    vertxVersion = "4.4.5"
+    junitJupiterEngineVersion = "5.9.3"
+    jooqVersion = "3.18.4"
+    protoVersion = "3.23.3"
     grpcVersion = "1.49.2"
 }
-sourceCompatibility = "11"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(17))
+    }
+}
+
+sourceCompatibility = "17"
 
 pmd {
     ruleSetFiles = files("dodexstart.xml")
@@ -70,8 +78,7 @@ dependencies {
     implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
     implementation group:"io.vertx", name:"vertx-core", version:"$vertxVersion"
     implementation "io.vertx:vertx-web:$vertxVersion"
-    implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
-    implementation group: "io.agroal", name: "agroal-pool", version: "1.13"
+    implementation group: "io.agroal", name: "agroal-pool", version: "2.1"
     implementation "io.vertx:vertx-pg-client:$vertxVersion"
     implementation "io.vertx:vertx-mysql-client:$vertxVersion"
     implementation "io.vertx:vertx-jdbc-client:$vertxVersion"
@@ -79,7 +86,7 @@ dependencies {
     implementation "io.vertx:vertx-rx-java3:$vertxVersion"
 
     implementation group: "org.xerial", name: "sqlite-jdbc", version: "3.31.1"
-    implementation group: "cubrid", name: "cubrid-jdbc", version: "11.0.3.0293"
+    implementation group: 'cubrid', name: 'cubrid-jdbc', version: '11.0.11.0365'
     implementation "com.google.firebase:firebase-admin:9.1.1"
     implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: "4.4.9"
     implementation "io.vertx:vertx-mongo-client:4.4.1"
@@ -93,6 +100,16 @@ dependencies {
     implementation "com.google.guava:guava:30.0-jre"
     implementation project(":handicap")
     implementation "dmo.fs.utils:generate"
+    // implementation "io.vertx:vertx-openapi:$vertxVersion"
+
+    implementation "io.vertx:vertx-web-openapi-router:$vertxVersion"
+    implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
+
+    // implementation "io.vertx:vertx-web-validation"
+    // implementation "io.vertx:vertx-web-openapi"
+    // implementation "io.vertx:vertx-auth-webauthn"
+    // implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
+    // compileOnly "io.vertx:vertx-web-openapi-router:$vertxVersion"
 
     implementation group: "jakarta.xml.bind", name: "jakarta.xml.bind-api", version: "4.0.0"
     runtimeOnly group: "com.sun.xml.bind", name: "jaxb-impl", version: "4.0.0"
@@ -100,7 +117,7 @@ dependencies {
     testImplementation "io.vertx:vertx-junit5:$vertxVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterEngineVersion"
     testImplementation "org.junit.jupiter:junit-jupiter-api:$junitJupiterEngineVersion"
-    testImplementation "junit:junit:4.13.1"
+    testImplementation "junit:junit:4.13.2"
 }
 
 application {
@@ -112,6 +129,7 @@ def mainClassName = "io.vertx.core.Launcher"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = "src/main/java/**/*.java, handicap/src/main/**/*"
 def debug = ""
+def cache = "--java-opts=-Dvertx.disableFileCaching=true"
 def OS = System.getProperty("os.name").toLowerCase()
 def usr = System.getProperty("user.home")
 
@@ -119,12 +137,14 @@ apply plugin: "nu.studer.jooq"
 
 tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << "-Xlint:deprecation"
+//    dependsOn processResources
 }
 
 processResources {
-    if ("run" == getGradle().getStartParameter().getTaskNames()[0]) {
+//    def taskName = getGradle().getStartParameter().getTaskNames()[0]
+//    if ("run" == taskName || "jooqGenerate" == taskName) {
         dependsOn handicap: compileJava
-    }
+//    }
 }
 
 startScripts {
@@ -137,7 +157,8 @@ startShadowScripts {
 
 run {
      if (System.getProperty("DEBUG", "false") == "true") {
-        debug = "--java-opts=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+        debug = "--java-opts=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dvertx.disableFileCaching=true"
+        cache = ""
      }
 
     environment "VERTXWEB_ENVIRONMENT", "dev"
@@ -147,8 +168,8 @@ run {
 
     args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName",
     "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json",
-     "--java-opts=-Dvertx.disableFileCaching=true"]
-    systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
+     cache]
+    // systemProperty("java.util.logging.config.file", "src/main/java/vertx-default-jul-logging.properties")
 }
 
 /*
@@ -189,6 +210,10 @@ tasks.register('listServer', Exec) {
         //on linux
         commandLine "java" args "-jar", "dodex-vertx-${version}-prod.jar", "list"
     }
+}
+
+jar {
+    duplicatesStrategy DuplicatesStrategy.EXCLUDE
 }
 
 shadowJar {

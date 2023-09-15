@@ -1,8 +1,25 @@
 # Changelog
 
-## [v3.0.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.0.0) (2023-05-12)
+## [v3.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.1.0) (2023-08-15)
 
-[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.0.0..v3.0.1)
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.0.2..v3.1.0)
+
+* Upgraded to vertx 4.4.5 final
+* Upgraded javascript dependencies
+* Added handicap dodex group capability using OpenApi
+  * see __Dodex Groups using OpenAPI__ section in the README
+* Added group openapi client to static directory for use with other dodex implementations
+* Fixed skipped tests, however the "dev" server and "envoy" proxy must be running to complete successfully.
+* Fixed `error: incompatible types: DodexDatabasePostgres cannot be converted to DodexDatabase,`
+    gradle compile dependency problem and package/class name conflicts - no need to run clean first
+* upgraded to Gradle 8.1.1
+* Default vertx grpc port changed to 15002
+* Changed all mariadb table names to lowercase to make consistent with jooq/postgres generator
+* Fixed font-size on handicap form
+
+## [v3.0.2](https://github.com/DaveO-Home/dodex-vertx/tree/v3.0.2) (2023-05-12)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.0.1..v3.0.2)
 
 * Upgraded to vertx 4.4.2 final
 * Upgraded javascript dependencies

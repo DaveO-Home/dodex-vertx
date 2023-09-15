@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -56,6 +57,7 @@ public class DodexDatabasePostgres extends DbPostgres {
       this.dbOverrideMap = dbOverrideMap;
     }
 
+    assert dbOverrideMap != null;
     DbConfiguration.mapMerge(dbMap, dbOverrideMap);
     databaseSetup();
   }
@@ -72,7 +74,7 @@ public class DodexDatabasePostgres extends DbPostgres {
   }
 
   public DodexDatabasePostgres(Boolean isCreateTables)
-      throws InterruptedException, IOException, SQLException {
+      throws IOException {
     super();
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
@@ -109,17 +111,17 @@ public class DodexDatabasePostgres extends DbPostgres {
     PgConnectOptions connectOptions;
 
     connectOptions = new PgConnectOptions().setHost(dbMap.get("host2"))
-        .setPort(Integer.valueOf(dbMap.get("port")))
+        .setPort(Integer.parseInt(dbMap.get("port")))
         .setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setDatabase(dbMap.get("database")).setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
+        .setDatabase(dbMap.get("database")).setSsl(Boolean.parseBoolean(dbProperties.getProperty("ssl")))
         .setIdleTimeout(1)
     // .setCachePreparedStatements(true)
     ;
 
     pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+    Completable completable = pool4.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -186,21 +188,23 @@ public class DodexDatabasePostgres extends DbPostgres {
             Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
               logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
             }).doOnSuccess(row2 -> {
+              tx.commit();
               logger.info("Undelivered Table Added.");
             });
 
             crow.subscribe(result2 -> {
               //
             }, err -> {
-              logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
             });
           }
         }).doOnError(err -> {
-          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+          logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
         })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
           logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
         }).doOnSuccess(rows -> {
-          if (MainVerticle.getEnableHandicap()) {
+          conn.close();
+          if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
             Set<String> names = new HashSet<>();
 
             for (Row row : rows) {
@@ -213,6 +217,8 @@ public class DodexDatabasePostgres extends DbPostgres {
             }
             conn.query(sql).rxExecute().doOnError(err -> {
               logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+              conn.close();
+              throw new SQLException(err.getMessage());
             }).doOnSuccess(row1 -> {
               if (!names.contains("golfer")) {
                 logger.warn("Golfer Table Added.");
@@ -224,6 +230,8 @@ public class DodexDatabasePostgres extends DbPostgres {
               }
               conn.query(sql2).rxExecute().doOnError(err -> {
                 logger.warn(String.format("Course Table Error: %s", err.getMessage()));
+                conn.close();
+                throw new SQLException(err.getMessage());
               }).doOnSuccess(row2 -> {
                 if (!names.contains("course")) {
                   logger.warn("Course Table Added.");
@@ -235,6 +243,8 @@ public class DodexDatabasePostgres extends DbPostgres {
                 }
                 conn.query(sql3).rxExecute().doOnError(err -> {
                   logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
+                  conn.close();
+                  throw new SQLException(err.getMessage());
                 }).doOnSuccess(row3 -> {
                   if (!names.contains("ratings")) {
                     logger.warn("Ratings Table Added.");
@@ -246,17 +256,47 @@ public class DodexDatabasePostgres extends DbPostgres {
                   }
                   conn.query(sql4).rxExecute().doOnError(err -> {
                     logger.error(String.format("Scores Table Error: %s", err.getMessage()));
+                    conn.close();
+                    throw new SQLException(err.getMessage());
                   }).doOnSuccess(row4 -> {
                     if (!names.contains("scores")) {
                       logger.warn("Scores Table Added.");
                     }
-                    tx.commit();
-                    conn.close();
-                    finalPromise.complete(isCreateTables.toString());
-                    if (isCreateTables) {
-                      returnPromise.complete(isCreateTables.toString());
+                    String sql5 = getCreateTable("GROUPS").replaceAll("dummy",
+                        dbProperties.get("user").toString());
+                    if ((names.contains("groups"))) {
+                      sql5 = SELECTONE;
                     }
-                  }).subscribe(res -> conn.close());
+                    conn.query(sql5).rxExecute().doOnError(err -> {
+                      logger.error(String.format("Groups Table Error: %s", err.getMessage()));
+                      conn.close();
+                      throw new SQLException(err.getMessage());
+                    }).doOnSuccess(row5 -> {
+                      if (!names.contains("groups")) {
+                        logger.warn("Groups Table Added.");
+                      }
+                      String sql6 = getCreateTable("MEMBER").replaceAll("dummy",
+                          dbProperties.get("user").toString());
+                      if ((names.contains("member"))) {
+                        sql6 = SELECTONE;
+                      }
+                      conn.query(sql6).rxExecute().doOnError(err -> {
+                        logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                        conn.close();
+                        throw new SQLException(err.getMessage());
+                      }).doOnSuccess(row6 -> {
+                        if (!names.contains("member")) {
+                          logger.warn("Member Table Added.");
+                        }
+                        tx.commit();
+                        conn.close();
+                        if (isCreateTables) {
+                          returnPromise.complete(isCreateTables.toString());
+                        }
+                        finalPromise.complete(isCreateTables.toString());
+                      }).subscribe();
+                    }).subscribe();
+                  }).subscribe();
                 }).subscribe();
               }).subscribe();
             }).subscribe();
@@ -267,7 +307,7 @@ public class DodexDatabasePostgres extends DbPostgres {
           }
         })).flatMapCompletable(res -> Completable.complete())));
 
-    completable.subscribe(() -> {
+    completable.toCompletionStage(pool4).whenComplete((pool4, err) -> {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
@@ -277,8 +317,9 @@ public class DodexDatabasePostgres extends DbPostgres {
           }
         }
       });
-    }, err -> {
-      logger.info(String.format("Tables Create Error: %s", err.getMessage()));
+      if(err != null) {
+        logger.error("Tables Create Error: {}", err.getMessage());
+      }
     });
   }
 

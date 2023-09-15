@@ -11,6 +11,9 @@
     width: 700px;
   }
 
+  .fs-15 {
+    font-size: 15px;
+  }
   /*
 Put in bootstrap scss file
 @include media-breakpoint-up(xl) {

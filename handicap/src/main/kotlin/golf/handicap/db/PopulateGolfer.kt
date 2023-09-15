@@ -2,7 +2,7 @@
 
 package golf.handicap.db
 
-import dmo.fs.db.DbConfiguration
+import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.*
 import golf.handicap.Golfer
@@ -12,28 +12,17 @@ import io.grpc.stub.StreamObserver
 import io.vertx.core.Future
 import io.vertx.core.Promise
 import io.vertx.rxjava3.sqlclient.Tuple
+import org.jooq.impl.DSL.*
 import java.sql.SQLException
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-//import java.util.logging.Logger
-import kotlin.Throws
-import org.jooq.impl.DSL.deleteFrom
-import org.jooq.impl.DSL.field
-import org.jooq.impl.DSL.insertInto
-import org.jooq.impl.DSL.select
-import org.jooq.impl.DSL.table
-import org.jooq.impl.DSL.update
-import mu.KotlinLogging
-//import org.slf4j.Logger
-
-import org.slf4j.LoggerFactory
-
+import java.util.logging.Logger
 
 class PopulateGolfer() : SqlConstants() {
     companion object {
-        private val LOGGER = LoggerFactory.getLogger(PopulateGolfer::class.java.name)
-        private val logger = KotlinLogging.logger {}
+        private val LOGGER = Logger.getLogger(PopulateGolfer::class.java.name)
+//        private val logger = KotlinLogging.logger {}
         @Throws(SQLException::class)
         @JvmStatic
         public fun buildSql() {
@@ -73,7 +62,7 @@ class PopulateGolfer() : SqlConstants() {
                     field("PUBLIC"),
                     field("LAST_LOGIN")
                 )
-                    .from(table("GOLFER"))
+                    .from(table("golfer"))
                     .where(field("PIN").eq("$"))
             )
         }
@@ -92,7 +81,7 @@ class PopulateGolfer() : SqlConstants() {
                     field("PUBLIC"),
                     field("LAST_LOGIN")
                 )
-                    .from(table("GOLFER"))
+                    .from(table("golfer"))
                     .where(field("LAST_NAME").eq("$"))
             )
         }
@@ -111,7 +100,7 @@ class PopulateGolfer() : SqlConstants() {
                     field("PUBLIC"),
                     field("LAST_LOGIN")
                 )
-                    .from(table("GOLFER"))
+                    .from(table("golfer"))
                     .where(field("LAST_NAME").eq("$"))
                     .and(field("FIRST_NAME").eq("$"))
             )
@@ -130,7 +119,7 @@ class PopulateGolfer() : SqlConstants() {
         @JvmStatic
         fun setupInsertGolfer(): String {
             return create!!.renderNamedParams(
-                insertInto(table("GOLFER"))
+                insertInto(table("golfer"))
                     .columns(
                         field("FIRST_NAME"),
                         field("LAST_NAME"),
@@ -149,7 +138,7 @@ class PopulateGolfer() : SqlConstants() {
         @JvmStatic
         fun setupUpdateGolferName(): String {
             return create!!.renderNamedParams(
-                update(table("GOLFER"))
+                update(table("golfer"))
                     .set(field("FIRST_NAME"), "$")
                     .set(field("LAST_NAME"), "$")
                     .where(field("pin").eq("$"))
@@ -159,7 +148,7 @@ class PopulateGolfer() : SqlConstants() {
         @JvmStatic
         fun setupUpdateGolfer(): String {
             return create!!.renderNamedParams(
-                update(table("GOLFER"))
+                update(table("golfer"))
                     .set(field("COUNTRY"), "$")
                     .set(field("STATE"), "$")
                     .set(field("OVERLAP_YEARS"), "$")
@@ -269,7 +258,7 @@ class PopulateGolfer() : SqlConstants() {
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.error(
+                            LOGGER.severe(
                                 String.format(
                                     "%sError querying Golfer - %s%s %s",
                                     ColorUtilConstants.RED,
@@ -301,7 +290,7 @@ class PopulateGolfer() : SqlConstants() {
 
                 val sql = GETPUBLICGOLFERS
 //                parameters.addInteger(1)
-
+                parameters.addBoolean(true)
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnSuccess { rows ->
@@ -326,9 +315,9 @@ class PopulateGolfer() : SqlConstants() {
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.error(
+                            LOGGER.severe(
                                 String.format(
-                                    "%sError Querying Golfer - %s%s %s",
+                                    "%sError2 Querying Golfer - %s%s %s",
                                     ColorUtilConstants.RED,
                                     err,
                                     ColorUtilConstants.RESET,
@@ -395,7 +384,7 @@ class PopulateGolfer() : SqlConstants() {
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.error(
+                            LOGGER.severe(
                                 String.format(
                                     "%sError Adding Golfer - %s%s %s",
                                     ColorUtilConstants.RED,
@@ -463,7 +452,7 @@ class PopulateGolfer() : SqlConstants() {
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.error(
+                            LOGGER.severe(
                                 String.format(
                                     "%sError Updating Golfer - %s%s %s",
                                     ColorUtilConstants.RED,

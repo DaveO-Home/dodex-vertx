@@ -13,12 +13,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import dmo.fs.db.DbConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.FirestoreOptions;
-import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DodexFirebase;
 import dmo.fs.db.MessageUser;
 import dmo.fs.kafka.KafkaEmitterDodex;

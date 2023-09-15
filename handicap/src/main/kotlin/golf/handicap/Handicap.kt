@@ -47,10 +47,9 @@ class Handicap {
         var difference: Float
         var handicapDifferential: Float
         var handicap: BigDecimal
-        var handicapData: Future<Map<String, Any?>>?
         val latestTee: MutableMap<String, Any> = HashMap()
 
-        handicapData = golferScores.getGolferScores(golfer)
+        var handicapData: Future<Map<String, Any?>>? = golferScores.getGolferScores(golfer)
 
         handicapData!!.onSuccess { map ->
             if (map.isEmpty()) {

@@ -6,30 +6,32 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
+import dmo.fs.db.*;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import dmo.fs.db.DbConfiguration;
-import dmo.fs.db.DbCubrid;
-import dmo.fs.db.DbMariadb;
-import dmo.fs.db.DbPostgres;
-import dmo.fs.db.DbSqlite3;
-import dmo.fs.db.DodexDatabase;
-import dmo.fs.db.DodexDatabaseSqlite3;
-import dmo.fs.db.MessageUser;
+//import dmo.fs.dbh.DbHandicapConfiguration;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -39,15 +41,32 @@ import io.vertx.rxjava3.sqlclient.Pool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.SqlConnection;
 import io.vertx.rxjava3.sqlclient.Tuple;
+// import org.junit.platform.commons.logging.LoggerFactory;
+// import org.junit.platform.commons.logging.Logger;
+
 
 class AppTest {
-    Logger logger = LoggerFactory.getLogger(AppTest.class.getName());
+    Logger logger = LoggerFactory.getLogger(AppTest.class);
 
     @Test
     void getJavaResource() throws IOException {
         try (InputStream in = getClass().getResourceAsStream("/application-conf.json")) {
             assertNotNull(in, "should find resource file.");
         }
+    }
+
+    @Test
+    void testDataFormatter() {
+        Locale.setDefault(Locale.forLanguageTag("US"));
+        DateTimeFormatter formatter = DateTimeFormatter.ISO_INSTANT.withZone(ZoneId.systemDefault());
+        LocalDate localDate = LocalDate.now();
+        LocalTime localTime = LocalTime.of(
+            LocalTime.now().getHour(),
+            LocalTime.now().getMinute(),
+            LocalTime.now().getSecond());
+        ZonedDateTime zonedDateTime = ZonedDateTime.of(localDate, localTime, ZoneId.systemDefault());
+        String openApiDate = zonedDateTime.format(formatter);
+        assertSame("Date should be formatted to openapi format", openApiDate != null, Boolean.TRUE);
     }
 }
 
@@ -94,16 +113,16 @@ class UtilTest {
         assertEquals(command, ";users", "should return the users command");
     }
 }
-
 @TestInstance(Lifecycle.PER_CLASS)
+@TestMethodOrder(MethodOrderer.MethodName.class)
 class DbTest /* extends DbDefinitionBase */ {
-    Logger logger = LoggerFactory.getLogger(DbTest.class.getName());
+    Logger logger = LoggerFactory.getLogger(DbTest.class);
 
     MessageUser messageUser;
     MessageUser resultUser;
     DodexDatabase dodexDatabase;
     Pool pool;
-    String checkSql = DbSqlite3.CHECKUSERSQL;
+    String checkSql;
 
     @BeforeAll
     void testDatabaseSetup() throws InterruptedException, IOException, SQLException {
@@ -121,37 +140,40 @@ class DbTest /* extends DbDefinitionBase */ {
         if ("sqlite3".equals(whichDb)) {
             dodexDatabase = DbConfiguration.getDefaultDb();
             pool = dodexDatabase.getPool4();
+            checkSql = DbSqlite3.CHECKUSERSQL;
+            DbSqlite3.setupSql(pool);
         } else if ("postgres".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
             overrideMap.put("database", "dodex"); // <------- should match test/dev db
             dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
             pool = dodexDatabase.getPool4();
             checkSql = DbPostgres.CHECKUSERSQL;
+            DbPostgres.setupSql(pool);
         } else if ("mariadb".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
-            overrideMap.put("database", "dodex"); // <------- should match test/dev db
+            overrideMap.put("database", "test"); // <------- should match test/dev db
             dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
             pool = dodexDatabase.getPool4();
             checkSql = DbMariadb.CHECKUSERSQL;
+            DbMariadb.setupSql(pool);
         } else if ("cubrid".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
             overrideMap.put("database", "dodex"); // <------- should match test/dev db
             dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);
             pool = dodexDatabase.getPool4();
             checkSql = DbCubrid.CHECKUSERSQL;
+            DbCubrid.setupSql(pool);
         }
-
-        // DodexDatabaseSqlite3.setupSql(pool);
 
         messageUser = dodexDatabase.createMessageUser();
         resultUser = dodexDatabase.createMessageUser();
 
         messageUser.setName("User1");
         messageUser.setPassword("Password");
-
         // Make sure test user is removed from database
         SqlConnection conn = pool.rxGetConnection().blockingGet();
         Tuple parameters = Tuple.of(messageUser.getName(), messageUser.getPassword());
+
         conn.preparedQuery(dodexDatabase.getDeleteUser()).rxExecute(parameters).subscribe(r -> {
             conn.close();
         }, err -> {
@@ -164,7 +186,7 @@ class DbTest /* extends DbDefinitionBase */ {
         assertNotEquals(dodexDatabase, null, "dodexDatabase should be created");
         pool.rxGetConnection().doOnSuccess(value -> {
             assertNotNull(value, "database pool should exist");
-        });
+        }).doOnError(Throwable::printStackTrace).subscribe();
     }
 
     @Test
@@ -178,7 +200,8 @@ class DbTest /* extends DbDefinitionBase */ {
                 for (Row row : rows) {
                     table[0] = row.getString(0).toLowerCase();
                 }
-            }).subscribe(r -> {
+            }).doOnError(Throwable::printStackTrace)
+            .subscribe(r -> {
                 c.close();
             });
         });
@@ -187,10 +210,10 @@ class DbTest /* extends DbDefinitionBase */ {
         await(testDisposable[0]);
         assertTrue("Users Table Exists",  "users".equals(table[0]));
     }
-    @Disabled("Disabled until it works")
+
     @Test
     void testDatabaseAndReactiveVertx() throws InterruptedException, SQLException {
-        Disposable testDisposable[] = { null };
+        Disposable testDisposable[] = { null, null };
         boolean emptyTable[] = { false, false, false };
 
         messageUser.setIp("0");
@@ -201,12 +224,11 @@ class DbTest /* extends DbDefinitionBase */ {
         Single<SqlConnection> conn = pool.rxGetConnection();
 
         testDisposable[0] = conn.subscribe(c -> {
-            testDisposable[0] = c.preparedQuery(dodexDatabase.getUserById())
+            c.preparedQuery(dodexDatabase.getUserById())
                 .rxExecute(Tuple.of(messageUser.getName(), messageUser.getPassword()))
                 .doOnSuccess(rows -> {
-                    if(rows.rowCount() == 0) {
+                    if(rows.size() == 0) {
                         emptyTable[0] = true;
-                        
                         Future<MessageUser> future2 = dodexDatabase.addUser(null, messageUser);
 
                         future2.onComplete(handler -> {
@@ -229,23 +251,23 @@ class DbTest /* extends DbDefinitionBase */ {
                             resultUser.setLastLogin(row.getValue(4));
                         }
                     }
-                })
+                }).doOnError(Throwable::printStackTrace)
                 .subscribe(result -> {
                     c.close();
                     emptyTable[2] = true;
                 });
             });
-        
+
         assertSame("reactive vertx should be running asynchronously", emptyTable[0], false);
-        
+
         await(testDisposable[0]);
-       
-        assertSame("user should not be found & added to table", emptyTable[0], true);
+
+        assertSame("user should not be found & added to table", emptyTable[1], true);
         assertTrue("user id should be generated", resultUser.getId() > 0);
         assertEquals(resultUser.getName(), "User1", "user should be retrieved");
         assertTrue("subscribe should finish", emptyTable[2]);
     }
-    @Disabled("Disabled until it works")
+
     @Test
     void deleteUserFromDatabase() {
         Disposable testDisposable[] = { null };
@@ -260,6 +282,8 @@ class DbTest /* extends DbDefinitionBase */ {
                 c.close();
             }).subscribe();
         });
+
+        
             
         assertSame("user deletion should not start yet", deleted[0] == 0, Boolean.TRUE);
 
@@ -268,13 +292,46 @@ class DbTest /* extends DbDefinitionBase */ {
         assertSame("user deleted or not in database", deleted[0] == 1, Boolean.TRUE);
     }
 
+    @Test
+    void batachQueryDatabase() {
+        Integer[] rowSize = {0};
+        Disposable testDisposable[] = { null };
+        Single<SqlConnection> conn = pool.rxGetConnection();
+
+       testDisposable[0] = conn.subscribe(connection -> {
+                List<Tuple> userList = new ArrayList<Tuple>();
+                String x = "daveo🎱";
+                String y = "daveo🌵";
+                
+                connection.preparedQuery("select ID, NAME, PASSWORD, IP, LAST_LOGIN from USERS where NAME = $1")
+                    .executeBatch(Arrays.asList(
+                        Tuple.of(x),
+                        Tuple.of(y)
+                    ))
+                    .doOnSuccess(rows -> {
+                        rowSize[0] = rows.size();
+                        for (Row row : rows) {
+                            // addGroupJson.put("id", row.getLong(0));
+                        }
+
+                        assertSame("Batch Size should be", rowSize[0] == 0, Boolean.TRUE);
+
+                    }).subscribe(c -> {
+                        connection.close();
+                    },err-> {
+                        logger.info("Error: " + err.getMessage());
+                    });
+                });
+    }
+
     public void await(Disposable disposable) {
+        int count = 0;
         try {
-            Thread.sleep(1000);
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        while (!disposable.isDisposed()) {
+        while ((disposable == null || !disposable.isDisposed()) && count++ < 50) {
             try {
                 Thread.sleep(100);
             } catch (InterruptedException e) {
@@ -282,4 +339,11 @@ class DbTest /* extends DbDefinitionBase */ {
             }
         }
     }
+    // // per fozzybear - stack overflow
+    // private final static Supplier<String> failedMessageSupplier(final String msgPrefix, final String ... customMessages) {
+    //     final String msgString = new StringBuilder(msgPrefix)
+    //         .append(" - ")
+    //         .append(String.join("\n", customMessages)).toString();
+    //     return () -> (String)Function.identity().apply(msgString);
+    // }; 
 }

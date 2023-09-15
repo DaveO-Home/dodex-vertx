@@ -1,236 +1,237 @@
 package dmo.fs.router;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Map;
-
-import io.vertx.rxjava3.ext.web.RoutingContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.cloud.firestore.Firestore;
 import dmo.fs.kafka.KafkaConsumerDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.vertx.Server;
+import io.vertx.core.Future;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.Session;
+import io.vertx.ext.web.handler.StaticHandler;
+import io.vertx.rxjava3.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.http.HttpServer;
-import io.vertx.rxjava3.core.http.HttpServerResponse;
-import io.vertx.rxjava3.ext.web.Route;
-import io.vertx.rxjava3.ext.web.Router;
-import io.vertx.rxjava3.ext.web.Session;
-import io.vertx.rxjava3.ext.web.handler.CorsHandler;
-import io.vertx.rxjava3.ext.web.handler.FaviconHandler;
 import io.vertx.rxjava3.ext.web.handler.SessionHandler;
-import io.vertx.rxjava3.ext.web.handler.StaticHandler;
-import io.vertx.rxjava3.ext.web.handler.TimeoutHandler;
 import io.vertx.rxjava3.ext.web.sstore.LocalSessionStore;
 import io.vertx.rxjava3.ext.web.sstore.SessionStore;
 import io.vertx.rxjava3.kafka.client.producer.KafkaProducer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Routes {
-	private static final Logger logger = LoggerFactory.getLogger(Routes.class.getName());
-	protected Vertx vertx;
-	protected Router router;
-	protected HttpServer server;
-	protected SessionStore sessionStore;
-	protected static KafkaProducer<String, Integer> producer;
-	Integer counter = 0;
-	Firestore firestore;
+  private static final Logger logger = LoggerFactory.getLogger(Routes.class.getName());
+  protected Vertx vertx;
+  protected Router router;
+  protected HttpServer server;
+  protected SessionStore sessionStore;
+  protected static KafkaProducer<String, Integer> producer;
+  Firestore firestore;
+  Promise<Router> routerPromise = Promise.promise();
 
-	public Routes(Vertx vertx, HttpServer server, Integer vertxVersion)
-			throws InterruptedException, IOException, SQLException {
-		this.vertx = vertx;
-		router = Router.router(vertx);
-		sessionStore = LocalSessionStore.create(vertx);
-		this.server = server;
+  public Routes(Vertx vertx, HttpServer server, Integer vertxVersion)
+      throws InterruptedException, IOException, SQLException {
+    this.vertx = vertx;
+    sessionStore = LocalSessionStore.create(vertx);
+    this.server = server;
 
-		String value = System.getenv("VERTXWEB_ENVIRONMENT");
-		if (value != null && (value.equals("dev") || value.equals("test"))) {
-			DodexUtil.setEnv("dev");
-		} else {
-			DodexUtil.setEnv("prod");
-		}
-		DodexUtil.setVertx(vertx);
-		if(Server.getUseKafka()) {
-			setMonitorRoute();
-		}
-		setFavRoute();
-		setStaticRoute();
-		setDodexRoute();
+    String value = System.getenv("VERTXWEB_ENVIRONMENT");
+    if (value != null && (value.equals("dev") || value.equals("test"))) {
+      DodexUtil.setEnv("dev");
+    } else {
+      DodexUtil.setEnv("prod");
+    }
+    DodexUtil.setVertx(vertx);
 
-		if ("dev".equals(DodexUtil.getEnv())) {
-			setTestRoute();
-		} else {
-			setProdRoute();
-		}
+    OpenApiRouter.setOpenApiRouter(vertx).onSuccess(router -> {
+      if (Server.getUseKafka()) {
+        setMonitorRoute(router);
+      }
+      setStaticRoute(router);
 
-		if(Server.getUseKafka()) {
-			Map<String, String> config = new HashMap<>();
-			config.put("bootstrap.servers", "localhost:9092");
-			config.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-			config.put("value.serializer", "org.apache.kafka.common.serialization.IntegerSerializer");
-			config.put("acks", "1");
+      try {
+        setDodexRoute(router);
+      } catch (InterruptedException | IOException | SQLException e) {
+        e.printStackTrace();
+        return;
+      }
 
-			producer = KafkaProducer.create(vertx, config);
-		}
-	}
+      if ("dev".equals(DodexUtil.getEnv())) {
+        setTestRoute(router);
+      } else {
+        setProdRoute(router);
+      }
 
-	public static  KafkaProducer<String, Integer> getProducer() {
-		return producer;
-	}
+      if (Server.getUseKafka()) {
+        Map<String, String> config = new HashMap<>();
+        config.put("bootstrap.servers", "localhost:9092");
+        config.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
+        config.put("value.serializer", "org.apache.kafka.common.serialization.IntegerSerializer");
+        config.put("acks", "1");
 
-	public void setTestRoute() {
-		Route route = router.routeWithRegex(HttpMethod.GET, "/test/[\\w/-]*\\.html|/test[/]?");
-		
-		route.handler(routingContext -> {
-			routingContext.put("name", "test");
-			HttpServerResponse response = routingContext.response();
-			response.putHeader("content-type", "text/html");
-			
-			int length = routingContext.request().path().length();
-			String path = routingContext.request().path();
-			String file = length < 7 ? "test/index.html" : path.substring(1);
-			
-			response.sendFile(file);
-		});
-		route.failureHandler(ctx ->
-			logger.error(String.format("%sFAILURE in /test/ route: %d - %s - %s%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute(), ctx.body(), ColorUtilConstants.RESET))
-		  );
-	}
+        producer = KafkaProducer.create(vertx, config);
+      }
+      // this.router = router;
+      routerPromise.complete(router);
+    });
+  }
 
-	public void setProdRoute() {
-		Route route = router.routeWithRegex(HttpMethod.GET, "/dodex[/]?|/dodex/.*\\.html");
-		route.handler(routingContext -> {
-			routingContext.put("name", "prod");
-			HttpServerResponse response = routingContext.response();
-			response.putHeader("content-type", "text/html");
-			
-			int length = routingContext.request().path().length();
-			String path = routingContext.request().path();
-			String file = length < 8 ? "dodex/index.html" : path.substring(1);
+  public static KafkaProducer<String, Integer> getProducer() {
+    return producer;
+  }
 
-			response.sendFile(file);
-		});
-		route.failureHandler(ctx -> 
-			logger.error(String.format("%sFAILURE in prod/dodex route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
-		  );
-	}
+  public void setTestRoute(Router router) {
+    Route route = router.routeWithRegex(HttpMethod.GET, "/test/[\\w/-]*\\.html|/test[/]?");
 
-	public void setStaticRoute() {
-		StaticHandler staticHandler = StaticHandler.create("static");
-		staticHandler.setCachingEnabled(false);
-        
-        router.routeWithRegex("/.*\\.md|" + "/.*/templates/.*")
-            .produces("text/plain")
-            .produces("text/markdown")
-            .handler(ctx -> {
-                HttpServerResponse response = ctx.response();
-                String acceptableContentType = ctx.getAcceptableContentType();
-                response.putHeader("content-type", acceptableContentType);
-                response.sendFile(ctx.normalizedPath());
-                staticHandler.handle(ctx);
-            });
-            
-		Route staticRoute = router.route("/*").handler(TimeoutHandler.create(2000)).handler(RoutingContext::next);
-		if ("dev".equals(DodexUtil.getEnv())) {
-			staticRoute.handler(CorsHandler.create().allowedMethod(HttpMethod.GET));  /* Need ports 8087 & 9876 */
-		}
+    route.handler(routingContext -> {
+      routingContext.put("name", "test");
+      HttpServerResponse response = routingContext.response();
+      response.putHeader("content-type", "text/html");
 
-		staticRoute.handler(staticHandler);
-		staticRoute.failureHandler(ctx ->
-			logger.error(String.format("%sFAILURE in static route: %d -- %s -- %s%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET))
-		  );
-	}
+      int length = routingContext.request().path().length();
+      String path = routingContext.request().path();
+      String file = length < 7 ? "test/index.html" : path.substring(1);
 
-	public void setFavRoute() {
-		FaviconHandler faviconHandler = null;
+      response.sendFile(file);
+    });
+    route.failureHandler(ctx ->
+        logger.error(String.format("%sFAILURE in /test/ route: %d - %s - %s%s",
+            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute(), ctx.body(), ColorUtilConstants.RESET))
+    );
+  }
 
-		faviconHandler = FaviconHandler.create(vertx);
-		
-		router.route().handler(faviconHandler);
-	}
+  public void setProdRoute(Router router) {
+    Route route = router.routeWithRegex(HttpMethod.GET, "/dodex[/]?|/dodex/.*\\.html");
+    route.handler(routingContext -> {
+      routingContext.put("name", "prod");
+      HttpServerResponse response = routingContext.response();
+      response.putHeader("content-type", "text/html");
 
-	public void setMonitorRoute() {
-		Route route = router.route(HttpMethod.GET, "/events/:command/:init")
- 			.produces("application/json");
+      int length = routingContext.request().path().length();
+      String path = routingContext.request().path();
+      String file = length < 8 ? "dodex/index.html" : path.substring(1);
 
-		route.handler(SessionHandler.create(SessionStore.create(vertx)));
-		route.handler(routingContext -> {
-			routingContext.put("name", "monitor");
-			HttpServerResponse response = routingContext.response();
-			String acceptableContentType = routingContext.getAcceptableContentType();
-			response.putHeader("content-type",  acceptableContentType);
-			Session session = routingContext.session();
-			
-			if(session.isEmpty()) {
-				session.put("monitor", new KafkaConsumerDodex());
-			}
-			
-			KafkaConsumerDodex kafkaConsumerDodex = session.get("monitor");
+      response.sendFile(file);
+    });
+    route.failureHandler(ctx ->
+        logger.error(String.format("%sFAILURE in prod/dodex route: %d%s",
+            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+    );
+  }
 
-			try {
-				response.send(kafkaConsumerDodex.list(
-					routingContext.pathParam("command"), routingContext.pathParam("init"))).subscribe();
-			} catch (JsonProcessingException e) {
-				e.printStackTrace();
-			}
-			if("-1".equals(routingContext.pathParam("init"))) {
-				session.destroy();
-			}
-		});
-		route.failureHandler(ctx -> 
-			logger.error(String.format("%sFAILURE in /monitor/ route: %d%s", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
-		  );
-	}
+  public void setStaticRoute(Router router) {
+    Route staticRoute = router.route("/*");
+    StaticHandler staticHandler = StaticHandler.create("static");
+    staticHandler.setCachingEnabled(false);
 
-	public void setDodexRoute() throws InterruptedException, IOException, SQLException {
-		DodexUtil du = new DodexUtil();
-		String defaultDbName = du.getDefaultDb();
+    router.routeWithRegex("/.*\\.html|/.*\\.md|" + "/.*/templates/.*")
+        .produces("text/plain")
+        .produces("text/markdown")
+        .handler(ctx -> {
+          HttpServerResponse response = ctx.response();
+          String acceptableContentType = ctx.getAcceptableContentType();
+          response.putHeader("content-type", acceptableContentType);
+          response.sendFile(ctx.normalizedPath());
+          staticHandler.handle(ctx);
+        });
 
-        if ("firebase".equals(defaultDbName)) {
-			try {
-				FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
-				firebaseRouter.setWebSocket(server);
-				firestore = firebaseRouter.getDbf();
-			} catch(Exception ex) {
-				ex.printStackTrace();
-				throw ex;
-			}
-        } else if ("cassandra".equals(defaultDbName)) {
-			try {
-				CassandraRouter cassandraRouter = new CassandraRouter(vertx);
-				cassandraRouter.setWebSocket(server);
-			} catch(Exception ex) {
-				ex.printStackTrace();
-				throw ex;
-			}
-        } else if ("neo4j".equals(defaultDbName)) {
-			try {
-				Neo4jRouter neo4jRouter = new Neo4jRouter(vertx);
-				neo4jRouter.setWebSocket(server);
-			} catch(Exception ex) {
-				ex.printStackTrace();
-				throw ex;
-			}
-		} else {
-			try {
-				DodexRouter dodexRouter = new DodexRouter(vertx);
-				dodexRouter.setWebSocket(server);
-			} catch(Exception ex) {
-				ex.printStackTrace();
-				throw ex;
-			}
-		}
-	}
+    staticRoute.handler(staticHandler);
+    staticRoute.failureHandler(ctx -> {
+      logger.error(String.format("%sFAILURE in static route: %d -- %s -- %s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
+          ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET));
+      ctx.response().end(Integer.valueOf(ctx.statusCode()).toString());
+    });
 
-	public Router getRouter() {
-		return router;
-	}
+  }
 
-	public Firestore getFirestore() {
-		return firestore;
-	}
+  public void setMonitorRoute(Router router) {
+    Route route = router.route(HttpMethod.GET, "/events/:command/:init")
+        .produces("application/json");
+
+    route.handler(SessionHandler.create(SessionStore.create(vertx)).getDelegate());
+    route.handler(routingContext -> {
+      routingContext.put("name", "monitor");
+      HttpServerResponse response = routingContext.response();
+      String acceptableContentType = routingContext.getAcceptableContentType();
+      response.putHeader("content-type", acceptableContentType);
+      Session session = routingContext.session();
+
+      if (session.isEmpty()) {
+        session.put("monitor", new KafkaConsumerDodex());
+      }
+
+      KafkaConsumerDodex kafkaConsumerDodex = session.get("monitor");
+
+      try {
+        response.send(kafkaConsumerDodex.list(
+            routingContext.pathParam("command"), routingContext.pathParam("init")));
+      } catch (JsonProcessingException e) {
+        e.printStackTrace();
+      }
+      if ("-1".equals(routingContext.pathParam("init"))) {
+        session.destroy();
+      }
+    });
+    route.failureHandler(ctx ->
+        logger.error(String.format("%sFAILURE in /monitor/ route: %d%s",
+            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+    );
+  }
+
+  public void setDodexRoute(Router router) throws InterruptedException, IOException, SQLException {
+    DodexUtil du = new DodexUtil();
+    String defaultDbName = du.getDefaultDb();
+
+    if ("firebase".equals(defaultDbName)) {
+      try {
+        FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
+        firebaseRouter.setWebSocket(server);
+        firestore = firebaseRouter.getDbf();
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        throw ex;
+      }
+    } else if ("cassandra".equals(defaultDbName)) {
+      try {
+        CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+        cassandraRouter.setWebSocket(server);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        throw ex;
+      }
+    } else if ("neo4j".equals(defaultDbName)) {
+      try {
+        Neo4jRouter neo4jRouter = new Neo4jRouter(vertx);
+        neo4jRouter.setWebSocket(server);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        throw ex;
+      }
+    } else {
+      try {
+        DodexRouter dodexRouter = new DodexRouter(vertx);
+        dodexRouter.setWebSocket(server);
+      } catch (Exception ex) {
+        ex.printStackTrace();
+        throw ex;
+      }
+    }
+  }
+
+  public Future<Router> getRouter() {
+    return routerPromise.future();
+  }
+
+  public Firestore getFirestore() {
+    return firestore;
+  }
 }

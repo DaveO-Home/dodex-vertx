@@ -1,4 +1,6 @@
 #!/usr/bin/bash
 
+#    Make sure the dev vertx server and envoy proxy are running before running tests or build.
+
 gradlew --no-build-cache cleanTest $1 $2 test  
 

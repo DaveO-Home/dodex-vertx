@@ -1,7 +1,6 @@
 package dmo.fs.spa.router;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -20,13 +19,13 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.http.HttpServer;
-import io.vertx.rxjava3.core.http.HttpServerResponse;
-import io.vertx.rxjava3.ext.web.Route;
-import io.vertx.rxjava3.ext.web.Router;
-import io.vertx.rxjava3.ext.web.Session;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.Session;
 import io.vertx.rxjava3.ext.web.handler.BodyHandler;
 import io.vertx.rxjava3.ext.web.handler.CorsHandler;
-import io.vertx.rxjava3.ext.web.handler.SessionHandler;
+import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.rxjava3.ext.web.sstore.LocalSessionStore;
 import io.vertx.rxjava3.ext.web.sstore.SessionStore;
 
@@ -55,11 +54,11 @@ public class SpaRoutes {
     }
 
     public void setGetLoginRoute() {
-        SessionHandler sessionHandler = SessionHandler.create(sessionStore);
+        SessionHandler sessionHandler = SessionHandler.create(sessionStore.getDelegate());
         Route route = router.route(HttpMethod.GET, "/userlogin").handler(sessionHandler);
 
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create().allowedMethod(HttpMethod.GET));
+            route.handler(CorsHandler.create().getDelegate().allowedMethod(HttpMethod.GET));
         }
 
         route.handler(routingContext -> {
@@ -125,14 +124,14 @@ public class SpaRoutes {
     }
 
     public void setPutLoginRoute() {
-        SessionHandler sessionHandler = SessionHandler.create(sessionStore);
+        SessionHandler sessionHandler = SessionHandler.create(sessionStore.getDelegate());
         Route route = router.route(HttpMethod.PUT, "/userlogin").handler(sessionHandler);
 
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create().allowedMethod(HttpMethod.PUT));
+            route.handler(CorsHandler.create().getDelegate().allowedMethod(HttpMethod.PUT));
         }
 
-        route.handler(BodyHandler.create()).handler(routingContext -> {
+        route.handler(BodyHandler.create().getDelegate()).handler(routingContext -> {
 
             try {
 
@@ -220,10 +219,10 @@ public class SpaRoutes {
     }
 
     public void setLogoutRoute() {
-        SessionHandler sessionHandler = SessionHandler.create(sessionStore);
+        SessionHandler sessionHandler = SessionHandler.create(sessionStore.getDelegate());
         Route route = router.route(HttpMethod.DELETE, "/userlogin").handler(sessionHandler);
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create().allowedMethod(HttpMethod.DELETE));
+            route.handler(CorsHandler.create().getDelegate().allowedMethod(HttpMethod.DELETE));
         }
 
         route.handler(routingContext -> {
@@ -261,12 +260,12 @@ public class SpaRoutes {
     }
 
     public void setUnregisterLoginRoute() {
-        SessionHandler sessionHandler = SessionHandler.create(sessionStore);
+        SessionHandler sessionHandler = SessionHandler.create(sessionStore.getDelegate());
         Route route =
                 router.route(HttpMethod.DELETE, "/userlogin/unregister").handler(sessionHandler);
 
         if ("dev".equals(DodexUtil.getEnv())) {
-            route.handler(CorsHandler.create().allowedMethod(HttpMethod.DELETE));
+            route.handler(CorsHandler.create().getDelegate().allowedMethod(HttpMethod.DELETE));
         }
 
         route.handler(routingContext -> {

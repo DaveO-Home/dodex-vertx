@@ -28,6 +28,7 @@
   <script src="../node_modules/dodex-input/dist/dodex-input.min.js" type="text/javascript"></script>
   <script src="../node_modules/dodex-mess/dist/dodex-mess.min.js" type="text/javascript"></script>
   <script src="../node_modules/jsoneditor/dist/jsoneditor.min.js"></script>
+  <script src="../group/main.min.js"></script>
 
   <script>
     const dodex = window.doDex;
@@ -46,7 +47,8 @@
         for (var i = 0; i < 3; i++) {
           dodex.addCard(content);
         }
-
+        /* Api for user grouping */
+        window.groupListener();
         /* Auto display of widget */
         dodex.openDodex();
       });

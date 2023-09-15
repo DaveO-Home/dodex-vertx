@@ -1,11 +1,11 @@
-package dmo.fs.db;
-
-import java.sql.SQLException;
+package dmo.fs.dbg;
 
 import io.vertx.core.Future;
 import io.vertx.rxjava3.core.Vertx;
 
-public interface HandicapDatabase {
+import java.sql.SQLException;
+
+public interface HandicapDatabaseG {
 	Future<String> checkOnTables() throws InterruptedException, SQLException;
 
 	<T> T getPool4();

@@ -2,7 +2,7 @@ package golf.handicap.db
 
 // import golf.handicap.Course.key
 
-import dmo.fs.db.DbConfiguration
+import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.*
 import golf.handicap.generated.tables.references.COURSE
@@ -15,20 +15,17 @@ import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.rxjava3.core.Promise
 import io.vertx.rxjava3.sqlclient.Tuple
-import java.lang.Exception
+import org.jooq.*
+import org.jooq.impl.*
+import org.jooq.impl.DSL.*
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.sql.*
-import java.sql.Date
 import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.time.Year
 import java.util.*
 import java.util.logging.Logger
-import kotlin.Throws
-import org.jooq.*
-import org.jooq.impl.*
-import org.jooq.impl.DSL.*
 
 class PopulateGolferScores : SqlConstants() {
     private val teeDate = SimpleDateFormat("yyyy-MM-dd")
@@ -112,7 +109,7 @@ class PopulateGolferScores : SqlConstants() {
         @JvmStatic
         private fun setupSqliteSetUsedUpdate(): String {
             return create!!.renderNamedParams(
-                update(table("SCORES"))
+                update(table("scores"))
                     .set(field("USED"), '*')
                     .where(
                         (field("PIN")
@@ -133,7 +130,7 @@ class PopulateGolferScores : SqlConstants() {
         @JvmStatic
         private fun setupSqliteResetUsedUpdate(): String {
             return create!!.renderNamedParams(
-                update(table("SCORES"))
+                update(table("scores"))
                     .setNull(field("USED"))
                     .where((field("PIN").eq("$").and(field("USED").eq("$"))))
             )
@@ -149,7 +146,7 @@ class PopulateGolferScores : SqlConstants() {
         @JvmStatic
         private fun setupSqliteHandicapUpdate(): String {
             return create!!.renderNamedParams(
-                update(table("GOLFER")).set(field("HANDICAP"), "$").where((field("PIN").eq("$")))
+                update(table("golfer")).set(field("HANDICAP"), "$").where((field("PIN").eq("$")))
             )
         }
 
@@ -166,7 +163,7 @@ class PopulateGolferScores : SqlConstants() {
         @JvmStatic
         private fun setupSqliteScoreUpdate(): String {
             return create!!.renderNamedParams(
-                update(table("SCORES"))
+                update(table("scores"))
                     .set(field("HANDICAP"), "$")
                     .set(field("NET_SCORE"), "$")
                     .where(
@@ -422,7 +419,7 @@ class PopulateGolferScores : SqlConstants() {
     fun getGolferScores(golfer: Golfer): Future<Map<String, Any?>>? {
         val scoresPromise: Promise<Map<String, Any?>> = Promise.promise()
         val golferPin = golfer.pin
-        val previousYear = Year.now().getValue() - 1
+        val previousYear = Year.now().value - 1
         overlapYears = golfer.overlap
 
         beginDate = if (overlapYears) "01-01-$previousYear" else beginDate
@@ -462,14 +459,14 @@ class PopulateGolferScores : SqlConstants() {
                             y = 0
                             val rowObject = JsonObject()
                             while (y < columns) {
-                                var name = row.getColumnName(y)
-                                name = if (DbConfiguration.isUsingPostgres()) name.uppercase() else name
-                                if ("NET_SCORE".equals(name) || "HANDICAP".equals(name)) {
+                                val name = row.getColumnName(y).uppercase();
+
+                                if ("NET_SCORE" == name || "HANDICAP" == name) {
                                     rowObject.put(
                                         name,
                                         BigDecimal(row.getValue(y++).toString()).setScale(1, RoundingMode.UP)
                                     )
-                                } else if ("TEE_TIME".equals(name) && gettingData) {
+                                } else if ("TEE_TIME" == name && gettingData) {
                                     rowObject.put(name, row.getValue(y++).toString().substring(0, 10))
                                 } else {
                                     rowObject.put(name, row.getValue(y++))
@@ -497,6 +494,7 @@ class PopulateGolferScores : SqlConstants() {
                                 err.stackTraceToString()
                             )
                         )
+                        err.printStackTrace()
                     })
             }
             .subscribe()

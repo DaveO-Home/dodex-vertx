@@ -1,8 +1,7 @@
 package golf.handicap.db
 
-import dmo.fs.db.DbConfiguration
+import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
-import golf.handicap.Course
 import golf.handicap.generated.tables.records.ScoresRecord
 import golf.handicap.generated.tables.references.SCORES
 import handicap.grpc.*
@@ -11,15 +10,12 @@ import io.vertx.core.Future
 import io.vertx.rxjava3.core.Promise
 import io.vertx.rxjava3.jdbcclient.JDBCPool
 import io.vertx.rxjava3.sqlclient.Tuple
-import java.sql.*
-import java.util.*
-import java.util.logging.Logger
-import kotlin.Throws
-import kotlin.stackTraceToString
 import org.jooq.*
 import org.jooq.impl.*
 import org.jooq.impl.DSL.*
-import org.jooq.impl.DSL.insertInto
+import java.sql.*
+import java.util.*
+import java.util.logging.Logger
 
 class PopulateScore : SqlConstants() {
     companion object {
@@ -100,7 +96,7 @@ class PopulateScore : SqlConstants() {
         private fun setupUpdateScore(): String {
 
             return create!!.renderNamedParams(
-                update(table("SCORES"))
+                update(table("scores"))
                     .set(field("gross_score"), 0)
                     .set(field("adjusted_score"), 0)
                     .set(field("net_score"), 0)
@@ -114,7 +110,7 @@ class PopulateScore : SqlConstants() {
         @JvmStatic
         fun setupUpdateGolfer(): String {
             return create!!.renderNamedParams(
-                update(table("GOLFER"))
+                update(table("golfer"))
                     .set(field("OVERLAP_YEARS"), "$")
                     .set(field("PUBLIC"), "$")
                     .where(field("pin").eq("$"))
@@ -320,12 +316,16 @@ class PopulateScore : SqlConstants() {
                 conn.rxBegin()
                     .doOnSuccess { tx ->
                         val parameters: Tuple = Tuple.tuple()
-
-                        parameters
-                            .addInteger(if (score.golfer!!.overlap) 1 else 0)
-                            .addInteger(if (score.golfer!!.public) 1 else 0)
-                            .addString(score.golfer!!.pin)
-
+                        if (DbConfiguration.isUsingPostgres()) {
+                            parameters
+                                .addBoolean(score.golfer!!.overlap)
+                                .addBoolean(score.golfer!!.public)
+                        } else {
+                            parameters
+                                .addInteger(if (score.golfer!!.overlap) 1 else 0)
+                                .addInteger(if (score.golfer!!.public) 1 else 0)
+                        }
+                        parameters.addString(score.golfer!!.pin)
                         conn.preparedQuery(GETGOLFERUPDATECHECKED)
                             .rxExecute(parameters)
                             .doOnSuccess { _ ->
@@ -344,6 +344,7 @@ class PopulateScore : SqlConstants() {
                                         ColorUtilConstants.RESET,
                                     )
                                 )
+                                err.printStackTrace()
                                 score.status = -1
                                 score.golfer!!.message = "Golfer update failed"
                                 conn.close()

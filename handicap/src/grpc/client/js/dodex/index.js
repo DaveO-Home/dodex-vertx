@@ -7,6 +7,7 @@ import jsonEditor from "jsoneditor"
 import "@fortawesome/fontawesome-free/js/all.js";
 import "@fortawesome/fontawesome-free/js/fontawesome.js";
 import "../../css/dodex_handicap.css";
+import { groupListener } from "./groups";
 window.JSONEditor = jsonEditor;
 
 if (document.querySelector(".top--dodex") === null) {
@@ -26,6 +27,9 @@ if (document.querySelector(".top--dodex") === null) {
       mess: mess,
       server: server
     }).then(function () {
+
+      groupListener(); // Dodex addon for defining user groups.
+      
       // Add in app/personal cards
 //      for (let i = 0; i < 4; i++) {
 //        dodex.addCard(getAdditionalContent());

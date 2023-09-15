@@ -1,5 +1,5 @@
 
-package dmo.fs.db;
+package dmo.fs.dbh;
 
 import dmo.fs.utils.DodexUtil;
 import golf.handicap.db.PopulateCourse;

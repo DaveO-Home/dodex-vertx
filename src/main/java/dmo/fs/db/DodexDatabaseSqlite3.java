@@ -77,7 +77,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
   }
 
   public DodexDatabaseSqlite3(Boolean isCreateTables)
-      throws InterruptedException, IOException, SQLException {
+      throws IOException {
     super();
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
@@ -89,12 +89,12 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
     this.isCreateTables = isCreateTables;
   }
 
-  public Future<String> checkOnTables() throws InterruptedException, SQLException {
+  public Future<String> checkOnTables() {
     databaseSetup();
     return returnPromise.future();
   }
 
-  private void databaseSetup() throws InterruptedException, SQLException {
+  private void databaseSetup() {
     Promise<String> finalPromise = Promise.promise();
     if ("dev".equals(webEnv)) {
       DbConfiguration.configureTestDefaults(dbMap, dbProperties);
@@ -193,52 +193,60 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
         })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
           logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
         }).doOnSuccess(rows -> {
-          if (MainVerticle.getEnableHandicap()) {
-            Set<String> names = new HashSet<>();
+          Set<String> names = new HashSet<>();
 
-            for (Row row : rows) {
-              names.add(row.getString(0));
+          for (Row row : rows) {
+            names.add(row.getString(0));
+          }
+          conn.query(getCreateTable("GOLFER")).rxExecute().doOnError(err -> {
+            logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+          }).doOnSuccess(row1 -> {
+            if (!names.contains("golfer")) {
+              logger.warn("Golfer Table Added.");
             }
-            conn.query(getCreateTable("GOLFER")).rxExecute().doOnError(err -> {
-              logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
-            }).doOnSuccess(row1 -> {
-              if (!names.contains("GOLFER")) {
-                logger.warn("Golfer Table Added.");
-              }
 
-              conn.query(getCreateTable("COURSE")).rxExecute().doOnError(err -> {
-                logger.warn(String.format("Course Table Error: %s", err.getMessage()));
-              }).doOnSuccess(row2 -> {
-                if (!names.contains("COURSE")) {
-                  logger.warn("Course Table Added.");
+            conn.query(getCreateTable("COURSE")).rxExecute().doOnError(err -> {
+              logger.warn(String.format("Course Table Error: %s", err.getMessage()));
+            }).doOnSuccess(row2 -> {
+              if (!names.contains("course")) {
+                logger.warn("Course Table Added.");
+              }
+              conn.query(getCreateTable("RATINGS")).rxExecute().doOnError(err -> {
+                logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
+              }).doOnSuccess(row3 -> {
+                if (!names.contains("ratings")) {
+                  logger.warn("Ratings Table Added.");
                 }
-                conn.query(getCreateTable("RATINGS")).rxExecute().doOnError(err -> {
-                  logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
-                }).doOnSuccess(row3 -> {
-                  if (!names.contains("RATINGS")) {
-                    logger.warn("Ratings Table Added.");
+                conn.query(getCreateTable("SCORES")).rxExecute().doOnError(err -> {
+                  logger.error(String.format("Scores Table Error: %s", err.getMessage()));
+                }).doOnSuccess(row4 -> {
+                  if (!names.contains("scores")) {
+                    logger.warn("Scores Table Added.");
                   }
-                  conn.query(getCreateTable("SCORES")).rxExecute().doOnError(err -> {
+                  conn.query(getCreateTable("GROUPS")).rxExecute().doOnError(err -> {
                     logger.error(String.format("Scores Table Error: %s", err.getMessage()));
-                  }).doOnSuccess(row4 -> {
-                    if (!names.contains("SCORES")) {
-                      logger.warn("Scores Table Added.");
+                  }).doOnSuccess(row5 -> {
+                    if (!names.contains("groups")) {
+                      logger.warn("Groups Table Added.");
                     }
-                    tx.commit();
-                    conn.close();
-                    if (isCreateTables) {
-                      returnPromise.complete(isCreateTables.toString());
-                    }
-                    finalPromise.complete(isCreateTables.toString());
+                    conn.query(getCreateTable("MEMBER")).rxExecute().doOnError(err -> {
+                      logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                    }).doOnSuccess(row6 -> {
+                      if (!names.contains("member")) {
+                        logger.warn("Member Table Added.");
+                      }
+                      tx.commit();
+                      conn.close();
+                      if (isCreateTables) {
+                        returnPromise.complete(isCreateTables.toString());
+                      }
+                      finalPromise.complete(isCreateTables.toString());
+                    }).subscribe();
                   }).subscribe();
                 }).subscribe();
               }).subscribe();
             }).subscribe();
-          } else {
-            tx.commit(); 
-            conn.close();
-            finalPromise.complete("");
-          }
+          }).subscribe();
         })).flatMapCompletable(res -> Completable.complete())));
 
     completable.subscribe(() -> {

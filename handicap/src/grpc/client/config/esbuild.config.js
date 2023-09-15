@@ -7,8 +7,8 @@ if (isProduction) {
     import("del").then(del => {
         (async () => {
             await del.deleteAsync(["../../main/resources/static/dist/*"], { force: true, dryRun: false });
+            build();
         })();
-        build();
     });
 } else {
     build();

@@ -40,7 +40,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
 
 
   public DodexDatabaseMariadb(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
-      throws InterruptedException, IOException, SQLException {
+      throws IOException {
     super();
 
     defaultNode = dodexUtil.getDefaultNode();
@@ -63,7 +63,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
     databaseSetup();
   }
 
-  public DodexDatabaseMariadb() throws InterruptedException, IOException, SQLException {
+  public DodexDatabaseMariadb() throws IOException {
     super();
 
     defaultNode = dodexUtil.getDefaultNode();
@@ -78,7 +78,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
   }
 
   public DodexDatabaseMariadb(Boolean isCreateTables)
-      throws InterruptedException, IOException, SQLException {
+      throws IOException {
     super();
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
@@ -90,12 +90,12 @@ public class DodexDatabaseMariadb extends DbMariadb {
     this.isCreateTables = isCreateTables;
   }
 
-  public Future<String> checkOnTables() throws InterruptedException, SQLException {
+  public Future<String> checkOnTables() {
     databaseSetup();
     return returnPromise.future();
   }
 
-  private void databaseSetup() throws InterruptedException, SQLException {
+  private void databaseSetup() {
     Promise<String> finalPromise = Promise.promise();
     if ("dev".equals(webEnv)) {
       DbConfiguration.configureTestDefaults(dbMap, dbProperties);
@@ -187,11 +187,11 @@ public class DodexDatabaseMariadb extends DbMariadb {
                 crow.subscribe(result2 -> {
                   //
                 }, err -> {
-                  logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                  logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
                 });
               }
             }).doOnError(err -> {
-              logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
             })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
               logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
             }).doOnSuccess(rows -> {
@@ -204,34 +204,50 @@ public class DodexDatabaseMariadb extends DbMariadb {
                 conn.query(getCreateTable("GOLFER")).rxExecute().doOnError(err -> {
                   logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
                 }).doOnSuccess(row1 -> {
-                  if (!names.contains("GOLFER")) {
+                  if (!names.contains("golfer")) {
                     logger.warn("Golfer Table Added.");
                   }
 
                   conn.query(getCreateTable("COURSE")).rxExecute().doOnError(err -> {
                     logger.warn(String.format("Course Table Error: %s", err.getMessage()));
                   }).doOnSuccess(row2 -> {
-                    if (!names.contains("COURSE")) {
+                    if (!names.contains("course")) {
                       logger.warn("Course Table Added.");
                     }
                     conn.query(getCreateTable("RATINGS")).rxExecute().doOnError(err -> {
                       logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
                     }).doOnSuccess(row3 -> {
-                      if (!names.contains("RATINGS")) {
+                      if (!names.contains("ratings")) {
                         logger.warn("Ratings Table Added.");
                       }
                       conn.query(getCreateTable("SCORES")).rxExecute().doOnError(err -> {
                         logger.error(String.format("Scores Table Error: %s", err.getMessage()));
                       }).doOnSuccess(row4 -> {
-                        if (!names.contains("SCORES")) {
+                        if (!names.contains("scores")) {
                           logger.warn("Scores Table Added.");
                           tx.commit();
                         }
-                        finalPromise.complete(isCreateTables.toString());
-                        if (isCreateTables) {
-                          returnPromise.complete(isCreateTables.toString());
-                        }
-                      }).subscribe(res -> conn.close());
+                        conn.query(getCreateTable("GROUPS")).rxExecute().doOnError(err -> {
+                          logger.error(String.format("Groups Table Error: %s", err.getMessage()));
+                        }).doOnSuccess(row5 -> {
+                          if (!names.contains("groups")) {
+                            logger.warn("Groups Table Added.");
+                          }
+                          conn.query(getCreateTable("MEMBER")).rxExecute().doOnError(err -> {
+                            logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                          }).doOnSuccess(row6 -> {
+                            if (!names.contains("member")) {
+                              logger.warn("Member Table Added.");
+                            }
+                            tx.commit();
+                            conn.close();
+                            if (isCreateTables) {
+                              returnPromise.complete(isCreateTables.toString());
+                            }
+                            finalPromise.complete(isCreateTables.toString());
+                          }).subscribe(res -> conn.close());
+                        }).subscribe();
+                      }).subscribe();
                     }).subscribe();
                   }).subscribe();
                 }).subscribe();

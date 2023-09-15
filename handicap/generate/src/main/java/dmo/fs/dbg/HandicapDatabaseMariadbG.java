@@ -1,4 +1,4 @@
-package dmo.fs.db;
+package dmo.fs.dbg;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -7,12 +7,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
-
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
@@ -26,9 +23,9 @@ import io.vertx.rxjava3.sqlclient.RowIterator;
 import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
 
-public class HandicapDatabaseMariadb extends DbMariadb {
+public class HandicapDatabaseMariadbG extends DbMariadb {
   private final static Logger logger =
-      LoggerFactory.getLogger(HandicapDatabaseMariadb.class.getName());
+      LoggerFactory.getLogger(HandicapDatabaseMariadbG.class.getName());
   protected Disposable disposable;
   protected MySQLPool pool4;
   protected Properties dbProperties = new Properties();
@@ -40,7 +37,7 @@ public class HandicapDatabaseMariadb extends DbMariadb {
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
 
-  public HandicapDatabaseMariadb(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+  public HandicapDatabaseMariadbG(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
     super();
 
@@ -64,7 +61,7 @@ public class HandicapDatabaseMariadb extends DbMariadb {
     databaseSetup();
   }
 
-  public HandicapDatabaseMariadb() throws InterruptedException, IOException, SQLException {
+  public HandicapDatabaseMariadbG() throws InterruptedException, IOException, SQLException {
     super();
 
     defaultNode = dodexUtil.getDefaultNode();
@@ -78,7 +75,7 @@ public class HandicapDatabaseMariadb extends DbMariadb {
     databaseSetup();
   }
 
-  public HandicapDatabaseMariadb(Boolean isCreateTables)
+  public HandicapDatabaseMariadbG(Boolean isCreateTables)
       throws InterruptedException, IOException, SQLException {
     super();
     defaultNode = dodexUtil.getDefaultNode();
@@ -105,10 +102,10 @@ public class HandicapDatabaseMariadb extends DbMariadb {
     }
 
     MySQLConnectOptions connectOptions = new MySQLConnectOptions()
-        .setPort(Integer.parseInt(dbMap.get("port"))).setHost(dbMap.get("host2"))
+        .setPort(Integer.valueOf(dbMap.get("port"))).setHost(dbMap.get("host2"))
         .setDatabase(dbMap.get("database")).setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setSsl(Boolean.parseBoolean(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
+        .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
         .setCharset("utf8mb4");
 
     // Pool options
@@ -188,11 +185,11 @@ public class HandicapDatabaseMariadb extends DbMariadb {
                 crow.subscribe(result2 -> {
                   //
                 }, err -> {
-                  logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                  logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
                 });
               }
             }).doOnError(err -> {
-              logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
             })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
               logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
             }).doOnSuccess(rows -> {
@@ -204,39 +201,55 @@ public class HandicapDatabaseMariadb extends DbMariadb {
               conn.query(getCreateTable("GOLFER")).rxExecute().doOnError(err -> {
                 logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
               }).doOnSuccess(row1 -> {
-                if (!names.contains("GOLFER")) {
+                if (!names.contains("golfer")) {
                   logger.warn("Golfer Table Added.");
                 }
 
                 conn.query(getCreateTable("COURSE")).rxExecute().doOnError(err -> {
                   logger.warn(String.format("Course Table Error: %s", err.getMessage()));
                 }).doOnSuccess(row2 -> {
-                  if (!names.contains("COURSE")) {
+                  if (!names.contains("course")) {
                     logger.warn("Course Table Added.");
                   }
                   conn.query(getCreateTable("RATINGS")).rxExecute().doOnError(err -> {
                     logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
                   }).doOnSuccess(row3 -> {
-                    if (!names.contains("RATINGS")) {
+                    if (!names.contains("ratings")) {
                       logger.warn("Ratings Table Added.");
                     }
                     conn.query(getCreateTable("SCORES")).rxExecute().doOnError(err -> {
                       logger.error(String.format("Scores Table Error: %s", err.getMessage()));
                     }).doOnSuccess(row4 -> {
-                      if (!names.contains("SCORES")) {
+                      if (!names.contains("scores")) {
                         logger.warn("Scores Table Added.");
                       }
-                      tx.commit();
-                      conn.close();
-                      finalPromise.complete(isCreateTables.toString());
-                      if (isCreateTables) {
-                        returnPromise.complete(isCreateTables.toString());
-                      }
+                      conn.query(getCreateTable("GROUPS")).rxExecute().doOnError(err -> {
+                        logger.error(String.format("Groups Table Error: %s", err.getMessage()));
+                      }).doOnSuccess(row5 -> {
+                        if (!names.contains("groups")) {
+                          logger.warn("Groups Table Added.");
+                        }
+                        conn.query(getCreateTable("MEMBER")).rxExecute().doOnError(err -> {
+                          logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                        }).doOnSuccess(row6 -> {
+                          if (!names.contains("member")) {
+                            logger.warn("Member Table Added.");
+                          }
+                          tx.commit();
+                          conn.close();
+                          if (isCreateTables) {
+                            returnPromise.complete(isCreateTables.toString());
+                          }
+                          finalPromise.complete(isCreateTables.toString());
+                        }).subscribe(res -> conn.close());
+                      }).subscribe();
                     }).subscribe();
                   }).subscribe();
                 }).subscribe();
               }).subscribe();
-            })).flatMapCompletable(res -> Completable.complete())));
+            })).flatMapCompletable(res -> tx.rxCommit()).doOnSubscribe(sub -> {
+              conn.rxClose();
+            })));
 
     completable.subscribe(() -> {
       finalPromise.future().onComplete(c -> {

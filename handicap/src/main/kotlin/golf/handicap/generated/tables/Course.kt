@@ -5,7 +5,7 @@ package golf.handicap.generated.tables
 
 
 import golf.handicap.generated.DefaultSchema
-import golf.handicap.generated.keys.COURSE__
+import golf.handicap.generated.keys.COURSE_PKEY
 import golf.handicap.generated.tables.records.CourseRecord
 
 import org.jooq.Field
@@ -48,7 +48,7 @@ open class Course(
     companion object {
 
         /**
-         * The reference instance of <code>COURSE</code>
+         * The reference instance of <code>course</code>
          */
         val COURSE: Course = Course()
     }
@@ -59,47 +59,47 @@ open class Course(
     override fun getRecordType(): Class<CourseRecord> = CourseRecord::class.java
 
     /**
-     * The column <code>COURSE.COURSE_SEQ</code>.
+     * The column <code>course.course_seq</code>.
      */
-    val COURSE_SEQ: TableField<CourseRecord, Int?> = createField(DSL.name("COURSE_SEQ"), SQLDataType.INTEGER.nullable(false).identity(true), this, "")
+    val COURSE_SEQ: TableField<CourseRecord, Int?> = createField(DSL.name("course_seq"), SQLDataType.INTEGER.nullable(false).identity(true), this, "")
 
     /**
-     * The column <code>COURSE.COURSE_NAME</code>.
+     * The column <code>course.course_name</code>.
      */
-    val COURSE_NAME: TableField<CourseRecord, String?> = createField(DSL.name("COURSE_NAME"), SQLDataType.VARCHAR(128).nullable(false), this, "")
+    val COURSE_NAME: TableField<CourseRecord, String?> = createField(DSL.name("course_name"), SQLDataType.VARCHAR(128).nullable(false), this, "")
 
     /**
-     * The column <code>COURSE.COURSE_COUNTRY</code>.
+     * The column <code>course.course_country</code>.
      */
-    val COURSE_COUNTRY: TableField<CourseRecord, String?> = createField(DSL.name("COURSE_COUNTRY"), SQLDataType.VARCHAR(128).nullable(false), this, "")
+    val COURSE_COUNTRY: TableField<CourseRecord, String?> = createField(DSL.name("course_country"), SQLDataType.VARCHAR(128).nullable(false), this, "")
 
     /**
-     * The column <code>COURSE.COURSE_STATE</code>.
+     * The column <code>course.course_state</code>.
      */
-    val COURSE_STATE: TableField<CourseRecord, String?> = createField(DSL.name("COURSE_STATE"), SQLDataType.CHAR(2).nullable(false), this, "")
+    val COURSE_STATE: TableField<CourseRecord, String?> = createField(DSL.name("course_state"), SQLDataType.CHAR(2).nullable(false), this, "")
 
     private constructor(alias: Name, aliased: Table<CourseRecord>?): this(alias, null, null, aliased, null)
     private constructor(alias: Name, aliased: Table<CourseRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, aliased, parameters)
 
     /**
-     * Create an aliased <code>COURSE</code> table reference
+     * Create an aliased <code>course</code> table reference
      */
     constructor(alias: String): this(DSL.name(alias))
 
     /**
-     * Create an aliased <code>COURSE</code> table reference
+     * Create an aliased <code>course</code> table reference
      */
     constructor(alias: Name): this(alias, null)
 
     /**
-     * Create a <code>COURSE</code> table reference
+     * Create a <code>course</code> table reference
      */
-    constructor(): this(DSL.name("COURSE"), null)
+    constructor(): this(DSL.name("course"), null)
 
     constructor(child: Table<out Record>, key: ForeignKey<out Record, CourseRecord>): this(Internal.createPathAlias(child, key), child, key, COURSE, null)
     override fun getSchema(): Schema? = if (aliased()) null else DefaultSchema.DEFAULT_SCHEMA
     override fun getIdentity(): Identity<CourseRecord, Int?> = super.getIdentity() as Identity<CourseRecord, Int?>
-    override fun getPrimaryKey(): UniqueKey<CourseRecord> = COURSE__
+    override fun getPrimaryKey(): UniqueKey<CourseRecord> = COURSE_PKEY
     override fun `as`(alias: String): Course = Course(DSL.name(alias), this)
     override fun `as`(alias: Name): Course = Course(alias, this)
 

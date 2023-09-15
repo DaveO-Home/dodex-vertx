@@ -1,4 +1,4 @@
-package dmo.fs.db;
+package dmo.fs.dbh;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -9,8 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import dmo.fs.utils.DodexUtil;
 
-public abstract class DbConfiguration {
-    static Logger logger = LoggerFactory.getLogger(DbConfiguration.class.getName());
+public abstract class DbHandicapConfiguration {
+    static Logger logger = LoggerFactory.getLogger(DbHandicapConfiguration.class.getName());
     private static Map<String, String> map = new ConcurrentHashMap<>();
     protected static Properties properties = new Properties();
 

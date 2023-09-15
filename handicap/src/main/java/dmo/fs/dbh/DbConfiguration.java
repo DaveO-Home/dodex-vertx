@@ -1,19 +1,26 @@
-package dmo.fs.db;
+package dmo.fs.dbh;
 
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import dmo.fs.utils.DodexUtil;
 
 public abstract class DbConfiguration {
-    private static final Map<String, String> map = new ConcurrentHashMap<>();
+    static Logger logger = LoggerFactory.getLogger(DbConfiguration.class.getName());
+    private static Map<String, String> map = new ConcurrentHashMap<>();
     protected static Properties properties = new Properties();
+
     private static Boolean isUsingSqlite3 = false;
     private static Boolean isUsingPostgres = false;
+    private static Boolean isUsingCubrid = false;
     private static Boolean isUsingMariadb = false;
+    private static Boolean isUsingIbmDB2 = false;
+    private static Boolean isUsingCassandra = false;
+    private static Boolean isUsingFirebase = false;
     private static String defaultDb = "sqlite3";
     private static final DodexUtil dodexUtil = new DodexUtil();
     private static HandicapDatabase handicapDatabase;
@@ -21,14 +28,18 @@ public abstract class DbConfiguration {
     private enum DbTypes {
         POSTGRES("postgres"),
         SQLITE3("sqlite3"),
-        MARIADB("mariadb");
+        CUBRID("cubrid"),
+        MARIADB("mariadb"),
+        IBMDB2("ibmdb2"),
+        CASSANDRA("cassandra"),
+        FIREBASE("firebase");
 
-        final String db;
+        String db;
 
         DbTypes(String db) {
             this.db = db;
         }
-    }
+    };
 
     public static boolean isUsingSqlite3() {
         return isUsingSqlite3;
@@ -38,8 +49,24 @@ public abstract class DbConfiguration {
         return isUsingPostgres;
     }
 
+    public static boolean isUsingCubrid() {
+        return isUsingCubrid;
+    }
+
     public static boolean isUsingMariadb() {
         return isUsingMariadb;
+    }
+
+    public static boolean isUsingIbmDB2() {
+        return isUsingIbmDB2;
+    }
+
+    public static boolean isUsingCassandra() {
+        return isUsingCassandra;
+    }
+
+    public static boolean isUsingFirebase() {
+        return isUsingFirebase;
     }
 
     @SuppressWarnings("unchecked")
@@ -53,10 +80,11 @@ public abstract class DbConfiguration {
             if(defaultDb.equals(DbTypes.SQLITE3.db) && handicapDatabase == null) {
                 handicapDatabase = new HandicapDatabaseSqlite3();
                 isUsingSqlite3 = true;
-            } else if(defaultDb.equals(DbTypes.MARIADB.db) && handicapDatabase == null) {
-                 handicapDatabase = new HandicapDatabaseMariadb();
-                 isUsingMariadb = true;
-             }
+            } 
+            else if(defaultDb.equals(DbTypes.MARIADB.db) && handicapDatabase == null) {
+                handicapDatabase = new HandicapDatabaseMariadb();
+                isUsingMariadb = true;
+            } 
         } catch (Exception exception) { 
             throw exception;
         }
@@ -68,7 +96,7 @@ public abstract class DbConfiguration {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
         try {
             if(defaultDb.equals(DbTypes.POSTGRES.db) /*&& handicapDatabase == null*/ && isCreateTables) {
-                handicapDatabase = new HandicapDatabasePostgres(isCreateTables);
+                handicapDatabase = new HandicapDatabasePostgres();
                 isUsingPostgres = true;
             } else 
             if(defaultDb.equals(DbTypes.SQLITE3.db) /*&& handicapDatabase == null*/ && isCreateTables) {
@@ -78,7 +106,7 @@ public abstract class DbConfiguration {
             else if(defaultDb.equals(DbTypes.MARIADB.db) /* && handicapDatabase == null*/ && isCreateTables) {
                 handicapDatabase = new HandicapDatabaseMariadb(isCreateTables);
                 isUsingMariadb = true;
-            }
+            } 
         } catch (Exception exception) { 
             throw exception;
         }
@@ -98,11 +126,11 @@ public abstract class DbConfiguration {
             if(defaultDb.equals(DbTypes.SQLITE3.db) && handicapDatabase == null) {
                 handicapDatabase = new HandicapDatabaseSqlite3(overrideMap, overrideProps);
                 isUsingSqlite3 = true;
-            }
+            } 
             else if(defaultDb.equals(DbTypes.MARIADB.db) && handicapDatabase == null) {
                 handicapDatabase = new HandicapDatabaseMariadb(overrideMap, overrideProps);
                 isUsingMariadb = true;
-            }
+            } 
         } catch (Exception exception) { 
             throw exception;
         }

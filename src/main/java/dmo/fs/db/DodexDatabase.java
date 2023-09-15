@@ -15,13 +15,13 @@ public interface DodexDatabase {
 
 	String getUserById();
 
-	String getInsertUser();
-
-	String getRemoveUndelivered();
+//	String getInsertUser();
+//
+//	String getRemoveUndelivered();
 
 	String getRemoveMessage();
 
-	String getUndeliveredMessage();
+//	String getUndeliveredMessage();
 
 	String getDeleteUser();
 
@@ -37,10 +37,10 @@ public interface DodexDatabase {
 	Future<Void> addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId)
 			throws SQLException;
 
-	Future<Long> getUserIdByName(String name) throws InterruptedException, SQLException;
-
-	Future<Void> addUndelivered(Long userId, Long messageId)
-			throws SQLException, InterruptedException;
+//	Future<Long> getUserIdByName(String name) throws InterruptedException, SQLException;
+//
+//	Future<Void> addUndelivered(Long userId, Long messageId)
+//			throws SQLException, InterruptedException;
 
 	Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws, MessageUser messageUser)
 			throws Exception;

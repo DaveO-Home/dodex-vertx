@@ -1,11 +1,13 @@
 
 package dmo.fs.db;
 
+import dmo.fs.dbh.HandicapDatabase;
+
 public abstract class DbPostgres extends DbDefinitionBase implements DodexDatabase, HandicapDatabase {
 	public final static String CHECKUSERSQL = "SELECT to_regclass('public.users')";
     protected final static String CHECKMESSAGESSQL = "SELECT to_regclass('public.messages')";
     protected final static String CHECKUNDELIVEREDSQL = "SELECT to_regclass('public.undelivered')";
-	protected final static String CHECKHANDICAPSQL = "SELECT table_name FROM information_schema.tables WHERE table_name in ('golfer', 'course', 'scores', 'ratings');";
+	protected final static String CHECKHANDICAPSQL = "SELECT table_name FROM information_schema.tables WHERE table_name in ('golfer', 'course', 'scores', 'ratings', 'groups', 'member');";
 	protected final static String SELECTONE = "SELECT 1;";
 
 	private enum CreateTable {
@@ -108,7 +110,32 @@ public abstract class DbPostgres extends DbDefinitionBase implements DodexDataba
 					"ON DELETE NO ACTION " +
 					"ON UPDATE NO ACTION NOT VALID)" +
 					"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
-			"ALTER TABLE public.SCORES OWNER to dummy;");
+			"ALTER TABLE public.SCORES OWNER to dummy;"),
+		CREATEGROUPS(
+			// "CREATE SEQUENCE group_id_seq INCREMENT 1 START 19 MINVALUE 1 MAXVALUE 2147483647 CACHE 1; " +
+			// "ALTER SEQUENCE group_id_seq OWNER TO dummy;" +
+			"CREATE TABLE IF NOT EXISTS public.GROUPS (" +
+				"id integer GENERATED ALWAYS AS IDENTITY, " +
+				"name varchar(24) COLLATE pg_catalog.\"default\"," +
+				"owner INTEGER NOT NULL DEFAULT 0," +
+				"created timestamp with time zone NOT NULL," +
+				"updated timestamp with time zone DEFAULT NULL," +
+				"CONSTRAINT groups_pkey PRIMARY KEY (id)," +
+				"CONSTRAINT name_ukey UNIQUE (name))" +
+				"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
+			"ALTER TABLE public.groups OWNER to dummy;"),
+		CREATEMEMBER(
+			"CREATE TABLE IF NOT EXISTS public.MEMBER (" +
+				"GROUP_ID INTEGER NOT NULL DEFAULT 0," +
+				"USER_ID INTEGER NOT NULL DEFAULT 0," +
+				"CONSTRAINT member_group_id_foreign FOREIGN KEY (group_id)" +
+					"REFERENCES public.groups (id) MATCH SIMPLE " +
+					"ON UPDATE NO ACTION ON DELETE NO ACTION NOT VALID," +
+				"CONSTRAINT member_user_id_foreign FOREIGN KEY (user_id)" +
+					"REFERENCES public.users (id) MATCH SIMPLE " +
+					"ON UPDATE NO ACTION ON DELETE NO ACTION NOT VALID)" +
+					"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
+			"ALTER TABLE public.member OWNER to dummy;");
 
         String sql;
 

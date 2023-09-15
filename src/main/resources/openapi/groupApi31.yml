@@ -1,0 +1,201 @@
+openapi: 3.1.0
+info:
+  title: Groups API
+  description: An API for managing Dodex Groups
+  version: 1.0.0
+paths:
+  /groups:
+    get:
+      description: Returns all groups from the system that the user has access to
+      operationId: getAll
+      responses:
+        "200":
+          description: A list of pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/listGroup"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /addGroup:
+    get:
+      description: Returns all groups from the system that the user has access to
+      operationId: getNextAll
+      responses:
+        "200":
+          description: A list of pets.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/listGroup"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    put:
+      operationId: addGroup
+      requestBody:
+        description: Information about a new pet in the system
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRequest"
+      responses:
+        "200":
+          description: Return a 200 status to indicate that the data was received successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+  /removeGroup:
+    delete:
+      operationId: deleteGroup
+      requestBody:
+        description: Information about a new pet in the system
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRequest"
+      responses:
+        "200":
+          description: Return a 200 status to indicate that the data was received successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GroupResponse"
+  /getGroup/{groupId}:
+    post:
+      description: Info for a specific pet
+      operationId: groupById
+      requestBody:
+        description: Information about a new pet in the system
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupRequest"
+      responses:
+        "200":
+          description: Expected response to a valid request
+          content:
+            application/json:
+              # application/json:
+              schema:
+                $ref: "#/components/schemas/listGroup"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      parameters:
+        - name: help
+          in: query
+          description: group id parameter
+          required: false
+          schema:
+            type: string
+    parameters:
+      - name: groupId
+        in: path
+        description: group id parameter
+        required: true
+        schema:
+          type: string
+        style: simple
+components:
+  schemas:
+    listGroup:
+      required:
+        - groupMessage
+        - groupName
+        - groupOwner
+        - ownerId
+        - status
+      properties:
+        groupName:
+          type: string
+        groupId:
+          type: integer
+        members:
+          type: string
+        groupOwner:
+          type: string
+        status:
+          type: integer
+        groupMessage:
+          type: string
+        errorMessage:
+          type: string
+    Group:
+      required:
+        - groupName
+      properties:
+        groupName:
+          type: string
+        groupId:
+          type: integer
+    GroupRequest:
+      required:
+        - groupMessage
+        - groupName
+        - groupOwner
+        - ownerId
+      properties:
+        groupMessage:
+          type: string
+        name:
+          type: string
+        groupOwner:
+          type: string
+        ownerId:
+          type: string
+        status:
+          type: integer
+        id:
+          type: integer
+        created:
+          type: string
+        updated:
+          type: string
+    GroupResponse:
+      required:
+        - groupMessage
+        - groupName
+        - groupOwner
+        - id
+      properties:
+        groupMessage:
+          type: string
+        groupName:
+          type: string
+        groupOwner:
+          type: string
+        status:
+          type: integer
+        id:
+          type: integer
+        created:
+          type: string
+        updated:
+          type: string
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

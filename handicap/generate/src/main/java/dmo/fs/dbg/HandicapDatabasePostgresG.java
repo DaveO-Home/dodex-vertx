@@ -1,4 +1,4 @@
-package dmo.fs.db;
+package dmo.fs.dbg;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -7,12 +7,9 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
-
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
@@ -25,11 +22,10 @@ import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
 import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
-import io.vertx.sqlclient.SqlClient;
 
-public class HandicapDatabasePostgres extends DbPostgres {
+public class HandicapDatabasePostgresG extends DbPostgres {
   private final static Logger logger =
-      LoggerFactory.getLogger(HandicapDatabaseMariadb.class.getName());
+      LoggerFactory.getLogger(HandicapDatabasePostgresG.class.getName());
   protected Disposable disposable;
   protected PgPool pool4;
   protected Properties dbProperties = new Properties();
@@ -41,7 +37,7 @@ public class HandicapDatabasePostgres extends DbPostgres {
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
 
-  public HandicapDatabasePostgres(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
+  public HandicapDatabasePostgresG(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
     super();
 
@@ -61,12 +57,11 @@ public class HandicapDatabasePostgres extends DbPostgres {
 
     dbProperties.setProperty("foreign_keys", "true");
 
-    assert dbOverrideMap != null;
     DbConfiguration.mapMerge(dbMap, dbOverrideMap);
     databaseSetup();
   }
 
-  public HandicapDatabasePostgres() throws InterruptedException, IOException, SQLException {
+  public HandicapDatabasePostgresG() throws InterruptedException, IOException, SQLException {
     super();
 
     defaultNode = dodexUtil.getDefaultNode();
@@ -80,7 +75,7 @@ public class HandicapDatabasePostgres extends DbPostgres {
     databaseSetup();
   }
 
-  public HandicapDatabasePostgres(Boolean isCreateTables)
+  public HandicapDatabasePostgresG(Boolean isCreateTables)
       throws InterruptedException, IOException, SQLException {
     super();
     defaultNode = dodexUtil.getDefaultNode();
@@ -117,11 +112,13 @@ public class HandicapDatabasePostgres extends DbPostgres {
     // .setCachePreparedStatements(true)
     ;
 
+    // Pool options
     PoolOptions poolOptions =
         new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
+    // Create the client pool
     pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
-    
+
     Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
@@ -252,17 +249,57 @@ public class HandicapDatabasePostgres extends DbPostgres {
                   if (!names.contains("scores")) {
                     logger.warn("Scores Table Added.");
                   }
-                  tx.commit();
-                  conn.close();
                   finalPromise.complete(isCreateTables.toString());
                   if (isCreateTables) {
                     returnPromise.complete(isCreateTables.toString());
                   }
+                  String sql5 = getCreateTable("LOGIN").replaceAll("dummy",
+                      dbProperties.get("user").toString());
+                  if ((names.contains("login"))) {
+                    sql5 = SELECTONE;
+                  }
+                  conn.query(sql5).rxExecute().doOnError(err -> {
+                    logger.error(String.format("Login Table Error: %s", err.getMessage()));
+                  }).doOnSuccess(row5 -> {
+                    if (!names.contains("login")) {
+                      logger.warn("Login Table Added.");
+                    }
+                    String sql6 = getCreateTable("GROUPS").replaceAll("dummy",
+                        dbProperties.get("user").toString());
+                    if ((names.contains("groups"))) {
+                      sql6 = SELECTONE;
+                    }
+                    conn.query(sql6).rxExecute().doOnError(err -> {
+                      logger.error(String.format("Groups Table Error: %s", err.getMessage()));
+                    }).doOnSuccess(row6 -> {
+                      if (!names.contains("groups")) {
+                        logger.warn("Groups Table Added.");
+                      }
+                      String sql7 = getCreateTable("MEMBER").replaceAll("dummy",
+                          dbProperties.get("user").toString());
+                      if ((names.contains("member"))) {
+                        sql7 = SELECTONE;
+                      }
+                      conn.query(sql7).rxExecute().doOnError(err -> {
+                        logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                      }).doOnSuccess(row7 -> {
+                        if (!names.contains("member")) {
+                          logger.warn("Member Table Added.");
+                        }
+                        tx.commit();
+                        conn.close();
+                        if (isCreateTables) {
+                          returnPromise.complete(isCreateTables.toString());
+                        }
+                        finalPromise.complete(isCreateTables.toString());
+                      }).subscribe(res -> conn.close());
+                    }).subscribe();
+                  }).subscribe();
                 }).subscribe();
               }).subscribe();
             }).subscribe();
           }).subscribe();
-        })).flatMapCompletable(res -> Completable.complete())));
+        })).flatMapCompletable(res -> tx.rxCommit()).doOnSubscribe(sub -> conn.rxClose())));
 
     completable.subscribe(() -> {
       finalPromise.future().onComplete(c -> {

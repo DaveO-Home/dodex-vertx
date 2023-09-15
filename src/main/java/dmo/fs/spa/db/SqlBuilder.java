@@ -12,12 +12,13 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Date;
+
+import dmo.fs.db.DbConfiguration;
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import dmo.fs.db.DbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
@@ -79,7 +80,7 @@ public abstract class SqlBuilder {
     private static String setupLoginByNamePassword() {
         return create.renderNamedParams(
                 select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-                        .from(table("LOGIN")).where(field("NAME").eq("$"))
+                        .from(table("login")).where(field("NAME").eq("$"))
                         .and(field("PASSWORD").eq("$")));
     }
 
@@ -90,7 +91,7 @@ public abstract class SqlBuilder {
     private static String setupLoginByName() {
         return create.renderNamedParams(
                 select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-                        .from(table("LOGIN")).where(field("NAME").eq("$")));
+                        .from(table("login")).where(field("NAME").eq("$")));
     }
 
     public String getUserByName() {
@@ -100,7 +101,7 @@ public abstract class SqlBuilder {
     private static String setupLoginById() {
         return create.renderNamedParams(
                 select(field("ID"), field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
-                        .from(table("LOGIN")).where(field("NAME").eq("$")));
+                        .from(table("login")).where(field("NAME").eq("$")));
     }
 
     public String getUserById() {
@@ -108,7 +109,7 @@ public abstract class SqlBuilder {
     }
 
     private static String setupInsertLogin() {
-        return create.renderNamedParams(insertInto(table("LOGIN"))
+        return create.renderNamedParams(insertInto(table("login"))
                 .columns(field("NAME"), field("PASSWORD"), field("LAST_LOGIN"))
                 .values("$", "$", "$").returning(field("ID")));
     }
@@ -118,7 +119,7 @@ public abstract class SqlBuilder {
     }
 
     private static String setupUpdateLogin() {
-        return create.renderNamedParams(update(table("LOGIN")).set(field("LAST_LOGIN"), "$")
+        return create.renderNamedParams(update(table("login")).set(field("LAST_LOGIN"), "$")
                 .where(field("ID").eq("$")).returning());
     }
 
@@ -127,7 +128,7 @@ public abstract class SqlBuilder {
     }
 
     public static String setupSqliteUpdateLogin() {
-        return "update LOGIN set last_login = $ where id = $";
+        return "update login set last_login = $ where id = $";
     }
 
     public String getSqliteUpdateLogin() {
@@ -136,7 +137,7 @@ public abstract class SqlBuilder {
 
     private static String setupRemoveLogin() {
         return create.renderNamedParams(
-                deleteFrom(table("LOGIN")).where(field("NAME").eq("$"), field("PASSWORD").eq("$")));
+                deleteFrom(table("login")).where(field("NAME").eq("$"), field("PASSWORD").eq("$")));
     }
 
     public String getRemoveLogin() {

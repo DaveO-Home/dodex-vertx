@@ -55,7 +55,7 @@
 * execute **`./gradlew clean`** and **`export USE_HANDICAP=true`**
 * Make sure your database configurations are correct; **./src/main/resources/database...**, **./handicap/src/main/resources/database...**, **./handicap/generate/src/main/resources/database...**
 * In **dodex-vertx** execute **`./gradlew shadowJar`** -  **Note:** The default database should be **sqlite3**
-* To start the production vertical, execute **`java -jar build/libs/dodex-vertx-3.0.0-prod.jar`**
+* To start the production vertical, execute **`java -jar build/libs/dodex-vertx-3.1.0-prod.jar`**
 * For the stand alone handicap application execute `java -jar handicap/build/libs/handicap-0.0.1-fat.jar`
 * Production runs on ports, **8880** and **8890**.
 

@@ -27,7 +27,7 @@ RUN mkdir /home/dodex/vertx && mkdir /home/dodex/vertx/logs
 
 VOLUME ~
 
-COPY dodex-vertx-3.0.0-prod.jar /home/dodex/vertx/dodex-vertx-3.0.0-prod.jar
+COPY dodex-vertx-3.1.0-prod.jar /home/dodex/vertx/dodex-vertx-3.1.0-prod.jar
 
 WORKDIR /home/dodex/vertx
 

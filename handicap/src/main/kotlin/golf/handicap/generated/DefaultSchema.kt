@@ -4,15 +4,20 @@
 package golf.handicap.generated
 
 
+import golf.handicap.generated.sequences.COURSE_ID_SEQ
+import golf.handicap.generated.sequences.GROUP_ID_SEQ
 import golf.handicap.generated.tables.Course
 import golf.handicap.generated.tables.Golfer
+import golf.handicap.generated.tables.Groups
 import golf.handicap.generated.tables.Login
+import golf.handicap.generated.tables.Member
 import golf.handicap.generated.tables.Ratings
 import golf.handicap.generated.tables.Scores
 
 import kotlin.collections.List
 
 import org.jooq.Catalog
+import org.jooq.Sequence
 import org.jooq.Table
 import org.jooq.impl.SchemaImpl
 
@@ -31,14 +36,19 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
     }
 
     /**
-     * The table <code>COURSE</code>.
+     * The table <code>course</code>.
      */
     val COURSE: Course get() = Course.COURSE
 
     /**
-     * The table <code>GOLFER</code>.
+     * The table <code>golfer</code>.
      */
     val GOLFER: Golfer get() = Golfer.GOLFER
+
+    /**
+     * The table <code>groups</code>.
+     */
+    val GROUPS: Groups get() = Groups.GROUPS
 
     /**
      * The table <code>login</code>.
@@ -46,21 +56,33 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
     val LOGIN: Login get() = Login.LOGIN
 
     /**
-     * The table <code>RATINGS</code>.
+     * The table <code>member</code>.
+     */
+    val MEMBER: Member get() = Member.MEMBER
+
+    /**
+     * The table <code>ratings</code>.
      */
     val RATINGS: Ratings get() = Ratings.RATINGS
 
     /**
-     * The table <code>SCORES</code>.
+     * The table <code>scores</code>.
      */
     val SCORES: Scores get() = Scores.SCORES
 
     override fun getCatalog(): Catalog = DefaultCatalog.DEFAULT_CATALOG
 
+    override fun getSequences(): List<Sequence<*>> = listOf(
+        COURSE_ID_SEQ,
+        GROUP_ID_SEQ
+    )
+
     override fun getTables(): List<Table<*>> = listOf(
         Course.COURSE,
         Golfer.GOLFER,
+        Groups.GROUPS,
         Login.LOGIN,
+        Member.MEMBER,
         Ratings.RATINGS,
         Scores.SCORES
     )

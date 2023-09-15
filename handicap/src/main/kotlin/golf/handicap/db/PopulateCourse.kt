@@ -1,6 +1,6 @@
 package golf.handicap.db
 
-import dmo.fs.db.DbConfiguration
+import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.Course
 import golf.handicap.generated.tables.references.COURSE
@@ -13,15 +13,12 @@ import io.vertx.rxjava3.core.Promise
 import io.vertx.rxjava3.jdbcclient.JDBCPool
 import io.vertx.rxjava3.mysqlclient.MySQLClient
 import io.vertx.rxjava3.sqlclient.Tuple
-import java.sql.*
-import java.util.*
-import java.util.logging.Logger
-import kotlin.Throws
-import kotlin.stackTraceToString
 import org.jooq.*
 import org.jooq.impl.*
 import org.jooq.impl.DSL.*
-import org.jooq.impl.DSL.insertInto
+import java.sql.*
+import java.util.*
+import java.util.logging.Logger
 
 class PopulateCourse : SqlConstants() {
     companion object {
@@ -239,7 +236,7 @@ class PopulateCourse : SqlConstants() {
         pool!!
             .rxGetConnection()
             .doOnSuccess { conn ->
-                val sql = GETCOURSEBYTEE
+                var sql = GETCOURSEBYTEE //?.uppercase()
                 val parameters: Tuple = Tuple.tuple()
                 var updateTees = true
 
@@ -343,7 +340,6 @@ class PopulateCourse : SqlConstants() {
                 val parameters: Tuple = Tuple.tuple()
                 parameters.addString(course.courseState)
                 var sql: String? = GETCOURSESBYSTATE
-
                 val coursesBuilder = ListCoursesResponse.newBuilder()
                 var courseBuilder: handicap.grpc.Course.Builder? = null
 

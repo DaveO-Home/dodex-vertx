@@ -6,6 +6,7 @@ import java.lang.management.RuntimeMXBean;
 import java.sql.SQLException;
 import java.util.Map;
 
+import dmo.fs.dbh.DbConfiguration;
 import org.jooq.codegen.GenerationTool;
 import org.jooq.meta.jaxb.Configuration;
 import org.jooq.meta.jaxb.Database;
@@ -19,8 +20,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import dmo.fs.db.DbConfiguration;
-import dmo.fs.db.HandicapDatabase;
+import dmo.fs.dbh.HandicapDatabase;
 
 public class JooqGenerate {
   public static void main(String[] args) throws IOException {

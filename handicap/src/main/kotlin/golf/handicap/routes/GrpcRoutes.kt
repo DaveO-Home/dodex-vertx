@@ -2,8 +2,8 @@ package golf.handicap.routes
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import dmo.fs.db.DbConfiguration
-import dmo.fs.db.HandicapDatabase
+import dmo.fs.dbh.HandicapDatabase
+import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.DodexUtil
 import golf.handicap.Golfer
 import golf.handicap.Handicap
@@ -35,9 +35,12 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
   private val grpcVertx = DodexUtil.getVertx().delegate
   var promise: Promise<Void> = Promise.promise()
 
+
   companion object {
     private val LOGGER = Logger.getLogger(GrpcRoutes::class.java.name)
-    var dodexDatabase: HandicapDatabase? = null
+    private var dodexDatabase: HandicapDatabase? = null
+    private val config = MainVerticle.getAlternateConfig()
+    private val grpcPort = config.getInteger("grpc:port")
 
     init {
       dodexDatabase = DbConfiguration.getDefaultDb()
@@ -75,13 +78,12 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
         grpcServer()
     }
 
-    public fun setGrpcPromise(promise: Promise<Void>) {
+    fun setGrpcPromise(promise: Promise<Void>) {
         this.promise = promise
         grpcServer()
     }
 
     private fun grpcServer() {
-        val grpcPort = 15001
         promise.future().onComplete {
             var service = HandicapIndexService()
             val rpcServer: VertxServer =
@@ -90,7 +92,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                     .build()
 
             rpcServer.start()
-            LOGGER.warning("gRpc server started on port 15001")
+            LOGGER.warning("gRpc server started on port $grpcPort")
         }
     }
 
@@ -162,9 +164,9 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                         .getHandicap(score.golfer!!)
                         .onSuccess { latestTee ->
                             val newHandicap: Float = latestTee.get("handicap") as Float
-                            val slope: Float = latestTee.get("slope") as Float
-                            val rating: Float = latestTee.get("rating") as Float
-                            val par: Int = latestTee.get("par") as Int
+                            val slope: Float = latestTee["slope"] as Float
+                            val rating: Float = latestTee["rating"] as Float
+                            val par: Int = latestTee["par"] as Int
                             score.handicap = newHandicap
                             val courseHandicap: Float = newHandicap * slope / 113 + (rating - par)
                             score.netScore = score.grossScore.toFloat() - courseHandicap
@@ -175,7 +177,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                                     responseObserve.onNext(
                                         HandicapData.newBuilder()
                                             .setMessage("Success")
-                                            .setCmd(request.getCmd())
+                                            .setCmd(request.cmd)
                                             .setJson(ObjectMapper().writeValueAsString(score))
                                             .build()
                                     )
@@ -208,7 +210,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             var requestJson = JsonObject(request.json)
             var golfer = requestJson.mapTo(Golfer::class.java)
 
-            val cmd = request.getCmd()
+            val cmd = request.cmd
             if (cmd < 0 || cmd > 8) {
                 val status: Status = Status.FAILED_PRECONDITION.withDescription("Cmd - Not between 0 and 8")
                 responseObserver.onError(status.asRuntimeException())
@@ -227,11 +229,11 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                     responseObserver.onNext(
                         HandicapData.newBuilder()
                             .setMessage(resultGolfer.message)
-                            .setCmd(request.getCmd())
+                            .setCmd(request.cmd)
                             .setJson(requestJson.toString())
                             .build()
                     )
-                    if ("Test".equals(request.message)) {
+                    if ("Test" == request.message) {
                         LOGGER.warning("Handicap Data Sent: " + request.json)
                     }
                     responseObserver.onCompleted()
@@ -254,8 +256,8 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                 responseObserver.onNext(
                     HandicapData.newBuilder()
                         .setMessage("Success")
-                        .setCmd(request.getCmd())
-                        .setJson(scoresMap.get("array").toString())
+                        .setCmd(request.cmd)
+                        .setJson(scoresMap["array"].toString())
                         .build()
                 )
 
@@ -282,13 +284,13 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             populateScores.removeLastScore(request.key).onSuccess { used ->
                 val handicap: Handicap = Handicap()
                 handicap.getHandicap(golfer).onSuccess { latestTee ->
-                    golfer.handicap = latestTee.get("handicap") as Float
+                    golfer.handicap = latestTee["handicap"] as Float
                     val jsonObject = JsonObject.mapFrom(golfer)
                     jsonObject.put("used", used)
                     responseObserver.onNext(
                         HandicapData.newBuilder()
                             .setMessage("Success")
-                            .setCmd(request.getCmd())
+                            .setCmd(request.cmd)
                             .setJson(jsonObject.toString())
                             .build()
                     )

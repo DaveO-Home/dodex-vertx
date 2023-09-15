@@ -13,10 +13,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
+import dmo.fs.db.DbConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import dmo.fs.admin.CleanOrphanedUsers;
-import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.DodexDatabase;
 import dmo.fs.db.MessageUser;
 import dmo.fs.kafka.KafkaEmitterDodex;
@@ -246,6 +247,7 @@ public class DodexRouter {
                 /*
                  * websocket.onConnection()
                  */
+                
                 String handle = "";
                 String id = "";
                 Map<String, String> query = null;

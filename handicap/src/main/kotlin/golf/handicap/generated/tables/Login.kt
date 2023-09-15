@@ -5,13 +5,18 @@ package golf.handicap.generated.tables
 
 
 import golf.handicap.generated.DefaultSchema
-import golf.handicap.generated.keys.LOGIN__
+import golf.handicap.generated.keys.LOGIN_NAME_UNIQUE
+import golf.handicap.generated.keys.LOGIN_PASSWORD_UNIQUE
+import golf.handicap.generated.keys.LOGIN_PKEY
 import golf.handicap.generated.tables.records.LoginRecord
 
-import java.time.LocalDateTime
+import java.time.OffsetDateTime
+
+import kotlin.collections.List
 
 import org.jooq.Field
 import org.jooq.ForeignKey
+import org.jooq.Identity
 import org.jooq.Name
 import org.jooq.Record
 import org.jooq.Row4
@@ -62,22 +67,22 @@ open class Login(
     /**
      * The column <code>login.id</code>.
      */
-    val ID: TableField<LoginRecord, Int?> = createField(DSL.name("id"), SQLDataType.INTEGER, this, "")
+    val ID: TableField<LoginRecord, Int?> = createField(DSL.name("id"), SQLDataType.INTEGER.nullable(false).identity(true), this, "")
 
     /**
      * The column <code>login.name</code>.
      */
-    val NAME: TableField<LoginRecord, String?> = createField(DSL.name("name"), SQLDataType.CLOB.nullable(false), this, "")
+    val NAME: TableField<LoginRecord, String?> = createField(DSL.name("name"), SQLDataType.VARCHAR(255), this, "")
 
     /**
      * The column <code>login.password</code>.
      */
-    val PASSWORD: TableField<LoginRecord, String?> = createField(DSL.name("password"), SQLDataType.CLOB.nullable(false), this, "")
+    val PASSWORD: TableField<LoginRecord, String?> = createField(DSL.name("password"), SQLDataType.VARCHAR(255), this, "")
 
     /**
      * The column <code>login.last_login</code>.
      */
-    val LAST_LOGIN: TableField<LoginRecord, LocalDateTime?> = createField(DSL.name("last_login"), SQLDataType.LOCALDATETIME(0).nullable(false), this, "")
+    val LAST_LOGIN: TableField<LoginRecord, OffsetDateTime?> = createField(DSL.name("last_login"), SQLDataType.TIMESTAMPWITHTIMEZONE(6), this, "")
 
     private constructor(alias: Name, aliased: Table<LoginRecord>?): this(alias, null, null, aliased, null)
     private constructor(alias: Name, aliased: Table<LoginRecord>?, parameters: Array<Field<*>?>?): this(alias, null, null, aliased, parameters)
@@ -99,7 +104,9 @@ open class Login(
 
     constructor(child: Table<out Record>, key: ForeignKey<out Record, LoginRecord>): this(Internal.createPathAlias(child, key), child, key, LOGIN, null)
     override fun getSchema(): Schema? = if (aliased()) null else DefaultSchema.DEFAULT_SCHEMA
-    override fun getPrimaryKey(): UniqueKey<LoginRecord> = LOGIN__
+    override fun getIdentity(): Identity<LoginRecord, Int?> = super.getIdentity() as Identity<LoginRecord, Int?>
+    override fun getPrimaryKey(): UniqueKey<LoginRecord> = LOGIN_PKEY
+    override fun getUniqueKeys(): List<UniqueKey<LoginRecord>> = listOf(LOGIN_NAME_UNIQUE, LOGIN_PASSWORD_UNIQUE)
     override fun `as`(alias: String): Login = Login(DSL.name(alias), this)
     override fun `as`(alias: Name): Login = Login(alias, this)
 
@@ -116,5 +123,5 @@ open class Login(
     // -------------------------------------------------------------------------
     // Row4 type methods
     // -------------------------------------------------------------------------
-    override fun fieldsRow(): Row4<Int?, String?, String?, LocalDateTime?> = super.fieldsRow() as Row4<Int?, String?, String?, LocalDateTime?>
+    override fun fieldsRow(): Row4<Int?, String?, String?, OffsetDateTime?> = super.fieldsRow() as Row4<Int?, String?, String?, OffsetDateTime?>
 }

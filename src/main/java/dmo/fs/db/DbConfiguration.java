@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.db.DodexDatabase;
 
 public abstract class DbConfiguration {
 

@@ -69,18 +69,18 @@ let formatter = Intl.DateTimeFormat(
 );
 /* Uncomment once you have a token, this fetch will set the form's default country/state */
 const ipInfo = "https://ipinfo.io/json?token=";
-const infoToken = ""; // insert you token
-//fetch(ipInfo + infoToken)
-//    .then(response => response.json())
-//    .then(jsonResponse => {
-//        if(jsonResponse.country !== document.querySelector("#country").value) {
-//            countryState(jsonResponse.country);
-//        }
-//        setStateCode(jsonResponse.region);
-//    })
-//    .catch((data, status) => {
-//        console.warn("Country/Region lookup failed", data, status);
-//    });
+const infoToken = "a2528cba8482f8"; // insert you token
+fetch(ipInfo + infoToken)
+    .then(response => response.json())
+    .then(jsonResponse => {
+        if(jsonResponse.country !== document.querySelector("#country").value) {
+            countryState(jsonResponse.country);
+        }
+        setStateCode(jsonResponse.region);
+    })
+    .catch((data, status) => {
+        console.warn("Country/Region lookup failed", data, status);
+    });
 
 const setStateCode = filter => {
   let txtValue;

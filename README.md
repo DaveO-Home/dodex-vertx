@@ -1,3 +1,4 @@
+
 # doDex-vertx, a java asynchronous server for Dodex, Dodex-input and Dodex-mess
 
 ## Install Assumptions
@@ -26,7 +27,7 @@
 
 1. Execute `.\gradlew tasks` to view all tasks.
 2. Execute `.\gradlew shadowJar` to build the production fat jar.
-3. Execute `java -jar build/libs/dodex-vertx-3.0.0-prod.jar` to start up the production server.
+3. Execute `java -jar build/libs/dodex-vertx-3.1.0-prod.jar` to start up the production server.
 4. Execute url `http://localhost:8880/dodex` or `.../dodex/bootstrap.html` in a browser. 
    * **Note:** This is a different port and url than development. 
    * **Note:** The default database on the backend is "Sqlite3", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
@@ -160,7 +161,50 @@ Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
     
     **Note:** you can open the messaging dialog with `ctrl-doubleclick` on the dials
 
-### Kotlin, gRPC Web Application
+## Dodex Groups using OpenAPI
+
+* A default javascript client is included in __.../dodex-vertx/src/main/resources/static/group/__. It can be regenerated in __.../dodex-vertx/handicap/src/grpc/client/__ by executing __`npm run group:prod`__.  
+* The group javascript client is in __.../src/grpc/client/js/dodex/groups.js__ and __group.js__.  
+    __Note:__ The client is included in the __Handicap__ application by default.  
+* See __.../src/main/resources/openapi/groupApi31.yml__ for OpenAPI declarations. The Vert.x implementation generates routes for __.../src/main/java/dmo/fs/router/OpenApiRouter.java__ 
+  
+### Installing in Dodex
+1. Implementing in a javascript module; see __.../dodex-vertx/handicap/src/grpc/client/js/dodex/index.js__
+   * `import { groupListener } from "./groups";`
+   * in the dodex init configuration, add  
+    ```
+   ...
+    .then(function () {
+         groupListener();
+   ...
+    ```
+2. Implementing with inline html; see __.../dodex-vertx/main/resources/test/index.html__
+   * `<script src="../group/main.min.js"></script>`
+   * in the dodex init configuration, add
+    ```
+   ...
+    .then(function () {
+         window.groupListener();
+   ...
+    ```
+3. Using dodex-messaging group functionality  
+   __Note:__ Grouping is only used to limit the list of "handles" when sending private messages.
+* Adding a group using `@group+<name>`
+  * select __Private Message__ from the __more__ button dropdown to get the list of handles.
+  * enter `@group+<name>` for example `@group+aces`
+  * select the handles to include and click "Send". Members can be added at any subsequent time.
+* Removing a group using `@group-<name>`
+  * enter `@group-<name>` for example `@group-aces` and click "Send". Click the confirmation popup to complete.
+* Removing a member
+  * enter `@group-<name>` for example `@group-aces`
+  * select a "handle" from the dropdown list and click "Send"
+* Selecting a group using `@group=<name>`
+  * enter `@group=<name>` for example `@group=aces` and click "Send"
+  * Select from reduced set of "handles" to send private message.  
+
+__Note:__ By default the entry `"dodex.groups.checkForOwner"` in __application-conf.json__ is set to __false__. This means that any "handle" can delete a "group" or "member". Setting the entry to __true__ prevents global administration, however, if the owner "handle" changes, group administration is lost.
+
+## Kotlin, gRPC Web Application
 
 * This web application can be used to maintain golfer played courses and scores and to calculate a handicap index. The application has many moving parts from the **envoy** proxy server to **kotlin**, **protobuf**, **gRPC**, **jooq**, **bootstrap**, **webpack**, **esbuild**, **gradle**, **java** and **javascript**.
 
@@ -178,11 +222,11 @@ Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
     * startup Vertx in dev mode - __`gradlew run`__
     * optionally install the __spa_react__ application and in **src/spa-react/devl** execute __`npx gulp prod`__ or __`npx gulp prd`__(does not need dodex-vertx started)
     * stop the vertx server - ctrl-c
-    * build the production fat jar - execute __`./gradlew clean`__ and __`./gradlew shadowJar`__
+    * build the production fat jar - execute __`./gradlew clean(optional) shadowJar`__
         * **Important** When building the **Fat** jar, set **DEFAULT_DB**=sqlite3 or postgres and **USE_HANDICAP**=true
-    * verify the jar's name - if different than `dodex-vertx-3.0.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
+    * verify the jar's name - if different than `dodex-vertx-3.1.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
 
-3. execute __`cp build/libs/dodex-vertx-3.0.0-prod.jar`__ to **kube/**
+3. execute __`cp build/libs/dodex-vertx-3.1.0-prod.jar`__ to **kube/**
 4. execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
 5. execute __`docker create -t -p 8880:8880 -p 8070:8070 -p 9901:9901 --name dodex_vertx dufferdo2/dodex-vertx`__
 6. execute __`docker start dodex_vertx`__, make sure **envoy** is not running on the host.
@@ -208,40 +252,43 @@ __Note:__ When running the dufferdo2/dodex-vertx image based on ./kube/Dockerfil
 1. execute __`minikube start`__
 2. to make sure the dufferdo2/dodex-vertx image is setup, execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
 3. edit kube/vertx.yml and change **env:** to desired database(DEFAULT_DB) - defaults to **sqlite3**, no database configuration necessary otherwise set **DEFAULT_DB** to **mariadb** or **postgres**
-3. execute `kubectl create -f kube/sqlite3-volume.yml`
-4. execute `kubectl create -f kube/vertx.yml`
-5. execute `minikube service vertx-service` to start **dodex-vertx** in the default browser - add **--url** to get just the URL
-6. verify that **dodex-vertx** started properly - execute `./execpod` and `cat ./logs/vertx.log` - enter `exit` to exit the pod
-    ``` 
-        For postgres make sure postgres.conf has entry: 
-                
+4. execute `kubectl create -f kube/sqlite3-volume.yml`
+5. execute `kubectl create -f kube/vertx.yml`
+6. execute `minikube service vertx-service` to start **dodex-vertx** in the default browser - add **--url** to get just the URL
+7. verify that **dodex-vertx** started properly - execute `./execpod` and `cat ./logs/vertx.log` - enter `exit` to exit the pod  
+
+For postgres make sure postgres.conf has entry:  
+ 
+```
              listen_addresses = '*'          # what IP address(es) to listen on;
-                
-        and  pg_hba.conf has entry:
+```                
+and  pg_hba.conf has entry:  
 
+```
              host    all    all    <ip from minikube vertx-service --url>/32   <whatever you use for security> (default for dodex-vertx "password")
-                   
-        and database_config.json(also in ../dodex-vertx/generate...resources/database(_spa)_confg.json) entry:
-
-             postgres...
+```                   
+and database_config.json(also in ../dodex-vertx/generate...resources/database(_spa)_confg.json) entry: postgres... (both dev/prod)  
+```          
               "config": {
-              "host": "<ip value from `hostname -i`>", - (both dev/prod)
+              "host": "<ip value from `hostname -i`>",
+```
+`netstat -an |grep 5432` should look like this  
 
-        netstat -an |grep 5432 should look like this
-
+```
              tcp        0      0 0.0.0.0:5432            0.0.0.0:*               LISTEN     
              tcp6       0      0 :::5432                 :::*                    LISTEN     
              unix  2      [ ACC ]     STREAM     LISTENING     57905233 /var/run/postgresql/.s.PGSQL.5432
              unix  2      [ ACC ]     STREAM     LISTENING     57905234 /tmp/.s.PGSQL.5432
-    ```
+```
+
 #### Development
 1. Make changes to the **dodex-vertx** code
-2. execute `gradlew clean`
+2. execute `gradlew clean`(optional)
 3. build the **fat** jar and **image** as described in the **Operation** and **Building an *image* and *container* with docker** sections, e.g.
     * build the production fat jar - __`./gradlew shadowJar`__
         * **Important** When building the **fat** jar, set **DEFAULT_DB**=sqlite3 or mariadb or postgres and **USE_HANDICAP**=true
-        * verify the jar's name - if different than **dodex-vertx-3.0.0-prod.jar**, change in **./kube/Dockerfile**
-    * copy the build/**dodex-vertx-3.0.0-prod.jar** to **./kube**
+        * verify the jar's name - if different than **dodex-vertx-3.1.0-prod.jar**, change in **./kube/Dockerfile**
+    * copy the build/**dodex-vertx-3.1.0-prod.jar** to **./kube**
     * if the **dodex_vertx** and/or the **dufferdo2/dodex-vertx** exist, remove them `docker rm dodex_vertx` and `docker rmi dufferdo2/dodex-vertx`
     * build the image `docker build -t dufferdo2/dodex-vertx:latest -f ./kube/Dockerfile ./kube`
 4. execute `./deleteapp`

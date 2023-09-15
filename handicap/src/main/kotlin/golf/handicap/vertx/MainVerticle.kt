@@ -77,7 +77,7 @@ class MainVerticle : AbstractVerticle() {
             }
         }
 
-        private fun getAlternateConfig(): JsonObject {
+        fun getAlternateConfig(): JsonObject {
             val jsonMapper = ObjectMapper()
             var node: JsonNode?
 

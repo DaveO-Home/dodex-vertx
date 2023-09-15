@@ -1,4 +1,26 @@
 {
   "http.port" : 8083,
-  "color": true
+  "color": true,
+  "clean.delay": 0,
+  "clean.period": 7,
+  "clean.age": 90,
+  "bridge.port": 7032,
+  "vertx.version": 4,
+  "prod.color": true,
+  "prod.http.port" : 8880,
+  "prod.bridge.port": 7032,
+  "prod.vertx.version": 4,
+  "dodex.kafka": false,
+  "dodex.events.partitions": 2,
+  "dodex.events.topic": "dodex-events",
+  "dodex.events.limit": 25,
+  "dodex.events.remove": false,
+  "vertx.disableFileCPResolving": true,
+  "vertx.fileResolverCachingEnabled": false,
+  "vertx.disableFileCaching": true,
+  "handicap.enableHandicap": true,
+  "handicap.enableAdmin": true,
+  "handicap.adminPin": "handiadm",
+  "handicap.port": 8888,
+  "prod.handicap.port": 8890
 }

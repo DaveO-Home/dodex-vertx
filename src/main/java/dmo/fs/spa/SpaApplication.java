@@ -7,11 +7,12 @@ import java.util.Date;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
+import dmo.fs.db.DbConfiguration;
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.cloud.firestore.Firestore;
-import dmo.fs.db.DbConfiguration;
 import dmo.fs.router.Neo4jRouter;
 import dmo.fs.spa.db.SpaCassandra;
 import dmo.fs.spa.db.SpaDatabase;

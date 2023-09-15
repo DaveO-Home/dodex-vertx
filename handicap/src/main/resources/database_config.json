@@ -6,7 +6,7 @@
             "credentials": {
             },
             "config": {
-                "filename": "../dodex_tests.db",
+                "filename": "dodex_tests.db",
                 "url": "jdbc:sqlite:"
             }
         },
@@ -14,7 +14,7 @@
             "credentials": {
             },
             "config": {
-                "filename": "db/handicap.db",
+                "filename": "/data/sqlite3/dodex.db",
                 "url": "jdbc:sqlite:"
             }
         }
@@ -27,8 +27,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "//192.168.1.75",
-                "host2": "192.168.1.75",
+                "host": "//192.168.49.1",
+                "host2": "192.168.49.1",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
                 "dbname": "/dodex",
@@ -42,8 +42,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "//192.168.1.75",
-                "host2": "192.168.1.75",
+                "host": "//192.168.49.1",
+                "host2": "192.168.49.1",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
                 "dbname": "/dodex",
@@ -95,16 +95,16 @@
         },
         "prod": { 
             "credentials": {
-                "user": "user",
-                "password": "password",
+                "user": "dodex",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
-                "host": "//localhost:3306",
-                "host2": "localhost",
+                "host": "//192.168.1.75:3306",
+                "host2": "192.168.1.75",
                 "url": "jdbc:mariadb:",
-                "dbname": "/dodex",
-                "database": "dodex",
+                "dbname": "/test",
+                "database": "test",
                 "port": "3306"
             }
         }

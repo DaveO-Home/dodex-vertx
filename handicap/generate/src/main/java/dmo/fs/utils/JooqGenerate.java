@@ -4,21 +4,16 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.Map;
 
+import dmo.fs.dbg.HandicapDatabaseG;
 import io.vertx.core.impl.logging.Logger;
 import io.vertx.core.impl.logging.LoggerFactory;
 import org.jooq.codegen.GenerationTool;
-import org.jooq.meta.jaxb.Configuration;
-import org.jooq.meta.jaxb.Database;
-import org.jooq.meta.jaxb.Generate;
-import org.jooq.meta.jaxb.Generator;
-import org.jooq.meta.jaxb.Jdbc;
-import org.jooq.meta.jaxb.Logging;
-import org.jooq.meta.jaxb.Target;
+import org.jooq.meta.jaxb.*;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
-import dmo.fs.db.DbConfiguration;
-import dmo.fs.db.HandicapDatabase;
+import dmo.fs.dbg.DbConfiguration;
+import org.jooq.meta.jaxb.Generator;
 
 public class JooqGenerate {
   public static void main(String[] args) throws IOException {
@@ -31,7 +26,7 @@ public class JooqGenerate {
     final String defaultDb = dodexUtil.getDefaultDb();
 
     try {
-      HandicapDatabase handicapDatabase = DbConfiguration.getDefaultDb(true);
+      HandicapDatabaseG handicapDatabase = DbConfiguration.getDefaultDb(true);
       handicapDatabase.checkOnTables().onComplete(c -> {
         String dbUrl = null;
         String jooqMetaName = "org.jooq.meta.sqlite.SQLiteDatabase";
@@ -68,7 +63,7 @@ public class JooqGenerate {
       boolean generateSequences = "org.jooq.meta.postgres.PostgresDatabase".equals(jooqMetaName);
       Configuration configuration = new Configuration()
           .withJdbc(new Jdbc()
-              // .withDriver("org.sqlite.JDBC")
+//               .withDriver("org.sqlite.JDBC")
               .withUrl(jdbcUrl))
           .withGenerator(new Generator()
               .withName("org.jooq.codegen.KotlinGenerator")

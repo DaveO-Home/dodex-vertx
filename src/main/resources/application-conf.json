@@ -23,5 +23,8 @@
   "handicap.enableAdmin": true,
   "handicap.adminPin": "dod3xadm",
   "handicap.port": 8888,
-  "prod.handicap.port": 8890
+  "prod.handicap.port": 8890,
+  "dodex.groups.checkForOwner": false,
+  "grpc:port": 15002,
+  "prod:grpc:port": 15002
 }

@@ -1,13 +1,12 @@
 
-package dmo.fs.db;
+package dmo.fs.dbg;
 
-public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapDatabase {
+public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapDatabaseG {
 	public final static String CHECKUSERSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='users'";
 	protected final static String CHECKMESSAGESSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='messages'";
 	protected final static String CHECKUNDELIVEREDSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='undelivered'";
 	protected final static String CHECKLOGINSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name='login'";
-	protected final static String CHECKHANDICAPSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name in ('GOLFER', 'COURSE', 'SCORES', 'RATINGS', 'login')";
-
+	protected final static String CHECKHANDICAPSQL = "SELECT name FROM sqlite_master WHERE type='table' AND name in ('golfer', 'course', 'scores', 'ratings', 'groups', 'member')";
 	private enum CreateTable {
 		CREATEUSERS(
 				"create table users (id integer primary key, name text not null unique, password text not null unique, ip text not null, last_login DATETIME not null)"),
@@ -17,7 +16,7 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapData
 				"create table undelivered (user_id integer, message_id integer, CONSTRAINT undelivered_user_id_foreign FOREIGN KEY (user_id) REFERENCES users (id), CONSTRAINT undelivered_message_id_foreign FOREIGN KEY (message_id) REFERENCES messages (id))"),
 		CREATELOGIN(
 				"create table IF NOT EXISTS login (id integer primary key, name text not null unique, password text not null, last_login DATETIME not null)"),
-		CREATEGOLFER("CREATE TABLE IF NOT EXISTS GOLFER (" +
+		CREATEGOLFER("CREATE TABLE IF NOT EXISTS golfer (" +
 				"PIN CHARACTER(8) primary key NOT NULL," +
 				"FIRST_NAME VARCHAR(32) NOT NULL," +
 				"LAST_NAME VARCHAR(32) NOT NULL," +
@@ -27,19 +26,19 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapData
 				"OVERLAP_YEARS BOOLEAN DEFAULT 1," +
 				"PUBLIC BOOLEAN DEFAULT 0," +
 				"LAST_LOGIN NUMERIC)"),
-		CREATECOURSE("CREATE TABLE IF NOT EXISTS COURSE (" +
+		CREATECOURSE("CREATE TABLE IF NOT EXISTS course (" +
 				"COURSE_SEQ INTEGER primary key autoincrement NOT NULL," +
 				"COURSE_NAME VARCHAR(128) NOT NULL," +
 				"COURSE_COUNTRY VARCHAR(128) NOT NULL," +
 				"COURSE_STATE CHARACTER(2) NOT NULL )"),
-		CREATERATINGS("CREATE TABLE IF NOT EXISTS RATINGS (" +
+		CREATERATINGS("CREATE TABLE IF NOT EXISTS ratings (" +
 				"COURSE_SEQ INTEGER NOT NULL," +
 				"TEE INTEGER NOT NULL," +
 				"TEE_COLOR VARCHAR(16)," +
 				"TEE_RATING FLOAT(4,1) NOT NULL," +
 				"TEE_SLOPE INTEGER NOT NULL," +
-				"TEE_PAR INTEGER DEFAULT '72' NOT NULL, PRIMARY KEY (COURSE_SEQ, TEE)  FOREIGN KEY ( COURSE_SEQ ) REFERENCES COURSE ( COURSE_SEQ ) ON UPDATE no action ON DELETE no action )"),
-		CREATESCORES("CREATE TABLE IF NOT EXISTS SCORES (" +
+				"TEE_PAR INTEGER DEFAULT '72' NOT NULL, PRIMARY KEY (COURSE_SEQ, TEE)  FOREIGN KEY ( COURSE_SEQ ) REFERENCES course ( COURSE_SEQ ) ON UPDATE no action ON DELETE no action )"),
+		CREATESCORES("CREATE TABLE IF NOT EXISTS scores (" +
 				"PIN CHARACTER(8) NOT NULL," +
 				"GROSS_SCORE INTEGER NOT NULL," +
 				"NET_SCORE FLOAT(4,1)," +
@@ -48,7 +47,21 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements HandicapData
 				"HANDICAP FLOAT(32)," +
 				"COURSE_SEQ INTEGER," +
 				"COURSE_TEES INTEGER," +
-				"USED CHARACTER(1), FOREIGN KEY ( COURSE_SEQ ) REFERENCES COURSE ( COURSE_SEQ ) ON UPDATE no action ON DELETE no action,  FOREIGN KEY ( PIN ) REFERENCES GOLFER ( PIN ) ON UPDATE no action ON DELETE no action )");
+				"USED CHARACTER(1), FOREIGN KEY ( COURSE_SEQ ) REFERENCES course ( COURSE_SEQ ) ON UPDATE no action ON DELETE no action,  FOREIGN KEY ( PIN ) REFERENCES GOLFER ( PIN ) ON UPDATE no action ON DELETE no action )"),
+		CREATEGROUPS("CREATE TABLE IF NOT EXISTS groups (" +
+				"id integer primary key autoincrement NOT NULL," +
+				"name varchar(100) NOT NULL UNIQUE," +
+				"owner integer NOT NULL DEFAULT 0," +
+				"created datetime NOT NULL," +
+				"updated datetime DEFAULT NULL)"),
+		CREATEMEMBER("CREATE TABLE IF NOT EXISTS member (" +
+				"group_id integer," +
+				"user_id integer," +
+				"CONSTRAINT member_primary_keys PRIMARY KEY (group_id, user_id) on conflict ignore," +
+				"CONSTRAINT member_user_id_foreign FOREIGN KEY (user_id)" +
+				"REFERENCES users (id)," +
+				"CONSTRAINT member_group_id_foreign FOREIGN KEY (group_id)" +
+				"REFERENCES GROUPS (id))");
 
 		String sql;
 

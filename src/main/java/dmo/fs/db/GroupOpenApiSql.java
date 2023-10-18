@@ -7,13 +7,11 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.rxjava3.SingleHelper;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.mysqlclient.MySQLClient;
-import io.vertx.rxjava3.sqlclient.Pool;
-import io.vertx.rxjava3.sqlclient.Row;
-import io.vertx.rxjava3.sqlclient.RowSet;
-import io.vertx.rxjava3.sqlclient.Tuple;
+import io.vertx.rxjava3.sqlclient.*;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -301,97 +299,109 @@ public class GroupOpenApiSql {
 
     checkOnGroupOwner(addGroupJson).onSuccess(checkedJson -> {
       if (checkedJson.getBoolean("isValidForOperation")) {
-        pool.getConnection().doOnSuccess(connection -> {
-          List<Tuple> userList = new ArrayList<>();
-          StringBuilder sql = new StringBuilder();
-          StringBuilder stringBuilder = new StringBuilder();
+        List<String> allUsers = new ArrayList<>();
+        allUsers.add(addGroupJson.getString("groupOwner"));
+        allUsers.addAll(selectedUsers);
 
-          for (String name : selectedUsers) {
-            if (DbConfiguration.isUsingSqlite3()) {
-              stringBuilder.append("'").append(name).append("',");
-            } else {
-              userList.add(Tuple.of(name));
-            }
-          }
+        checkOnMembers(allUsers, addGroupJson).onSuccess(newUsers -> {
+          if (!newUsers.isEmpty()) {
+            pool.getConnection().doOnSuccess(connection -> {
+              List<Tuple> userList = new ArrayList<>();
+              StringBuilder sql = new StringBuilder();
+              StringBuilder stringBuilder = new StringBuilder();
 
-          // Sqlite3(jdbc client) 'select' does not work well with executeBatch
-          Single<RowSet<Row>> query;
-          if (DbConfiguration.isUsingSqlite3()) {
-            stringBuilder.append("'").append(addGroupJson.getString("groupOwner")).append("'");
-            sql.append(getupUsersByNameSqlite().replace("?", stringBuilder.toString()));
-            query = connection.preparedQuery(sql.toString()).execute();
-          } else {
-            sql.append(dodexDatabase.getUserByName());
-            userList.add(Tuple.of(addGroupJson.getString("groupOwner")));
-            query = connection.preparedQuery(sql.toString()).executeBatch(userList);
-          }
-
-          query.doOnSuccess(result -> {
-            List<Tuple> list = new ArrayList<>();
-            for (RowSet<Row> rows = result; rows != null; rows = rows.next()) {
-              if (DbConfiguration.isUsingSqlite3()) {
-                for (Row row : rows) {
-                  list.add(Tuple.of(addGroupJson.getInteger("id"), row.getInteger(0)));
-                }
-              } else {
-                if (rows.iterator().hasNext()) {
-                  Row row = rows.iterator().next();
-                  list.add(Tuple.of(addGroupJson.getInteger("id"), row.getInteger(0)));
+              for (String name : selectedUsers) {
+                if (DbConfiguration.isUsingSqlite3()) {
+                  stringBuilder.append("'").append(name).append("',");
+                } else {
+                  userList.add(Tuple.of(name));
                 }
               }
-            }
 
-            connection.rxBegin().doOnSuccess(tx -> connection
-                .preparedQuery(getAddMember()).executeBatch(list)
-                .doOnSuccess(res -> {
-                  int rows = 0;
-                  for (RowSet<Row> s = res; s != null; s = s.next()) {
-                    if (s.rowCount() != 0) {
-                      rows += s.rowCount();
+              // Sqlite3(jdbc client) 'select' does not work well with executeBatch
+              Single<RowSet<Row>> query;
+              if (DbConfiguration.isUsingSqlite3()) {
+                stringBuilder.append("'").append(addGroupJson.getString("groupOwner")).append("'");
+                sql.append(getupUsersByNameSqlite().replace("?", stringBuilder.toString()));
+                query = connection.preparedQuery(sql.toString()).execute();
+              } else {
+                sql.append(dodexDatabase.getUserByName());
+                userList.add(Tuple.of(addGroupJson.getString("groupOwner")));
+                query = connection.preparedQuery(sql.toString()).executeBatch(userList);
+              }
+
+              query.doOnSuccess(result -> {
+                List<Tuple> list = new ArrayList<>();
+                for (RowSet<Row> rows = result; rows != null; rows = rows.next()) {
+                  if (DbConfiguration.isUsingSqlite3()) {
+                    for (Row row : rows) {
+                      list.add(Tuple.of(addGroupJson.getInteger("id"), row.getInteger(0)));
+                    }
+                  } else {
+                    if (rows.iterator().hasNext()) {
+                      Row row = rows.iterator().next();
+                      list.add(Tuple.of(addGroupJson.getInteger("id"), row.getInteger(0)));
                     }
                   }
-                  addGroupJson.put("errorMessage", "Members Added: " + rows);
-                  tx.rxCommit().doFinally(() ->
-                      connection.rxClose().doFinally(() -> promise.complete(addGroupJson)).subscribe()
-                  ).subscribe();
+                }
 
-                }).subscribe(v -> {
+                connection.rxBegin().doOnSuccess(tx -> connection
+                    .preparedQuery(getAddMember()).executeBatch(list)
+                    .doOnSuccess(res -> {
+                      int rows = 0;
+                      for (RowSet<Row> s = res; s != null; s = s.next()) {
+                        if (s.rowCount() != 0) {
+                          rows += s.rowCount();
+                        }
+                      }
+                      addGroupJson.put("errorMessage", "Members Added: " + rows);
+                      tx.rxCommit().doFinally(() ->
+                          connection.rxClose().doFinally(() -> promise.complete(addGroupJson)).subscribe()
+                      ).subscribe();
+
+                    }).subscribe(v -> {
+                    }, err -> {
+                      errData(err, promise, addGroupJson);
+                      if (err != null && err.getMessage() != null) {
+                        // committing because some of the batch inserts may have succeeded
+                        tx.rxCommit().doFinally(() ->
+                            connection.rxClose().subscribe()
+                        ).subscribe();
+                      }
+                    })).subscribe(v -> {
                 }, err -> {
                   errData(err, promise, addGroupJson);
                   if (err != null && err.getMessage() != null) {
-                    // committing because some of the batch inserts may have succeeded
-                    tx.rxCommit().doFinally(() ->
-                        connection.rxClose().subscribe()
-                    ).subscribe();
+                    connection.close();
                   }
-                })).subscribe(v -> {
-            }, err -> {
-              errData(err, promise, addGroupJson);
-              if (err != null && err.getMessage() != null) {
-                connection.close();
-              }
-            });
-          }).subscribe(result -> {
-            List<Tuple> list = new ArrayList<>();
-            for (RowSet<Row> rows = result; rows != null; rows = rows.next()) {
-              if (rows.iterator().hasNext()) {
-                Row row = rows.iterator().next();
-                list.add(Tuple.of(addGroupJson.getInteger("id"), row.getInteger(0)));
-              }
-            }
-          }, err -> {
-            errData(err, promise, addGroupJson);
-            if (err != null && err.getMessage() != null) {
-              connection.close();
-            }
-          });
-        }).subscribe(v -> {
-        }, Throwable::printStackTrace);
+                });
+              }).subscribe(result -> {
+                List<Tuple> list = new ArrayList<>();
+                for (RowSet<Row> rows = result; rows != null; rows = rows.next()) {
+                  if (rows.iterator().hasNext()) {
+                    Row row = rows.iterator().next();
+                    list.add(Tuple.of(addGroupJson.getInteger("id"), row.getInteger(0)));
+                  }
+                }
+              }, err -> {
+                errData(err, promise, addGroupJson);
+                if (err != null && err.getMessage() != null) {
+                  connection.close();
+                }
+              });
+            }).subscribe(v -> {
+            }, Throwable::printStackTrace);
+          } else {
+            addGroupJson.put("errorMessage", "Some member(s) already added");
+            promise.complete(addGroupJson);
+          }
+        }).onFailure(Throwable::printStackTrace);
       } else {
         addGroupJson.put("errorMessage", checkedJson.getString("errorMessage"));
         promise.complete(addGroupJson);
       }
-    });
+    }).onFailure(Throwable::printStackTrace);
+
     return promise.future();
   }
 
@@ -701,6 +711,36 @@ public class GroupOpenApiSql {
         .doOnError(err -> {
           errData(err, waitFor, groupJson);
         }).subscribe();
+
+    return waitFor.future();
+  }
+
+  protected Future<List<String>> checkOnMembers(List<String> selectedList, JsonObject addGroupJson) {
+    Promise<List<String>> waitFor = Promise.promise();
+    List<String> newSelected = new ArrayList<>();
+    Single<SqlConnection> connResult = pool.rxGetConnection();
+
+    for (String user : selectedList) {
+      Single.just(user).subscribe(SingleHelper.toObserver(userName -> {
+        Tuple parameters = Tuple.of(addGroupJson.getString("groupName"), userName.result());
+
+        connResult.flatMap(conn -> {
+              conn.preparedQuery(getMembersByGroup()).rxExecute(parameters)
+                  .doOnSuccess(rows -> {
+                    if (rows.size() == 0) {
+                      newSelected.add(userName.result());
+                    }
+                    if (userName.result().equals(selectedList.get(selectedList.size() - 1))) {
+                      waitFor.complete(newSelected);
+                      conn.close();
+                    }
+                  }).doOnError(Throwable::printStackTrace)
+                  .subscribe();
+              return Single.just(conn);
+            }).doOnError(Throwable::printStackTrace)
+            .subscribe();
+      }));
+    }
 
     return waitFor.future();
   }

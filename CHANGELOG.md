@@ -1,5 +1,13 @@
 # Changelog
 
+## [v3.1.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.1.1) (2023-10-18)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.1.0..v3.1.1)
+
+* Upgraded to vertx 4.4.6 final
+* Upgraded javascript dependencies
+* Fixed "duplicate key" when adding group members in the dodex openapi addon
+
 ## [v3.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.1.0) (2023-08-15)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.0.2..v3.1.0)

@@ -5,7 +5,7 @@
 
 1. Using Vertx4 @ <https://vertx.io/introduction-to-vertx-and-reactive/>
 2. Java 17 or higher installed with JAVA_HOME set.
-3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.0.2`
+3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.1.1`
 4. Node with npm javascript package manager installed.
 
 **Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web applicaion requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.

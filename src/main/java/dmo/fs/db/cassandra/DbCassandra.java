@@ -1,5 +1,5 @@
 
-package dmo.fs.db;
+package dmo.fs.db.cassandra;
 
 public abstract class DbCassandra extends DbCassandraBase implements DodexCassandra {
 	

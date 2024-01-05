@@ -1,5 +1,8 @@
 
-package dmo.fs.db;
+package dmo.fs.db.cubrid;
+
+import dmo.fs.db.DbCubridOverride;
+import dmo.fs.db.DodexDatabase;
 
 public abstract class DbCubrid extends DbCubridOverride implements DodexDatabase {
     public final static String CHECKUSERSQL = "SELECT class_name FROM _db_class WHERE class_name = 'users'";

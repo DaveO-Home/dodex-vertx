@@ -25,7 +25,7 @@ import java.util.*;
 
 import static org.jooq.impl.DSL.*;
 
-public class GroupOpenApiSql {
+public class GroupOpenApiSql implements GroupOpenApi {
   private final static Logger logger = LoggerFactory.getLogger(GroupOpenApiSql.class.getName());
 
   private static String GETGROUPBYNAME;
@@ -55,122 +55,122 @@ public class GroupOpenApiSql {
     GETDELETEMEMBERS = qmark ? setupDeleteMembers().replaceAll("\\$\\d", "?") : setupDeleteMembers();
     GETDELETEMEMBER = qmark ? setupDeleteMember().replaceAll("\\$\\d", "?") : setupDeleteMember();
     GETMEMBERSBYGROUP = qmark ? setupMembersByGroup().replaceAll("\\$\\d", "?") : setupMembersByGroup();
-    GETUSERBYNAMESQLITE = setupUsersByNameSqlite();
+    GETUSERBYNAMESQLITE = qmark ? setupUsersByNameSqlite().replaceAll("\\$\\d", "?") : setupUsersByNameSqlite();
   }
 
   private static String setupGroupByName() {
     return create.renderNamedParams(
         select(field("ID"), field("NAME"), field("OWNER"), field("CREATED"), field("UPDATED"))
-            .from(table("GROUPS")).where(field("NAME").eq("$")));
+            .from(table("groups")).where(field("NAME").eq("$")));
   }
 
-  public String getGroupByName() {
+  private String getGroupByName() {
     return GETGROUPBYNAME;
   }
 
   private static String setupAddGroup() {
-    return create.renderNamedParams(insertInto(table("GROUPS"))
+    return create.renderNamedParams(insertInto(table("groups"))
         .columns(field("NAME"), field("OWNER"), field("CREATED"), field("UPDATED"))
         .values("$", "$", "$", "$").returning(field("ID")));
   }
 
-  public String getAddGroup() {
+  private String getAddGroup() {
     return GETADDGROUP;
   }
 
   private static String setupMariaAddGroup() {
-    return create.renderNamedParams(insertInto(table("GROUPS"))
+    return create.renderNamedParams(insertInto(table("groups"))
         .columns(field("NAME"), field("OWNER"), field("CREATED"), field("UPDATED"))
         .values("$", "$", "$", "$"));
   }
 
-  public String getMariaAddGroup() {
+  private String getMariaAddGroup() {
     return GETMARIAADDGROUP;
   }
 
   private static String setupAddMember() {
     return create.renderNamedParams(
-        insertInto(table("MEMBER")).columns(field("GROUP_ID"), field("USER_ID")).values("$", "$"));
+        insertInto(table("member")).columns(field("GROUP_ID"), field("USER_ID")).values("$", "$"));
   }
 
-  public String getAddMember() {
+  private String getAddMember() {
     return GETADDMEMBER;
   }
 
   private static String setupDeleteGroup() {
     if (DbConfiguration.isUsingMariadb()) {
-      return create.renderNamedParams(deleteFrom(table("GROUPS")).where(field("NAME").eq("$1")));
+      return create.renderNamedParams(deleteFrom(table("groups")).where(field("NAME").eq("$1")));
     } else {
-      return create.renderNamedParams(deleteFrom(table("GROUPS")).where(field("NAME").eq("$1")).returning(field("ID")));
+      return create.renderNamedParams(deleteFrom(table("groups")).where(field("NAME").eq("$1")).returning(field("ID")));
     }
   }
 
-  public String getDeleteGroup() {
+  private String getDeleteGroup() {
     return GETDELETEGROUP;
   }
 
   private static String setupDeleteGroupById() {
     if (DbConfiguration.isUsingMariadb()) {
-      return create.renderNamedParams(deleteFrom(table("GROUPS")).where(field("ID").eq("$1")));
+      return create.renderNamedParams(deleteFrom(table("groups")).where(field("ID").eq("$1")));
     } else {
-      return create.renderNamedParams(deleteFrom(table("GROUPS")).where(field("ID").eq("$1")).returning(field("ID")));
+      return create.renderNamedParams(deleteFrom(table("groups")).where(field("ID").eq("$1")).returning(field("ID")));
     }
   }
 
-  public String getDeleteGroupById() {
+  private String getDeleteGroupById() {
     return GETDELETEGROUPBYID;
   }
 
   private static String setupDeleteMembers() {
     if (DbConfiguration.isUsingMariadb()) {
-      return create.renderNamedParams(deleteFrom(table("MEMBER")).where(field("GROUP_ID").eq("$1")));
+      return create.renderNamedParams(deleteFrom(table("member")).where(field("GROUP_ID").eq("$1")));
     } else {
-      return create.renderNamedParams(deleteFrom(table("MEMBER")).where(field("GROUP_ID").eq("$1"))); // .returning(field("ID")));
+      return create.renderNamedParams(deleteFrom(table("member")).where(field("GROUP_ID").eq("$1"))); // .returning(field("ID")));
     }
   }
 
-  public String getDeleteMembers() {
+  private String getDeleteMembers() {
     return GETDELETEMEMBERS;
   }
 
   private static String setupDeleteMember() {
     if (DbConfiguration.isUsingMariadb()) {
-      return create.renderNamedParams(deleteFrom(table("MEMBER")).where(field("GROUP_ID").eq("$1").and(field("USER_ID").eq("$2"))));
+      return create.renderNamedParams(deleteFrom(table("member")).where(field("GROUP_ID").eq("$1").and(field("USER_ID").eq("$2"))));
     } else {
-      return create.renderNamedParams(deleteFrom(table("MEMBER")).where(field("GROUP_ID").eq("$1").and(field("USER_ID").eq("$2")))); // .returning(field("ID")));
+      return create.renderNamedParams(deleteFrom(table("member")).where(field("GROUP_ID").eq("$1").and(field("USER_ID").eq("$2")))); // .returning(field("ID")));
     }
   }
 
-  public String getDeleteMember() {
+  private String getDeleteMember() {
     return GETDELETEMEMBER;
   }
 
   private static String setupMembersByGroup() {
-    return create.renderNamedParams(select(field("USER_ID"), field("USERS.NAME"), field("GROUP_ID"))
-        .from(table("GROUPS")).join(table("MEMBER"))
-        .on(field("GROUPS.ID").eq(field("GROUP_ID")).and(field("GROUPS.NAME").eq("$")))
-        .join(table("USERS")).on(field("USERS.ID").eq(field("USER_ID")))
+    return create.renderNamedParams(select(field("USER_ID"), field("users.NAME"), field("GROUP_ID"))
+        .from(table("groups")).join(table("member"))
+        .on(field("groups.ID").eq(field("GROUP_ID")).and(field("groups.NAME").eq("$")))
+        .join(table("users")).on(field("users.ID").eq(field("USER_ID")))
         .whereExists(select(field("ID"))
-            .from(table("USERS")).join(table("MEMBER"))
-            .on(field("USERS.ID").eq(field("USER_ID")).and(field("USERS.NAME").eq("$")))
+            .from(table("users")).join(table("member"))
+            .on(field("users.ID").eq(field("USER_ID")).and(field("users.NAME").eq("$")))
         ));
   }
 
-  public String getMembersByGroup() {
+  private String getMembersByGroup() {
     return GETMEMBERSBYGROUP;
   }
 
   private static String setup() {
     return create.renderNamedParams(
         select(field("ID"), field("NAME"), field("OWNER"), field("CREATED"), field("UPDATED"))
-            .from(table("GROUPS")).where(field("NAME").eq("$")));
+            .from(table("groups")).where(field("NAME").eq("$")));
   }
 
   private static String setupUsersByNameSqlite() {
-    return create.render(select(field("*")).from(table("USERS").where(field("NAME").in("?"))));
+    return create.render(select(field("*")).from(table("users").where(field("NAME").in("$"))));
   }
 
-  public String getupUsersByNameSqlite() {
+  private String getupUsersByNameSqlite() {
     return GETUSERBYNAMESQLITE;
   }
 
@@ -246,18 +246,19 @@ public class GroupOpenApiSql {
               Tuple parameters = Tuple.of(addGroupJson.getString("groupName"),
                   addGroupJson.getInteger("ownerKey"), currentDate, currentDate);
               String sql = getAddGroup();
-
+              if (DbConfiguration.isUsingSqlite3()) {
+                sql = sql + " RETURNING id";
+              }
               if (DbConfiguration.isUsingMariadb()) {
                 sql = getMariaAddGroup();
               }
-
               conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {
                 for (Row row : rows) {
                   addGroupJson.put("id", row.getLong(0));
                 }
                 if (DbConfiguration.isUsingMariadb()) {
                   addGroupJson.put("id", rows.property(MySQLClient.LAST_INSERTED_ID));
-                } else if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingCubrid()) {
+                } else if (DbConfiguration.isUsingCubrid()) {
                   addGroupJson.put("id", rows.property(JDBCPool.GENERATED_KEYS).getLong(0));
                 }
 
@@ -300,18 +301,20 @@ public class GroupOpenApiSql {
     checkOnGroupOwner(addGroupJson).onSuccess(checkedJson -> {
       if (checkedJson.getBoolean("isValidForOperation")) {
         List<String> allUsers = new ArrayList<>();
+
         allUsers.add(addGroupJson.getString("groupOwner"));
         allUsers.addAll(selectedUsers);
 
         checkOnMembers(allUsers, addGroupJson).onSuccess(newUsers -> {
           if (!newUsers.isEmpty()) {
             pool.getConnection().doOnSuccess(connection -> {
+              boolean addOwner = false;
               List<Tuple> userList = new ArrayList<>();
               StringBuilder sql = new StringBuilder();
               StringBuilder stringBuilder = new StringBuilder();
 
-              for (String name : selectedUsers) {
-                if (DbConfiguration.isUsingSqlite3()) {
+              for (String name : newUsers) {
+                if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingH2()) {
                   stringBuilder.append("'").append(name).append("',");
                 } else {
                   userList.add(Tuple.of(name));
@@ -320,20 +323,24 @@ public class GroupOpenApiSql {
 
               // Sqlite3(jdbc client) 'select' does not work well with executeBatch
               Single<RowSet<Row>> query;
-              if (DbConfiguration.isUsingSqlite3()) {
-                stringBuilder.append("'").append(addGroupJson.getString("groupOwner")).append("'");
-                sql.append(getupUsersByNameSqlite().replace("?", stringBuilder.toString()));
+              if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingH2()) {
+                stringBuilder.append("' '");
+                if (DbConfiguration.isUsingH2() && getupUsersByNameSqlite().contains("cast(?")) {
+                  sql.append(getupUsersByNameSqlite().replace("cast(? as varchar)", stringBuilder.toString()));
+                } else {
+                  sql.append(getupUsersByNameSqlite().replace("?", stringBuilder.toString()));
+                }
                 query = connection.preparedQuery(sql.toString()).execute();
               } else {
                 sql.append(dodexDatabase.getUserByName());
-                userList.add(Tuple.of(addGroupJson.getString("groupOwner")));
+                stringBuilder.append("' '");
                 query = connection.preparedQuery(sql.toString()).executeBatch(userList);
               }
 
               query.doOnSuccess(result -> {
                 List<Tuple> list = new ArrayList<>();
                 for (RowSet<Row> rows = result; rows != null; rows = rows.next()) {
-                  if (DbConfiguration.isUsingSqlite3()) {
+                  if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingH2()) {
                     for (Row row : rows) {
                       list.add(Tuple.of(addGroupJson.getInteger("id"), row.getInteger(0)));
                     }
@@ -462,6 +469,7 @@ public class GroupOpenApiSql {
               for (Row row : rows) {
                 id = row.getInteger(0);
               }
+
               deleteGroupJson.put("id", id);
               Tuple parameters = Tuple.of(id);
 
@@ -480,7 +488,8 @@ public class GroupOpenApiSql {
                           deleteGroupJson.put("errorMessage", deletedMembers + " members with ");
                         } else {
                           parameters.clear();
-                          parameters.addInteger(0);
+                          parameters.addInteger(deleteGroupJson.getInteger("id"));
+                          deleteGroupJson.put("errorMessage", deleteGroupJson.getString("groupName") + " ");
                         }
                         connection
                             .preparedQuery(getDeleteGroupById())
@@ -545,7 +554,7 @@ public class GroupOpenApiSql {
 
                     List<Tuple> userList = new ArrayList<>();
                     for (String name : selectedUsers) {
-                      if (DbConfiguration.isUsingSqlite3()) {
+                      if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingH2()) {
                         stringBuilder.append("'").append(name).append("',");
                       } else {
                         userList.add(Tuple.of(name));
@@ -553,9 +562,13 @@ public class GroupOpenApiSql {
                     }
 
                     Single<RowSet<Row>> query;
-                    if (DbConfiguration.isUsingSqlite3()) {
-                      stringBuilder.append("''"); //.append(deleteGroupJson.getString("groupOwner")).append("'");
-                      sql.append(getupUsersByNameSqlite().replace("?", stringBuilder.toString()));
+                    if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingH2()) {
+                      stringBuilder.append("''");
+                      if (DbConfiguration.isUsingH2() && getupUsersByNameSqlite().contains("cast(?")) {
+                        sql.append(getupUsersByNameSqlite().replace("cast(? as varchar)", stringBuilder.toString()));
+                      } else {
+                        sql.append(getupUsersByNameSqlite().replace("?", stringBuilder.toString()));
+                      }
                       query = connection.preparedQuery(sql.toString()).execute();
                     } else {
                       sql.append(dodexDatabase.getUserByName());
@@ -566,7 +579,7 @@ public class GroupOpenApiSql {
                       // Sqlite3(jdbc client) 'select' does not work well with executeBatch
                       List<Tuple> list = new ArrayList<>();
                       for (RowSet<Row> rows2 = result; rows2 != null; rows2 = rows2.next()) {
-                        if (DbConfiguration.isUsingSqlite3()) {
+                        if (DbConfiguration.isUsingSqlite3() || DbConfiguration.isUsingH2()) {
                           for (Row row : rows2) {
                             list.add(Tuple.of(deleteGroupJson.getInteger("id"), row.getInteger(0)));
                           }
@@ -604,7 +617,7 @@ public class GroupOpenApiSql {
                     }).subscribe(v -> {
                     }, Throwable::printStackTrace);
                   }).subscribe(v -> {
-                  }, Throwable::printStackTrace); // .subscribe(v -> {}, Throwable::printStackTrace));
+                  }, Throwable::printStackTrace);
                 }).subscribe(v -> {
                 }, Throwable::printStackTrace))
             .subscribe(v -> {
@@ -645,7 +658,9 @@ public class GroupOpenApiSql {
                     getGroupJson.put("id", row.getInteger(2));
                   }
                 }
-                getGroupJson.put("members", members);
+                getGroupJson.put("groupMessage", "")
+                    .put("status", 0)
+                    .put("members", members.encode());
                 promise.complete(getGroupJson);
               } else {
                 getGroupJson.put("errorMessage", "Group not found: " + getGroupJson.getString("groupName"));

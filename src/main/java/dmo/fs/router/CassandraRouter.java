@@ -1,7 +1,6 @@
 package dmo.fs.router;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
@@ -22,7 +21,7 @@ import org.modellwerkstatt.javaxbus.EventBus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import dmo.fs.admin.CleanOrphanedUsers;
-import dmo.fs.db.DodexCassandra;
+import dmo.fs.db.cassandra.DodexCassandra;
 import dmo.fs.db.MessageUser;
 import dmo.fs.kafka.KafkaEmitterDodex;
 import dmo.fs.utils.ColorUtilConstants;
@@ -44,7 +43,7 @@ import io.vertx.rxjava3.core.shareddata.SharedData;
 public class CassandraRouter {
     private static final Logger logger = LoggerFactory.getLogger(CassandraRouter.class.getName());
     protected Vertx vertx;
-    private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
+    private final Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
     private DodexCassandra dodexCassandra;
     private static EventBus eb;
     private static final String LOGFORMAT = "{}{}{}";
@@ -102,27 +101,21 @@ public class CassandraRouter {
             @Override
             public void handle(ServerWebSocket ws) {
 
-                try {
-                    String handle = URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"),
-                        StandardCharsets.UTF_8.name());
-                    logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle, ColorUtilConstants.RESET);
-                } catch (final UnsupportedEncodingException e) {
-                    logger.error(LOGFORMAT, ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET);
-                }
+              String handle = URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"),
+                  StandardCharsets.UTF_8);
+              logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle, ColorUtilConstants.RESET);
 
-                final DodexUtil dodexUtil = new DodexUtil();
+              final DodexUtil dodexUtil = new DodexUtil();
 
                 if (!"/dodex".equals(ws.path())) {
                     ws.reject();
                 } else {
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                     final MessageUser messageUser = dodexCassandra.createMessageUser();
-                    try {
-                        wsChatSessions.put(ws.remoteAddress().toString(),
-                                URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
-                    } catch (final UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
+
+                    wsChatSessions.put(ws.remoteAddress().toString(),
+                            URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8));
+
                     clients.put(ws.remoteAddress().toString(), ws);
                     if(ke != null) {
                         ke.setValue("sessions", wsChatSessions.size());
@@ -130,7 +123,7 @@ public class CassandraRouter {
                     ws.closeHandler(ch -> {
                         if (logger.isInfoEnabled()) {
                             logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT,
-                                    "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET);
+                                    "Closing ws-connection to client: " + messageUser.getName(), ColorUtilConstants.RESET);
                         }
                         wsChatSessions.remove(ws.remoteAddress().toString());
                         clients.remove(ws.remoteAddress().toString());
@@ -185,7 +178,7 @@ public class CassandraRouter {
                                                 if (!websocket.equals(ws.remoteAddress().toString())) {
                                                     // broadcast message
                                                     query = ParseQueryUtilHelper
-                                                            .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
+                                                            .getQueryMap(wsChatSessions.get(ws.remoteAddress().toString()));
                                                     final String handle = query.get("handle");
                                                     if (selectedUsers.length() == 0 && command[0].length() == 0) {
                                                         webSocket.writeTextMessage(
@@ -255,16 +248,16 @@ public class CassandraRouter {
                     /*
                      * websocket.onConnection()
                      */
-                    String handle = "";
-                    String id = "";
+                    String handle2;
+                    String id;
                     Map<String, String> query = null;
 
                     query = ParseQueryUtilHelper.getQueryMap(wsChatSessions.get(ws.remoteAddress().toString()));
 
-                    handle = query.get("handle");
+                    handle2 = query.get("handle");
                     id = query.get("id");
 
-                    messageUser.setName(handle);
+                    messageUser.setName(handle2);
                     messageUser.setPassword(id);
                     messageUser.setIp(ws.remoteAddress().toString());
 
@@ -282,7 +275,7 @@ public class CassandraRouter {
                                     try {
                                         dodexCassandra.processUserMessages(ws, eb, mUser).onComplete(fut -> {
                                             mjson.Json undeliveredArray = fut.result();
-                                            Integer size = undeliveredArray.asList().size();
+                                            int size = undeliveredArray.asList().size();
 
                                             for (int i = 0; i < size; i++) {
                                                 mjson.Json msg = undeliveredArray.at(i);

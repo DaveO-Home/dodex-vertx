@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.firestore.Firestore;
 import com.google.cloud.firestore.FirestoreOptions;
-import dmo.fs.db.DodexFirebase;
+import dmo.fs.db.firebase.DodexFirebase;
 import dmo.fs.db.MessageUser;
 import dmo.fs.kafka.KafkaEmitterDodex;
 import dmo.fs.utils.ColorUtilConstants;

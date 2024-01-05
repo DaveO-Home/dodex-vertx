@@ -10,7 +10,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * User Manual available at https://docs.gradle.org/7.5/userguide/building_java_projects.html
  */
 buildscript {
-  ext.kotlin_version = "1.9.0"
+  ext.kotlin_version = "1.9.21"
 
   dependencies {
     classpath "com.google.protobuf:protobuf-gradle-plugin:0.9.3"
@@ -19,7 +19,7 @@ buildscript {
 
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id "org.jetbrains.kotlin.jvm" version "1.9.0"
+    id "org.jetbrains.kotlin.jvm" version "1.9.21"
 
     id "application"
 
@@ -45,7 +45,7 @@ repositories {
 
 version = "0.0.1"
 ext {
-  vertxVersion = "4.4.5"
+  vertxVersion = "4.5.0"
   protoVersion = "3.22.5"
   grpcVersion = "1.56.0"
 }
@@ -166,7 +166,8 @@ dependencies {
     implementation("io.vertx:vertx-grpc")
     implementation("io.vertx:vertx-grpc-client:$vertxVersion")
     implementation("io.agroal:agroal-pool:2.1")
-    implementation("org.xerial:sqlite-jdbc:3.40.1.0")
+    implementation group: 'com.h2database', name: 'h2', version: '2.2.224'
+    implementation("org.xerial:sqlite-jdbc:3.43.2.2")
     implementation("io.vertx:vertx-mysql-client:$vertxVersion")
     implementation("io.vertx:vertx-pg-client:$vertxVersion")
     implementation('org.mariadb.jdbc:mariadb-java-client:3.1.2')

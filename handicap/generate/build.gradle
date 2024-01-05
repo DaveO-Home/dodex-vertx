@@ -20,7 +20,7 @@ group = "dmo.fs.utils"
 version = "0.0.1"
 
 ext {
-  vertxVersion = "4.4.5"
+  vertxVersion = "4.5.0"
 }
 
 def jooqClasspath

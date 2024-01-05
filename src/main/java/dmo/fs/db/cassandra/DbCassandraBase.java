@@ -1,11 +1,13 @@
 
-package dmo.fs.db;
+package dmo.fs.db.cassandra;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import dmo.fs.db.MessageUser;
 import org.modellwerkstatt.javaxbus.ConsumerHandler;
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.modellwerkstatt.javaxbus.Message;
@@ -18,8 +20,8 @@ import io.vertx.rxjava3.core.http.ServerWebSocket;
 
 public abstract class DbCassandraBase {
 	private final static Logger logger = LoggerFactory.getLogger(DbCassandraBase.class.getName());
-	private Map<String, Promise<MessageUser>> mUserPromises = new ConcurrentHashMap<>();
-	private Map<String, Promise<mjson.Json>> mJsonPromises = new ConcurrentHashMap<>();
+	private final Map<String, Promise<MessageUser>> mUserPromises = new ConcurrentHashMap<>();
+	private final Map<String, Promise<mjson.Json>> mJsonPromises = new ConcurrentHashMap<>();
 	private String vertxConsumer = "";
 
 	private Vertx vertx;
@@ -151,7 +153,7 @@ public abstract class DbCassandraBase {
 						case "selectuser":
 							mjson.Json cassJson = json.at("msg");
 							MessageUser resultUser = createMessageUser();
-							resultUser.setId(-1l);
+							resultUser.setId(-1L);
 							resultUser.setIp(cassJson.at("ip").asString());
 							resultUser.setPassword(cassJson.at("password").asString());
 							resultUser.setName(cassJson.at("name").asString());

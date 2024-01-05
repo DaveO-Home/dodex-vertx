@@ -16,7 +16,7 @@ public class MessageUserImpl implements MessageUser {
     private String password;
     private String ip;
     private Timestamp lastLogin ;
-
+    private String _id;
     @Override
     public void setId(final Long id) {
         if (id instanceof Long) {
@@ -114,7 +114,17 @@ public class MessageUserImpl implements MessageUser {
     }
 
     @Override
+    public void set_id(String _id) {
+        this._id = _id;
+    }
+
+    @Override
+    public String get_id() {
+        return _id;
+    }
+
+    @Override
     public String toString() {
-        return String.format("ID: %s, NAME: %s, PASSWORD: %s, IP: %s, LAST_LOGIN: %s", getId(), getName(), getPassword(), getIp(), getLastLogin() != null? getLastLogin().toString(): getLastLogin());
+        return String.format("ID: %s, NAME: %s, PASSWORD: %s, IP: %s, LAST_LOGIN: %s, _ID: %s", getId(), getName(), getPassword(), getIp(), getLastLogin() != null? getLastLogin().toString(): getLastLogin(), get_id());
     }
 }

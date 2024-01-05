@@ -1,5 +1,5 @@
 
-package dmo.fs.db;
+package dmo.fs.db.neo4j;
 
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -12,6 +12,8 @@ import java.util.TimeZone;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+
+import dmo.fs.db.MessageUser;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.reactive.RxResult;

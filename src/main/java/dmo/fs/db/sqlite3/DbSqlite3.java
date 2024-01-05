@@ -1,6 +1,8 @@
 
-package dmo.fs.db;
+package dmo.fs.db.sqlite3;
 
+import dmo.fs.db.DbDefinitionBase;
+import dmo.fs.db.DodexDatabase;
 import dmo.fs.dbh.HandicapDatabase;
 
 public abstract class DbSqlite3 extends DbDefinitionBase implements DodexDatabase, HandicapDatabase {
@@ -12,13 +14,13 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements DodexDatabas
 
 	private enum CreateTable {
 		CREATEUSERS(
-				"create table users (id integer primary key, name text not null unique, password text not null unique, ip text not null, last_login DATETIME not null)"),
+				"create table users (id integer primary key not null, name text not null unique, password text not null unique, ip text not null, last_login DATETIME not null)"),
 		CREATEMESSAGES(
-				"create table messages (id integer primary key, message text not null, from_handle text not null, post_date DATETIME not null)"),
+				"create table messages (id integer primary key not null, message text not null, from_handle text not null, post_date DATETIME not null)"),
 		CREATEUNDELIVERED(
 				"create table undelivered (user_id integer, message_id integer, CONSTRAINT undelivered_user_id_foreign FOREIGN KEY (user_id) REFERENCES users (id), CONSTRAINT undelivered_message_id_foreign FOREIGN KEY (message_id) REFERENCES messages (id))"),
 		CREATELOGIN(
-				"create table login (id integer primary key, name text not null unique, password text not null, last_login DATETIME not null)"),
+				"create table login (id integer primary key not null, name text not null unique, password text not null, last_login DATETIME not null)"),
 		CREATEGOLFER("CREATE TABLE IF NOT EXISTS golfer (" +
 				"PIN CHARACTER(8) primary key NOT NULL," +
 				"FIRST_NAME VARCHAR(32) NOT NULL," +
@@ -30,7 +32,7 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements DodexDatabas
 				"PUBLIC BOOLEAN DEFAULT 0," +
 				"LAST_LOGIN NUMERIC)"),
 		CREATECOURSE("CREATE TABLE IF NOT EXISTS course (" +
-				"COURSE_SEQ INTEGER primary key autoincrement NOT NULL," +
+				"COURSE_SEQ INTEGER primary key NOT NULL," +
 				"COURSE_NAME VARCHAR(128) NOT NULL," +
 				"COURSE_COUNTRY VARCHAR(128) NOT NULL," +
 				"COURSE_STATE CHARACTER(2) NOT NULL )"),
@@ -52,7 +54,7 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements DodexDatabas
 				"COURSE_TEES INTEGER," +
 				"USED CHARACTER(1), FOREIGN KEY ( COURSE_SEQ ) REFERENCES COURSE ( COURSE_SEQ ) ON UPDATE no action ON DELETE no action,  FOREIGN KEY ( PIN ) REFERENCES GOLFER ( PIN ) ON UPDATE no action ON DELETE no action )"),
 		CREATEGROUPS("CREATE TABLE IF NOT EXISTS groups (" +
-				"id integer primary key autoincrement NOT NULL," +
+				"id integer primary key NOT NULL," +
 				"name varchar(100) NOT NULL UNIQUE," +
 				"owner integer NOT NULL DEFAULT 0," +
 				"created datetime NOT NULL DEFAULT (datetime('now','localtime'))," +  //  DEFAULT (datetime('now','localtime')) - jooq problem

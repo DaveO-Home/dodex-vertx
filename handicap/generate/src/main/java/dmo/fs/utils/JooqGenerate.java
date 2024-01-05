@@ -43,6 +43,10 @@ public class JooqGenerate {
               + "&password=" + dbMap.get("CRED:password");
           jooqMetaName = "org.jooq.meta.postgres.PostgresDatabase";
           databaseDbname = "public"; // dbMap.get("database");
+        } else if ("h2".equals(defaultDb)) {
+          databaseDbname = "public";
+          jooqMetaName = "org.jooq.meta.h2.H2Database";
+          dbUrl = dbMap.get("url") + dbMap.get("filename") + ";DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE";
         }
         logger.info("Generate: "+dbUrl + " -- "+jooqMetaName + " -- "+databaseDbname);
         generateJooqObjects(dbUrl, jooqMetaName, databaseDbname);

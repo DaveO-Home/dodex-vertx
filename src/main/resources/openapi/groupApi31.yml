@@ -10,7 +10,7 @@ paths:
       operationId: getAll
       responses:
         "200":
-          description: A list of pets.
+          description: A list of groups.
           content:
             application/json:
               schema:
@@ -29,7 +29,7 @@ paths:
       operationId: getNextAll
       responses:
         "200":
-          description: A list of pets.
+          description: A list of groups.
           content:
             application/json:
               schema:
@@ -127,15 +127,22 @@ components:
         groupId:
           type: integer
         members:
-          type: string
+          oneOf:
+            - type: 'null'
+            - type: string
+              contentEncoding: UTF-8
         groupOwner:
           type: string
+          encoding:
+            charset: UTF-8
         status:
           type: integer
         groupMessage:
           type: string
         errorMessage:
-          type: string
+          oneOf:
+            - type: 'null'
+            - type: string 
     Group:
       required:
         - groupName
@@ -167,6 +174,8 @@ components:
           type: string
         updated:
           type: string
+        id_:
+          type: string
     GroupResponse:
       required:
         - groupMessage
@@ -188,6 +197,11 @@ components:
           type: string
         updated:
           type: string
+        id_:
+          type: string
+        members:
+          type: string
+          contentEncoding: UTF-8
     Error:
       type: object
       required:

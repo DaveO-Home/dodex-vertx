@@ -31,7 +31,7 @@ public class DodexUtil {
     private static String env = "dev";
     private static io.vertx.rxjava3.core.Vertx vertx;
 
-    String defaultDb = "sqlite3";
+    String defaultDb = "h2";
 
     // public void await(Disposable disposable) {
     // while (!disposable.isDisposed()) {

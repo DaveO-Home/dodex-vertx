@@ -10,7 +10,7 @@ import dmo.fs.db.DbConfiguration;
 import dmo.fs.spa.utils.SpaUtil;
 
 public class SpaDbConfiguration extends DbConfiguration {
-    private static String defaultDb = "sqlite3";
+    private static String defaultDb = "h2";
     private static SpaDatabase spaDatabase;
     private static SpaCassandra spaCassandra;
     private static SpaFirebase spaFirebase;
@@ -24,7 +24,8 @@ public class SpaDbConfiguration extends DbConfiguration {
         IBMDB2("ibmdb2"),
         CASSANDRA("cassandra"),
         FIREBASE("firebase"),
-        NEO4J("neo4j");
+        NEO4J("neo4j"),
+        H2("h2");
 
         String db;
 
@@ -46,6 +47,8 @@ public class SpaDbConfiguration extends DbConfiguration {
                 spaDatabase = new SpaDatabasePostgres();
             } else if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseSqlite3();
+            } else if(defaultDb.equals(DbTypes.H2.db) && spaDatabase == null) {
+                spaDatabase = new SpaDatabaseH2();
             } else if(defaultDb.equals(DbTypes.CUBRID.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseCubrid();
             } else if(defaultDb.equals(DbTypes.MARIADB.db) && spaDatabase == null) {
@@ -78,6 +81,8 @@ public class SpaDbConfiguration extends DbConfiguration {
                 spaDatabase = new SpaDatabasePostgres(overrideMap, overrideProps);
             } else if(defaultDb.equals(DbTypes.SQLITE3.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseSqlite3(overrideMap, overrideProps);
+            } else if(defaultDb.equals(DbTypes.H2.db) && spaDatabase == null) {
+                spaDatabase = new SpaDatabaseH2(overrideMap, overrideProps);
             } else if(defaultDb.equals(DbTypes.CUBRID.db) && spaDatabase == null) {
                 spaDatabase = new SpaDatabaseCubrid(overrideMap, overrideProps);
             } else if(defaultDb.equals(DbTypes.MARIADB.db) && spaDatabase == null) {

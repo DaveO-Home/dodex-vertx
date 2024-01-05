@@ -1,6 +1,8 @@
 
-package dmo.fs.db;
+package dmo.fs.db.mariadb;
 
+import dmo.fs.db.DbDefinitionBase;
+import dmo.fs.db.DodexDatabase;
 import dmo.fs.dbh.HandicapDatabase;
 
 public abstract class DbMariadb extends DbDefinitionBase implements DodexDatabase, HandicapDatabase {

@@ -23,12 +23,13 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dmo.fs.db.*;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.MethodOrderer;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import dmo.fs.db.cubrid.DbCubrid;
+import dmo.fs.db.mariadb.DbMariadb;
+import dmo.fs.db.postgres.DbPostgres;
+import dmo.fs.db.sqlite3.DbSqlite3;
+import dmo.fs.db.h2.DbH2;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
-import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 //import dmo.fs.dbh.DbHandicapConfiguration;
@@ -66,7 +67,7 @@ class AppTest {
             LocalTime.now().getSecond());
         ZonedDateTime zonedDateTime = ZonedDateTime.of(localDate, localTime, ZoneId.systemDefault());
         String openApiDate = zonedDateTime.format(formatter);
-        assertSame("Date should be formatted to openapi format", openApiDate != null, Boolean.TRUE);
+        Assertions.assertSame(openApiDate.length() > 8, Boolean.TRUE, "Date should be formatted to openapi format");
     }
 }
 
@@ -142,7 +143,12 @@ class DbTest /* extends DbDefinitionBase */ {
             pool = dodexDatabase.getPool4();
             checkSql = DbSqlite3.CHECKUSERSQL;
             DbSqlite3.setupSql(pool);
-        } else if ("postgres".equals(whichDb)) {
+        } else if ("h2".equals(whichDb)) {
+            dodexDatabase = DbConfiguration.getDefaultDb();
+            pool = dodexDatabase.getPool4();
+            checkSql = DbH2.CHECKUSERSQL;
+            DbH2.setupSql(pool);
+        }else if ("postgres".equals(whichDb)) {
             Map<String, String> overrideMap = new ConcurrentHashMap<>();
             overrideMap.put("database", "dodex"); // <------- should match test/dev db
             dodexDatabase = DbConfiguration.getDefaultDb(overrideMap, props);

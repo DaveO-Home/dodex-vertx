@@ -1,10 +1,11 @@
-package dmo.fs.db;
+package dmo.fs.db.neo4j;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import dmo.fs.db.MessageUser;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
 
 import org.neo4j.driver.Driver;

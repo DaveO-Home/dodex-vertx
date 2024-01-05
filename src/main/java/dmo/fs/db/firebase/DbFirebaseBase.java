@@ -1,5 +1,5 @@
 
-package dmo.fs.db;
+package dmo.fs.db.firebase;
 
 import java.sql.SQLException;
 import java.text.DateFormat;
@@ -10,6 +10,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+
+import dmo.fs.db.MessageUser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.api.core.ApiFuture;

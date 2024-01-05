@@ -48,7 +48,7 @@ class MainVerticle : AbstractVerticle() {
 
         init {
 //            setupLogging()
-            LOGGER.warning("Initializing Handicap Vertical")
+            LOGGER.warning("Initializing Handicap Verticle")
 
             config = Vertx.currentContext().config()
             val appConfig = getAlternateConfig()

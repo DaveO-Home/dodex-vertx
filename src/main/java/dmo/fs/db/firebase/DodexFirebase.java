@@ -1,10 +1,11 @@
-package dmo.fs.db;
+package dmo.fs.db.firebase;
 
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import com.google.cloud.firestore.Firestore;
+import dmo.fs.db.MessageUser;
 import dmo.fs.utils.FirebaseMessage;
 import dmo.fs.utils.FirebaseUser;
 import io.vertx.core.Future;

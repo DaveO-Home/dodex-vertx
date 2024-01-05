@@ -26,5 +26,6 @@
   "prod.handicap.port": 8890,
   "dodex.groups.checkForOwner": false,
   "grpc:port": 15002,
-  "prod:grpc:port": 15002
+  "prod:grpc:port": 15002,
+  "dodex.virtual.threads": false
 }

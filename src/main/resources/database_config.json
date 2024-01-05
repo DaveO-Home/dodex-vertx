@@ -1,6 +1,6 @@
 {
     "application": "Dodex",
-    "defaultdb": "sqlite3",
+    "defaultdb": "h2",
     "sqlite3": {
         "dev": { 
             "credentials": {
@@ -16,6 +16,30 @@
             "config": {
                 "filename": "/data/sqlite3/dodex.db",
                 "url": "jdbc:sqlite:"
+            }
+        }
+    },
+    "h2": {
+        "dev": {
+            "credentials": {
+                "user": "sa",
+                "password": "sa",
+                "ssl": "false"
+            },
+            "config": {
+                "filename": "file:./testh2.db",
+                "url": "jdbc:h2:"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "sa",
+                "password": "sa",
+                "ssl": "false"
+            },
+            "config": {
+                "filename": "file:/data/h2/dodexh2.db",
+                "url": "jdbc:h2:"
             }
         }
     },
@@ -206,6 +230,38 @@
                 "port": "7687",
                 "protocol": "bolt",
                 "dbname": "neo4j"
+            }
+        }
+    },
+    "mongo": {
+        "dev": {
+            "credentials": {
+                "username": "dodex",
+                "password": "dodex",
+                "authSource": "dodex",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "127.0.0.1",
+                "port": "27017",
+                "minPoolSize" : "5",
+                "useObjectId": "true",
+                "dbname": "dodex"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "dodex",
+                "password": "secret",
+                "authSource": "admin",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "localhost",
+                "port": "27017",
+                "minPoolSize" : "25",
+                "useObjectId": "true",
+                "dbname": "dodex"
             }
         }
     }

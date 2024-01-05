@@ -9,8 +9,7 @@ import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import io.vertx.core.Promise;
-import io.vertx.core.Verticle;
+import io.vertx.core.*;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.bridge.BridgeOptions;
@@ -106,6 +105,11 @@ public class Server extends AbstractVerticle {
       ColorUtilConstants.colorOff();
     }
 
+/* Using virtual threads - java 21
+DeploymentOptions options = new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER);
+vertx.deployVerticle("dmo.fs.vertx.Server", options);
+*/
+
     if (isUnix()) {
       server = configureLinuxOptions(vertx);
     } else {
@@ -115,11 +119,6 @@ public class Server extends AbstractVerticle {
     Routes routes = new Routes(vertx, server, vertxVersion);
 
     FileSystem fs = vertx.fileSystem();
-    /* For BoxFuse - sqlite3 */
-    // fs.mkdir("/efs");
-    // Runtime.getRuntime().exec("mount -t nfs4 -o
-    // nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2
-    // <your-efs-id>.efs.<your-aws-region>.amazonaws.com:/ /efs").waitFor();
 
     // Note: development = "prod" in production mode
     // Can override port at execution time with env variable "VERTX_PORT"
@@ -170,14 +169,25 @@ public class Server extends AbstractVerticle {
             logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
                 ColorUtilConstants.RESET);
           }
+          /*
+            Handicap Verticle
+           */
           if (Boolean.TRUE.equals(golf.handicap.vertx.MainVerticle.getEnableHandicap())) {
-            Verticle handicapVerticle = new golf.handicap.vertx.MainVerticle();
-            vertx.deployVerticle(handicapVerticle).subscribe();
+                Verticle handicapVerticle = new golf.handicap.vertx.MainVerticle();
+                vertx.deployVerticle(handicapVerticle).subscribe();
+          }
+          /*
+            Test Java 21 Virtual Threads
+           */
+          if(Boolean.TRUE.equals(config.getBoolean("dodex.virtual.threads"))) {
+            DeploymentOptions options2 = new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD);
+            VirtualThreadServer vts = new VirtualThreadServer();
+            vertx.getDelegate().deployVerticle(vts, options2);
           }
         }).doOnError(err -> {
           logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
               ColorUtilConstants.RESET);
-          promise.fail(err.getCause());
+//          promise.fail(err.getCause());
         }).subscribe();
       } catch (Exception e) {
         logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),

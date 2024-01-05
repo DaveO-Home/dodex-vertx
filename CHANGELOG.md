@@ -1,5 +1,26 @@
 # Changelog
 
+## [v3.2.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.2.0) (2024-01-05)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.1.2..v3.2.0)
+
+* Upgraded to vertx 4.5.1
+* Added "h2" database, supports dodex and the handicap application
+* Made "h2" the default DB - with latest java jdbc-client, sqlite3 no longer returns "generated key"
+* Added a verticle for Java21 Virtual Threads; "localhost:8881/threads" when "dodex.virtual.threads" is set to "true" in "application-conf.json"
+* Made "static" router a little less problematic (removed unnecessary routing)
+* Removed future deprecations from PMD - dodexstart.xml
+* Added "mongodb" for use with "dodex"
+* Organized the db package
+
+## [v3.1.2](https://github.com/DaveO-Home/dodex-vertx/tree/v3.1.2) (2023-11-18)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.1.1..v3.1.2)
+
+* Upgraded to vertx 4.4.6 final
+* Upgraded javascript dependencies
+* Fixed openapi validation and sqlite3 database functions for dodex openapi addon
+
 ## [v3.1.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.1.1) (2023-10-18)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.1.0..v3.1.1)

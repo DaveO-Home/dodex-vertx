@@ -85,7 +85,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
 
     private fun grpcServer() {
         promise.future().onComplete {
-            var service = HandicapIndexService()
+            val service = HandicapIndexService()
             val rpcServer: VertxServer =
                 VertxServerBuilder.forAddress(grpcVertx, "localhost", grpcPort)
                     .addService(service)

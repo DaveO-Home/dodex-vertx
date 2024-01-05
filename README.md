@@ -5,7 +5,7 @@
 
 1. Using Vertx4 @ <https://vertx.io/introduction-to-vertx-and-reactive/>
 2. Java 17 or higher installed with JAVA_HOME set.
-3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.1.1`
+3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.5`
 4. Node with npm javascript package manager installed.
 
 **Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web applicaion requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.
@@ -22,23 +22,25 @@
 8. The Cassandra database has been added via an `Akka` micro-service. See; <https://www.npmjs.com/package/dodex-akka>.
 9. Added Cassandra database to the `React` demo allowing the `login` component to use Cassandra.
 10. See the `Firebase` section for using Google's `Firestore` backend.
+11. Added a verticle for Java21 Virtual Threads test; "localhost:8881/threads" when  "dodex.virtual.threads" is set to "true" in "application-conf.json"
+12. Made "h2" default database.
 
 ### Operation
 
-1. Execute `.\gradlew tasks` to view all tasks.
-2. Execute `.\gradlew shadowJar` to build the production fat jar.
+1. Execute `./gradlew tasks` to view all tasks.
+2. Execute `./gradlew shadowJar` to build the production fat jar.
 3. Execute `java -jar build/libs/dodex-vertx-3.1.0-prod.jar` to start up the production server.
 4. Execute url `http://localhost:8880/dodex` or `.../dodex/bootstrap.html` in a browser. 
    * **Note:** This is a different port and url than development. 
-   * **Note:** The default database on the backend is "Sqlite3", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
-5. Swapping among databases; Use environment variable `DEFAULT_DB` by setting it to either `sqlite3` ,`postgres`, `cubrid`, `mariadb`, `ibmdb2`, `cassandra`, `firebase` or set the default database in `database_config.json`.
+   * **Note:** The default database on the backend is "h2", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
+5. Swapping among databases; Use environment variable `DEFAULT_DB` by setting it to either `sqlite3` ,`postgres`, `cubrid`, `mariadb`, `ibmdb2`, `cassandra`, `firebase`, `mongo` or set the default database in `database_config.json`.
 6. The environment variable `VERTXWEB_ENVIRONMENT` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.
 7. When Dodex-vertx is configured for the Cubrid database, the database must be created using UTF-8. For example `cubrid createdb dodex en_US.utf8`.
 8. Version 1.3.0 adds an auto user clean up process. See `application-conf.json` for configuration. It is turned off by default. Users and messages may be orphaned when clients change a handle when the server is offline.
 
 ## Debug
 
-* Execute `gradlew run -DDEBUG=true` to debug the Vertx Vertical.
+* Execute `gradlew run -DDEBUG=true` to debug the Vertx Verticle.
 * The default port is 5005, see `build.gradle` to change.
 * Tested with VSCode, the `launch.json` =
   
@@ -135,6 +137,24 @@ The Neo4j was tested with the `apoc` install, however the database should work w
 
 Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
 
+### Mongodb
+
+* Uses a separate OpenAPI setup, located in __"..../dmo.fs.db/mongodb"__
+* Configure in __..../src/main/resources/database_config.json__  
+* Make sure the database is setup with something like;  
+```
+          use dodex
+          db.createUser(
+            {
+              user: "dodex",
+              pwd: passwordPrompt(), // or cleartext password
+              roles: [
+                { role: "dbOwner", db: "dodex" },
+              ]
+            }
+          )
+```
+
 ### Dodex Monitoring
 
 #### Getting Started
@@ -165,7 +185,7 @@ Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
 
 * A default javascript client is included in __.../dodex-vertx/src/main/resources/static/group/__. It can be regenerated in __.../dodex-vertx/handicap/src/grpc/client/__ by executing __`npm run group:prod`__.  
 * The group javascript client is in __.../src/grpc/client/js/dodex/groups.js__ and __group.js__.  
-    __Note:__ The client is included in the __Handicap__ application by default.  
+    __Note:__ The client is included in the static directory by default.  
 * See __.../src/main/resources/openapi/groupApi31.yml__ for OpenAPI declarations. The Vert.x implementation generates routes for __.../src/main/java/dmo/fs/router/OpenApiRouter.java__ 
   
 ### Installing in Dodex

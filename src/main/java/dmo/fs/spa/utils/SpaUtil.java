@@ -18,7 +18,7 @@ import io.vertx.core.json.JsonObject;
 
 public class SpaUtil {
     private static String env = "dev";
-    private static String defaultDb = "sqlite3";
+    private static String defaultDb = "h2";
 
     public void await(final Disposable disposable) {
         while (!disposable.isDisposed()) {

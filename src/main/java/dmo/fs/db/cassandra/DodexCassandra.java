@@ -1,7 +1,9 @@
-package dmo.fs.db;
+package dmo.fs.db.cassandra;
 
 import java.sql.SQLException;
 import java.util.List;
+
+import dmo.fs.db.MessageUser;
 import org.modellwerkstatt.javaxbus.EventBus;
 import io.vertx.core.Future;
 import io.vertx.rxjava3.core.Vertx;

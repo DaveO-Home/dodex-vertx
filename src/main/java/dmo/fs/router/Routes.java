@@ -2,6 +2,7 @@ package dmo.fs.router;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.cloud.firestore.Firestore;
+import dmo.fs.db.DbConfiguration;
 import dmo.fs.kafka.KafkaConsumerDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
@@ -27,6 +28,7 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 public class Routes {
   private static final Logger logger = LoggerFactory.getLogger(Routes.class.getName());
@@ -38,6 +40,9 @@ public class Routes {
   Firestore firestore;
   Promise<Router> routerPromise = Promise.promise();
 
+  public Routes(Router router) {
+    this.router = router;
+  }
   public Routes(Vertx vertx, HttpServer server, Integer vertxVersion)
       throws InterruptedException, IOException, SQLException {
     this.vertx = vertx;
@@ -60,7 +65,7 @@ public class Routes {
 
       try {
         setDodexRoute(router);
-      } catch (InterruptedException | IOException | SQLException e) {
+      } catch (InterruptedException | IOException | SQLException | ExecutionException e) {
         e.printStackTrace();
         return;
       }
@@ -129,20 +134,20 @@ public class Routes {
   }
 
   public void setStaticRoute(Router router) {
-    Route staticRoute = router.route("/*");
+    Route staticRoute = router.route();
     StaticHandler staticHandler = StaticHandler.create("static");
     staticHandler.setCachingEnabled(false);
 
-    router.routeWithRegex("/.*\\.html|/.*\\.md|" + "/.*/templates/.*")
-        .produces("text/plain")
-        .produces("text/markdown")
-        .handler(ctx -> {
-          HttpServerResponse response = ctx.response();
-          String acceptableContentType = ctx.getAcceptableContentType();
-          response.putHeader("content-type", acceptableContentType);
-          response.sendFile(ctx.normalizedPath());
-          staticHandler.handle(ctx);
-        });
+//    router.routeWithRegex("/.*\\.html|/.*\\.md|" + "/.*/templates/.*")
+//        .produces("text/plain")
+//        .produces("text/markdown")
+//        .handler(ctx -> {
+//          HttpServerResponse response = ctx.response();
+//          String acceptableContentType = ctx.getAcceptableContentType();
+//          response.putHeader("content-type", acceptableContentType);
+//          response.sendFile(ctx.normalizedPath());
+//          staticHandler.handle(ctx);
+//        });
 
     staticRoute.handler(staticHandler);
     staticRoute.failureHandler(ctx -> {
@@ -187,42 +192,56 @@ public class Routes {
     );
   }
 
-  public void setDodexRoute(Router router) throws InterruptedException, IOException, SQLException {
+  public void setDodexRoute(Router router) throws InterruptedException, IOException, SQLException, ExecutionException {
     DodexUtil du = new DodexUtil();
     String defaultDbName = du.getDefaultDb();
 
-    if ("firebase".equals(defaultDbName)) {
-      try {
-        FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
-        firebaseRouter.setWebSocket(server);
-        firestore = firebaseRouter.getDbf();
-      } catch (Exception ex) {
-        ex.printStackTrace();
-        throw ex;
+    switch (defaultDbName) {
+      case "firebase" -> {
+        try {
+          FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
+          firebaseRouter.setWebSocket(server);
+          firestore = firebaseRouter.getDbf();
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          throw ex;
+        }
       }
-    } else if ("cassandra".equals(defaultDbName)) {
-      try {
-        CassandraRouter cassandraRouter = new CassandraRouter(vertx);
-        cassandraRouter.setWebSocket(server);
-      } catch (Exception ex) {
-        ex.printStackTrace();
-        throw ex;
+      case "cassandra" -> {
+        try {
+          CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+          cassandraRouter.setWebSocket(server);
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          throw ex;
+        }
       }
-    } else if ("neo4j".equals(defaultDbName)) {
-      try {
-        Neo4jRouter neo4jRouter = new Neo4jRouter(vertx);
-        neo4jRouter.setWebSocket(server);
-      } catch (Exception ex) {
-        ex.printStackTrace();
-        throw ex;
+      case "neo4j" -> {
+        try {
+          Neo4jRouter neo4jRouter = new Neo4jRouter(vertx);
+          neo4jRouter.setWebSocket(server);
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          throw ex;
+        }
       }
-    } else {
-      try {
-        DodexRouter dodexRouter = new DodexRouter(vertx);
-        dodexRouter.setWebSocket(server);
-      } catch (Exception ex) {
-        ex.printStackTrace();
-        throw ex;
+      case "mongo" -> {
+        try {
+          MongoRouter mongoRouter = new MongoRouter(vertx);
+          mongoRouter.setWebSocket(server);
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          throw ex;
+        }
+      }
+      case null, default -> {
+        try {
+          DodexRouter dodexRouter = new DodexRouter(vertx);
+          dodexRouter.setWebSocket(server);
+        } catch (Exception ex) {
+          ex.printStackTrace();
+          throw ex;
+        }
       }
     }
   }

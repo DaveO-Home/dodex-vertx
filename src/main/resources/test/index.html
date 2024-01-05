@@ -47,10 +47,12 @@
         for (var i = 0; i < 3; i++) {
           dodex.addCard(content);
         }
+        setTimeout(() => {
         /* Api for user grouping */
         window.groupListener();
         /* Auto display of widget */
         dodex.openDodex();
+        }, 1000);
       });
 
     var content = {

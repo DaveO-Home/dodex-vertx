@@ -1,5 +1,5 @@
 
-package dmo.fs.db;
+package dmo.fs.db.neo4j;
 
 public abstract class DbNeo4j extends DbNeo4jBase implements DodexNeo4j {
 

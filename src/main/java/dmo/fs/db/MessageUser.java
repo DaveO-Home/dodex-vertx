@@ -13,4 +13,6 @@ public interface MessageUser {
     String getPassword();
     String getIp();
     Timestamp getLastLogin();
+    void set_id(String hex);
+    String get_id();
 }

@@ -1,6 +1,6 @@
 {
     "application": "Dodex",
-    "defaultdb": "sqlite3",
+    "defaultdb": "h2",
     "sqlite3": {
         "dev": { 
             "credentials": {
@@ -16,6 +16,30 @@
             "config": {
                 "filename": "/data/sqlite3/dodex.db",
                 "url": "jdbc:sqlite:"
+            }
+        }
+    },
+    "h2": {
+        "dev": {
+            "credentials": {
+                "user": "sa",
+                "password": "sa",
+                "ssl": "false"
+            },
+            "config": {
+                "filename": "file:./testh2G.db",
+                "url": "jdbc:h2:"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "sa",
+                "password": "sa",
+                "ssl": "false"
+            },
+            "config": {
+                "filename": "file:/data/h2/dodexh2G.db",
+                "url": "jdbc:h2:"
             }
         }
     },
@@ -100,8 +124,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "//192.168.1.75:3306",
-                "host2": "192.168.1.75",
+                "host": "//192.168.49.1:3306",
+                "host2": "192.168.49.1",
                 "url": "jdbc:mariadb:",
                 "dbname": "/test",
                 "database": "test",

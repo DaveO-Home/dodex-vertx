@@ -118,8 +118,8 @@ Run these commands from `src/spa-react/devl`. __Note:__ If `gulp` is not install
     * run both `gulp tdd` and `gulp watch` in the same terminal window
 7. `gulp copy`
     * Copy any changed content to the `Vertx` static directory
-    * If `gulp watch` is running the vertical will be redeployed
-    * Manually redepoly the ***Dodex-Vertx*** vertical by touching any `*.java` file in `src/main/java/...`
+    * If `gulp watch` is running the verticle will be redeployed
+    * Manually redepoly the ***Dodex-Vertx*** verticle by touching any `*.java` file in `src/main/java/...`
 8. `gulp lint`
     * Run linting for Javascript, CSS and Bootstrap
 9. `Allure Reporting`

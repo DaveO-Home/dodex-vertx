@@ -77,14 +77,21 @@ const sendMessage = async () => {
                 sendMessage();
             }
         }
+
         if(typeof value.members !== "undefined") {
             for(let index = selectUser.length - 1; index > -1; index--) {
                 selectUser.removeChild(selectUser[index]);
             }
-            for(let index = 0; index < value.members.length; index++) {
+            let members;
+            if(typeof value.members === "string") {
+              members = JSON.parse(value.members);
+            } else {
+                members = value.members;
+            }
+            for(let index = 0; index < members.length; index++) {
                 const option = document.createElement("OPTION");
-                option.text = value.members[index].name;
-                option.value = value.members[index].name;
+                option.text = members[index].name;
+                option.value = members[index].name;
                 selectUser.add(option);
             }
         }

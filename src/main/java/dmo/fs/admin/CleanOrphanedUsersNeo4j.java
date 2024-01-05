@@ -21,7 +21,7 @@ import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import dmo.fs.db.DbNeo4jBase;
+import dmo.fs.db.neo4j.DbNeo4jBase;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
 import dmo.fs.router.Neo4jRouter;

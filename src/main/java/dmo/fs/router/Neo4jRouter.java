@@ -20,7 +20,7 @@ import org.neo4j.driver.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import dmo.fs.admin.CleanOrphanedUsersNeo4j;
-import dmo.fs.db.DodexNeo4j;
+import dmo.fs.db.neo4j.DodexNeo4j;
 import dmo.fs.db.MessageUser;
 import dmo.fs.kafka.KafkaEmitterDodex;
 import dmo.fs.utils.ColorUtilConstants;

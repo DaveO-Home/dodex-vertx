@@ -1,5 +1,8 @@
 
-package dmo.fs.db;
+package dmo.fs.db.db2;
+
+import dmo.fs.db.DbDefinitionBase;
+import dmo.fs.db.DodexDatabase;
 
 public abstract class DbIbmDB2 extends DbDefinitionBase implements DodexDatabase {
     /*

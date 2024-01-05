@@ -1,4 +1,4 @@
-package dmo.fs.db;
+package dmo.fs.db.neo4j;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -11,6 +11,9 @@ import javax.ws.rs.core.Response.Status;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import dmo.fs.db.DbConfiguration;
+import dmo.fs.db.MessageUser;
+import dmo.fs.db.MessageUserImpl;
 import org.neo4j.driver.AuthTokens;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;

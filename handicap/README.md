@@ -10,7 +10,7 @@
 
     * Execute **`./proto protos/handicap`** to generate the **proto3/gRPC** javascript modules. The proto3 configuration is in **./protos/handicap.proto**.
 
-      * Execute either **`npm run esbuild:build`** or **`npm run webpack:build`** to package the javascript development client. The output is located in **handicap/src/main/resources/static**. When making changes to javascript/html/css, simply rerun **`npm run esbuild:build`**, if the vertical is running, it will rebuild. For proto3 changes, rerun **`./proto protos/handicap`** first.
+      * Execute either **`npm run esbuild:build`** or **`npm run webpack:build`** to package the javascript development client. The output is located in **handicap/src/main/resources/static**. When making changes to javascript/html/css, simply rerun **`npm run esbuild:build`**, if the verticle is running, it will rebuild. For proto3 changes, rerun **`./proto protos/handicap`** first.
 
         **Note:**
           * **esbuild** is best for development(very fast) and **webpack** is better for production, e.g. **`npm run webpack:prod`**.
@@ -38,12 +38,12 @@
 
 * The frontend html/gRPC javascript client should display. See operation section on how to use the form.
     
-    **Note:** Only `sqlite3`, `mariadb` and `postgres` support the handicap application. 
+    **Note:** Only `sqlite3`, `h2`, `mariadb` and `postgres` support the handicap application. 
     
-    * The default database is `sqlite3`. To change the default database, execute **`export DEFAULT_DB=mariadb`** or **`export DEFAULT_DB=postgres`**.
+    * The default database is `h2`. To change the default database, execute **`export DEFAULT_DB=mariadb`**, **`export DEFAULT_DB=postgres`** or **`export DEFAULT_DB=sqlite3`**.
     * Gradle 8 configuration can now use jdk 19.
 * Making database changes and using **jooqGenerate**
-  * Set **DEFAULT_DB** to either **sqlite3** or **postgres** ("mariadb" handles booleans and floats differently)
+  * Set **DEFAULT_DB** to either **sqlite3**, **postgres**, **h2** or ("mariadb" handles booleans and floats differently)
   * If using **sqlite3** remove **handicap/dodex_tests.db**(Assumes that DbSqlite3.java has been changed as well as all other used databases)
     * **Note:** In **..../dodex-vertx** directory run for each database, **`find . -name DbSqlite3.java`** to find the db schema
   * Optionally remove **handicap/src/main/kotlin/golf/handicap/generated** directory
@@ -55,7 +55,7 @@
 * execute **`./gradlew clean`** and **`export USE_HANDICAP=true`**
 * Make sure your database configurations are correct; **./src/main/resources/database...**, **./handicap/src/main/resources/database...**, **./handicap/generate/src/main/resources/database...**
 * In **dodex-vertx** execute **`./gradlew shadowJar`** -  **Note:** The default database should be **sqlite3**
-* To start the production vertical, execute **`java -jar build/libs/dodex-vertx-3.1.0-prod.jar`**
+* To start the production verticle, execute **`java -jar build/libs/dodex-vertx-3.1.0-prod.jar`**
 * For the stand alone handicap application execute `java -jar handicap/build/libs/handicap-0.0.1-fat.jar`
 * Production runs on ports, **8880** and **8890**.
 

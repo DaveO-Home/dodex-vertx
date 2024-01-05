@@ -96,14 +96,10 @@ public class DodexRouter {
 
         server.webSocketHandler(ws -> {
 
-            try {
-                String handle = URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"), StandardCharsets.UTF_8.name());
-                logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle, ColorUtilConstants.RESET);
-            } catch (final UnsupportedEncodingException e) {
-                logger.error(LOGFORMAT, ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(), ColorUtilConstants.RESET);
-            }
+          String  handle = URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"), StandardCharsets.UTF_8);
+          logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle, ColorUtilConstants.RESET);
 
-            final DodexUtil dodexUtil = new DodexUtil();
+          final DodexUtil dodexUtil = new DodexUtil();
 
             if (!("/dodex").equals(ws.path())) {
                 ws.reject();
@@ -111,13 +107,9 @@ public class DodexRouter {
                 final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                 final MessageUser messageUser = dodexDatabase.createMessageUser();
                 // final PgPool pgPool = dodexDatabase.getPool4();
-                try {
-                    wsChatSessions.put(ws.remoteAddress().toString(),
-                            URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
-                } catch (final UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                clients.put(ws.remoteAddress().toString(), ws);
+              wsChatSessions.put(ws.remoteAddress().toString(),
+                      URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8));
+              clients.put(ws.remoteAddress().toString(), ws);
                 if (ke != null) {
                     ke.setValue("sessions", clients.size());
                 }
@@ -248,7 +240,7 @@ public class DodexRouter {
                  * websocket.onConnection()
                  */
                 
-                String handle = "";
+                handle = "";
                 String id = "";
                 Map<String, String> query = null;
 

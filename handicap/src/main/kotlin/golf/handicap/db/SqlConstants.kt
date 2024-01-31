@@ -45,19 +45,24 @@ open class SqlConstants {
         @JvmField var create: DSLContext? = null
         @Throws(NullPointerException::class)
         @JvmStatic
-        public fun setQMark(qmark: Boolean) {
+        fun setQMark(qmark: Boolean) {
             this.qmark = qmark
         }
 
         @Throws(SQLException::class)
         @JvmStatic
-        public fun setSqlPool(pool: Pool?) {
+        fun setSqlPool(pool: Pool?) {
             this.pool = pool
+        }
+        @Throws(SQLException::class)
+        @JvmStatic
+        fun getSqlPool(): Pool? {
+            return pool
         }
 
         @Throws(SQLException::class, NullPointerException::class)
         @JvmStatic
-        public fun setDslContext(create: DSLContext?) {
+        fun setDslContext(create: DSLContext?) {
             this.create = create
         }
     }

@@ -47,7 +47,7 @@ version = "0.0.1"
 ext {
   vertxVersion = "4.5.0"
   protoVersion = "3.22.5"
-  grpcVersion = "1.56.0"
+  grpcVersion = "1.61.0"
 }
 def mainVerticleName = "golf.handicap.vertx.MainVerticle"
 def launcherClassName = "io.vertx.core.Launcher"

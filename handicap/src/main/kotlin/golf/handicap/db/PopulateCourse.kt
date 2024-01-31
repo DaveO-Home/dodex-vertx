@@ -10,7 +10,6 @@ import io.grpc.stub.StreamObserver
 import io.vertx.core.Future
 import io.vertx.core.json.JsonObject
 import io.vertx.rxjava3.core.Promise
-import io.vertx.rxjava3.jdbcclient.JDBCPool
 import io.vertx.rxjava3.mysqlclient.MySQLClient
 import io.vertx.rxjava3.sqlclient.Tuple
 import org.jooq.*
@@ -27,7 +26,7 @@ class PopulateCourse : SqlConstants() {
 
         @Throws(SQLException::class)
         @JvmStatic
-        public fun buildSql() {
+        fun buildSql() {
             GETCOURSESBYSTATE =
                 if (qmark) setupCoursesByState().replace(regEx, "?")
                 else setupCoursesByState().replace("\"", "")
@@ -176,9 +175,9 @@ class PopulateCourse : SqlConstants() {
         }
     }
 
-    fun getCourse(courseMap: HashMap<String, Any>): Future<golf.handicap.Course> {
-        val promise: Promise<golf.handicap.Course> = Promise.promise()
-        val course = golf.handicap.Course()
+    fun getCourse(courseMap: HashMap<String, Any>): Future<Course> {
+        val promise: Promise<Course> = Promise.promise()
+        val course = Course()
 
         pool!!
             .rxGetConnection()
@@ -186,9 +185,9 @@ class PopulateCourse : SqlConstants() {
                 val sql = GETCOURSEBYNAME
                 val parameters: Tuple = Tuple.tuple()
 
-                parameters.addString(courseMap.get("courseName") as String)
-                parameters.addString(courseMap.get("country") as String)
-                parameters.addString(courseMap.get("state") as String)
+                parameters.addString(courseMap["courseName"] as String)
+                parameters.addString(courseMap["country"] as String)
+                parameters.addString(courseMap["state"] as String)
                 course.findNextRating()
 
                 conn.preparedQuery(sql)
@@ -206,7 +205,7 @@ class PopulateCourse : SqlConstants() {
                         promise.complete(course)
                     }
                     .subscribe(
-                        { conn.close() },
+                        { conn.close().subscribe() },
                         { err ->
                             LOGGER.severe(
                                 String.format(
@@ -231,19 +230,19 @@ class PopulateCourse : SqlConstants() {
         responseObserver: StreamObserver<HandicapData?>
     ): Future<StreamObserver<HandicapData?>> {
         val promise: Promise<StreamObserver<HandicapData?>> = Promise.promise()
-        val course = golf.handicap.Course()
+        val course = Course()
 
         pool!!
             .rxGetConnection()
             .doOnSuccess { conn ->
-                var sql = GETCOURSEBYTEE //?.uppercase()
+                val sql = GETCOURSEBYTEE //?.uppercase()
                 val parameters: Tuple = Tuple.tuple()
                 var updateTees = true
 
-                parameters.addString(courseMap.get("courseName") as String)
-                parameters.addString(courseMap.get("country") as String)
-                parameters.addString(courseMap.get("state") as String)
-                parameters.addInteger(courseMap.get("tee") as Int)
+                parameters.addString(courseMap["courseName"] as String)
+                parameters.addString(courseMap["country"] as String)
+                parameters.addString(courseMap["state"] as String)
+                parameters.addInteger(courseMap["tee"] as Int)
 
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
@@ -265,17 +264,17 @@ class PopulateCourse : SqlConstants() {
                                 row.getString(6) // "TEE_COLOR")
                             )
 
-                            if ((courseMap.get("rating") as String).equals(row.getFloat(7).toString()) &&
-                                (courseMap.get("slope") as Int).equals(row.getInteger(8)) &&
-                                (courseMap.get("par") as Int).equals(row.getInteger(9)) &&
-                                (courseMap.get("color") as String).equals(row.getString(6))
+                            if ((courseMap["rating"] as String) == row.getFloat(7).toString() &&
+                                (courseMap["slope"] as Int) == row.getInteger(8) &&
+                                (courseMap["par"] as Int) == row.getInteger(9) &&
+                                (courseMap["color"] as String) == row.getString(6)
                             ) {
                                 updateTees = false
                             }
                         }
                         if (rows.size() == 0) {
                             updateTees = false
-                            courseMap.set("status", 2)
+                            courseMap["status"] = 2
                             setCourse(courseMap, responseObserver).onSuccess {
                                 setRating(courseMap, responseObserver).onSuccess { course.resetIterator() }
                             }
@@ -328,7 +327,7 @@ class PopulateCourse : SqlConstants() {
     }
 
     @Throws(SQLException::class, InterruptedException::class)
-    public fun getCourses(
+    fun getCourses(
         course: Course,
         responseObserver: StreamObserver<ListCoursesResponse?>
     ): Future<StreamObserver<ListCoursesResponse?>> {
@@ -339,7 +338,7 @@ class PopulateCourse : SqlConstants() {
             .doOnSuccess { conn ->
                 val parameters: Tuple = Tuple.tuple()
                 parameters.addString(course.courseState)
-                var sql: String? = GETCOURSESBYSTATE
+                val sql: String? = GETCOURSESBYSTATE
                 val coursesBuilder = ListCoursesResponse.newBuilder()
                 var courseBuilder: handicap.grpc.Course.Builder? = null
 
@@ -351,7 +350,7 @@ class PopulateCourse : SqlConstants() {
                     .doOnSuccess { rows ->
                         val ratingTees: Array<Int> = arrayOf(-1, -1, -1, -1, -1)
                         for (row in rows) {
-                            if (courseBuilder == null || row!!.getInteger(0) != courseBuilder!!.getId()) {
+                            if (courseBuilder == null || row!!.getInteger(0) != courseBuilder!!.id) {
                                 if (courseBuilder != null) {
                                     setUndefinedTees(ratingTees, courseBuilder!!)
                                     coursesBuilder.addCourses(courseBuilder)
@@ -381,7 +380,7 @@ class PopulateCourse : SqlConstants() {
                         promise.complete(responseObserver)
                     }
                     .subscribe(
-                        { conn.close() },
+                        { conn.close().subscribe() },
                         { err ->
                             LOGGER.severe(
                                 String.format(
@@ -415,7 +414,7 @@ class PopulateCourse : SqlConstants() {
     }
 
     @Throws(SQLException::class, InterruptedException::class)
-    public fun setCourse(
+    fun setCourse(
         courseMap: HashMap<String, Any>,
         responseObserver: StreamObserver<HandicapData?>
     ): Future<StreamObserver<HandicapData?>> {
@@ -428,32 +427,31 @@ class PopulateCourse : SqlConstants() {
                     .flatMap { conn ->
                         conn.rxBegin().doOnSuccess { tx ->
                             val parameters: Tuple = Tuple.tuple()
-                            parameters.addString(courseMap.get("courseName") as String)
-                            parameters.addString(courseMap.get("country") as String)
-                            parameters.addString(courseMap.get("state") as String)
+                            parameters.addString(courseMap["courseName"] as String)
+                            parameters.addString(courseMap["country"] as String)
+                            parameters.addString(courseMap["state"] as String)
                             conn.preparedQuery(GETCOURSEINSERT)
                                 .rxExecute(parameters)
                                 .doOnSuccess { rows ->
                                     for (row in rows) {
-                                        courseMap.put("courseKey", row.getInteger(0))
+                                        courseMap["courseKey"] = row.getInteger(0)
                                     }
                                     if (DbConfiguration.isUsingSqlite3()) {
-                                        courseMap.put(
-                                            "courseKey",
-                                            rows.property(JDBCPool.GENERATED_KEYS).getInteger(0)
-                                        )
+                                        courseMap["courseKey"] = 0
                                     } else if (DbConfiguration.isUsingMariadb()) {
-                                        courseMap.put("courseKey", rows.property(MySQLClient.LAST_INSERTED_ID));
+                                        courseMap["courseKey"] = rows.property(MySQLClient.LAST_INSERTED_ID)
                                     }
                                     ratingPromise.complete(responseObserver)
-                                    tx.commit()
+                                    tx.commit().subscribe {
+                                        conn.close().subscribe()
+                                    }
                                 }
                                 .doOnError { _ ->
-                                    tx.rollback()
+                                    tx.rollback().subscribe()
                                     ratingPromise.complete(responseObserver)
                                 }
                                 .subscribe(
-                                    { conn.close() },
+                                    {},
                                     { err ->
                                         LOGGER.severe(
                                             String.format(
@@ -488,7 +486,7 @@ class PopulateCourse : SqlConstants() {
     }
 
     @Throws(SQLException::class, InterruptedException::class)
-    public fun setRating(
+    fun setRating(
         courseMap: HashMap<String, Any>,
         responseObserver: StreamObserver<HandicapData?>
     ): Future<StreamObserver<HandicapData?>> {
@@ -496,25 +494,25 @@ class PopulateCourse : SqlConstants() {
 
         getCourse(courseMap).onSuccess { queryedCourse ->
             if (queryedCourse.courseKey > 0) {
-                courseMap.put("courseKey", queryedCourse.courseKey)
+                courseMap["courseKey"] = queryedCourse.courseKey
             }
 
-            if (queryedCourse.courseKey > 0 || courseMap.get("courseKey") as Int > 0) {
+            if (queryedCourse.courseKey > 0 || courseMap["courseKey"] as Int > 0) {
                 pool!!
                     .rxGetConnection()
                     .flatMap { conn ->
                         conn.rxBegin().doOnSuccess { tx ->
                             val parameters: Tuple = Tuple.tuple()
-                            parameters.addInteger(courseMap.get("courseKey") as Int)
-                            parameters.addInteger(courseMap.get("tee") as Int)
-                            parameters.addString(courseMap.get("color") as String)
+                            parameters.addInteger(courseMap["courseKey"] as Int)
+                            parameters.addInteger(courseMap["tee"] as Int)
+                            parameters.addString(courseMap["color"] as String)
                             if (DbConfiguration.isUsingPostgres()) {
-                                parameters.addFloat((courseMap.get("rating") as String).toFloat())
+                                parameters.addFloat((courseMap["rating"] as String).toFloat())
                             } else {
-                                parameters.addString(courseMap.get("rating") as String)
+                                parameters.addString(courseMap["rating"] as String)
                             }
-                            parameters.addInteger(courseMap.get("slope") as Int)
-                            parameters.addInteger(courseMap.get("par") as Int)
+                            parameters.addInteger(courseMap["slope"] as Int)
+                            parameters.addInteger(courseMap["par"] as Int)
                             conn.preparedQuery(GETRATINGINSERT)
                                 .rxExecute(parameters)
                                 .doOnSuccess { _ ->
@@ -526,7 +524,7 @@ class PopulateCourse : SqlConstants() {
                                     ratingPromise.complete(responseObserver)
                                 }
                                 .subscribe(
-                                    { conn.close() },
+                                    { conn.close().subscribe() },
                                     { err ->
                                         LOGGER.severe(
                                             String.format(
@@ -573,31 +571,33 @@ class PopulateCourse : SqlConstants() {
             .flatMap { conn ->
                 conn.rxBegin().doOnSuccess { tx ->
                     val parameters: Tuple = Tuple.tuple()
-                    parameters.addString(courseMap.get("color") as String)
+                    parameters.addString(courseMap["color"] as String)
                     if (DbConfiguration.isUsingPostgres()) {
-                        parameters.addFloat((courseMap.get("rating") as String).toFloat())
+                        parameters.addFloat((courseMap["rating"] as String).toFloat())
                     } else {
-                        parameters.addString(courseMap.get("rating") as String)
+                        parameters.addString(courseMap["rating"] as String)
                     }
-                    parameters.addInteger(courseMap.get("slope") as Int)
-                    parameters.addInteger(courseMap.get("par") as Int)
-                    parameters.addInteger(courseMap.get("seq") as Int)
-                    parameters.addInteger(courseMap.get("tee") as Int)
+                    parameters.addInteger(courseMap["slope"] as Int)
+                    parameters.addInteger(courseMap["par"] as Int)
+                    parameters.addInteger(courseMap["seq"] as Int)
+                    parameters.addInteger(courseMap["tee"] as Int)
 
                     val sql: String? =
                         if (DbConfiguration.isUsingSqlite3()) GETSQLITERATINGUPDATE else GETRATINGUPDATE
                     conn.preparedQuery(sql)
                         .rxExecute(parameters)
                         .doOnSuccess { _ ->
-                            tx.commit()
+                            tx.commit().subscribe {
+                                conn.close().subscribe()
+                            }
                             ratingPromise.complete(responseObserver)
                         }
                         .doOnError { _ ->
-                            tx.rollback()
+                            tx.rollback().subscribe()
                             ratingPromise.complete(responseObserver)
                         }
                         .subscribe(
-                            { conn.close() },
+                            {},
                             { err ->
                                 LOGGER.severe(
                                     String.format(

@@ -109,7 +109,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             request: Command,
             responseObserver: StreamObserver<ListCoursesResponse?>
         ) {
-            val populateCourse: PopulateCourse = PopulateCourse()
+            val populateCourse = PopulateCourse()
             val course: golf.handicap.Course = golf.handicap.Course()
             course.courseState = request.key
 
@@ -119,27 +119,24 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
         }
 
         override fun addRating(request: Command, responseObserver: StreamObserver<HandicapData?>) {
-            val populateCourse: PopulateCourse = PopulateCourse()
-            val mapper: ObjectMapper = ObjectMapper()
+            val populateCourse = PopulateCourse()
+            val mapper = ObjectMapper()
 
             val ratingMap =
                 mapper.readValue(request.json, object : TypeReference<HashMap<String, Any>>() {})
 
-            val color: String? = ratingMap.get("color") as String
-            if (color != null && !color.startsWith("#")) {
+            val color: String = ratingMap["color"] as String
+            if (!color.startsWith("#")) {
                 val rgb: List<String> = color.split("(")[1].split(")")[0].split(",")
-                val hex: String = "%02x"
+                val hex = "%02x"
 
-                ratingMap.put(
-                    "color",
-                    String.format(
-                        "#%s%s%s",
-                        hex.format(rgb[0].trim().toInt()),
-                        hex.format(rgb[1].trim().toInt()),
-                        hex.format(rgb[2].trim().toInt())
-                    )
-                        .uppercase()
+                ratingMap["color"] = String.format(
+                    "#%s%s%s",
+                    hex.format(rgb[0].trim().toInt()),
+                    hex.format(rgb[1].trim().toInt()),
+                    hex.format(rgb[2].trim().toInt())
                 )
+                    .uppercase()
             }
             populateCourse
                 .getCourseWithTee(ratingMap, responseObserver)
@@ -151,19 +148,18 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
         }
 
         override fun addScore(request: Command, responseObserver: StreamObserver<HandicapData?>) {
-            val mapper: ObjectMapper = ObjectMapper()
+            val mapper = ObjectMapper()
             val score = mapper.readValue(request.json, object : TypeReference<golf.handicap.Score>() {})
 
-            val populateScore: PopulateScore = PopulateScore()
+            val populateScore = PopulateScore()
             populateScore
                 .setScore(score, responseObserver)
                 .onSuccess { _ ->
                     val handicap = Handicap()
-
                     handicap
                         .getHandicap(score.golfer!!)
                         .onSuccess { latestTee ->
-                            val newHandicap: Float = latestTee.get("handicap") as Float
+                            val newHandicap: Float = latestTee["handicap"] as Float
                             val slope: Float = latestTee["slope"] as Float
                             val rating: Float = latestTee["rating"] as Float
                             val par: Int = latestTee["par"] as Int
@@ -203,12 +199,12 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             request: HandicapSetup,
             responseObserver: StreamObserver<HandicapData?>
         ) {
-            if ("Test".equals(request.message)) {
+            if ("Test" == request.message) {
                 LOGGER.warning("Got json from Client: " + request.getJson())
             }
 
             var requestJson = JsonObject(request.json)
-            var golfer = requestJson.mapTo(Golfer::class.java)
+            val golfer = requestJson.mapTo(Golfer::class.java)
 
             val cmd = request.cmd
             if (cmd < 0 || cmd > 8) {
@@ -242,7 +238,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
         }
 
         override fun golferScores(request: Command, responseObserver: StreamObserver<HandicapData?>) {
-            val populateScores: PopulateGolferScores = PopulateGolferScores()
+            val populateScores = PopulateGolferScores()
             val requestJson = JsonObject(request.json)
             val golfer = requestJson.mapTo(Golfer::class.java)
             if (request.cmd == 10) {
@@ -269,7 +265,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             request: Command,
             responseObserver: StreamObserver<ListPublicGolfers?>
         ) {
-            val populateGolfer: PopulateGolfer = PopulateGolfer()
+            val populateGolfer = PopulateGolfer()
 
             populateGolfer.getGolfers(responseObserver).onSuccess { responseObserve ->
                 responseObserve.onCompleted()
@@ -277,12 +273,12 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
         }
 
         override fun removeScore(request: Command, responseObserver: StreamObserver<HandicapData?>) {
-            val populateScores: PopulateGolferScores = PopulateGolferScores()
+            val populateScores = PopulateGolferScores()
             val requestJson = JsonObject(request.json)
             val golfer = requestJson.mapTo(Golfer::class.java)
 
             populateScores.removeLastScore(request.key).onSuccess { used ->
-                val handicap: Handicap = Handicap()
+                val handicap = Handicap()
                 handicap.getHandicap(golfer).onSuccess { latestTee ->
                     golfer.handicap = latestTee["handicap"] as Float
                     val jsonObject = JsonObject.mapFrom(golfer)

@@ -44,11 +44,11 @@ version = "3.1.0"
 sourceCompatibility = "21"
 
 ext {
-    vertxVersion = "4.5.1"
+    vertxVersion = "4.5.2"
     junitJupiterEngineVersion = "5.9.3"
     jooqVersion = "3.18.4"
     protoVersion = "3.23.3"
-    grpcVersion = "1.49.2"
+    grpcVersion = "1.61.0"
 }
 
 java {

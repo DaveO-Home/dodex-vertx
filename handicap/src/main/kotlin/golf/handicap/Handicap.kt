@@ -7,6 +7,7 @@ package golf.handicap
 
 import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.db.PopulateGolferScores
+import io.reactivex.rxjava3.observables.GroupedObservable
 import io.vertx.core.Future
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
@@ -19,21 +20,20 @@ import java.util.*
 import java.util.logging.Logger
 
 class Handicap {
-    companion object {
-        private val LOGGER = Logger.getLogger(Handicap::class.java.name)
-    }
+    companion object;
 
+    private val LOGGER = Logger.getLogger(Handicap::class.java.name)
     var dateTime: Date? = null
-    var diffkeys = Array<String>(20, { " " })
+    private var diffkeys = Array(20) { " " }
     var index = intArrayOf(0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 9, 10)
-    var diffScores = FloatArray(20) { -100f }
+    private var diffScores = FloatArray(20) { -100f }
 
     private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")
     var multiple = .96.toFloat()
     var used: MutableMap<String, Used> = HashMap<String, Used>()
     var teeTime: String? = null
     var key: String = String()
-    var usedClass: Used? = null
+    private var usedClass: Used? = null
 
     fun getHandicap(golfer: Golfer): Future<MutableMap<String, Any>> {
         val handicapPromise = Promise.promise<MutableMap<String, Any>>()
@@ -49,14 +49,14 @@ class Handicap {
         var handicap: BigDecimal
         val latestTee: MutableMap<String, Any> = HashMap()
 
-        var handicapData: Future<Map<String, Any?>>? = golferScores.getGolferScores(golfer)
+        val handicapData: Future<Map<String, Any?>>? = golferScores.getGolferScores(golfer)
 
         handicapData!!.onSuccess { map ->
             if (map.isEmpty()) {
-                latestTee.put("handicap", 0.0f)
+                latestTee["handicap"] = 0.0f
                 handicapPromise.complete(latestTee)
             } else {
-                val dataArray: JsonArray = map.get("array") as JsonArray
+                val dataArray: JsonArray = map["array"] as JsonArray
                 val objects = dataArray.iterator()
 
                 var i = 0
@@ -71,10 +71,10 @@ class Handicap {
                         handicapDifferential = averageSlope * difference / slope
                         // Used to calculate Net Score
                         if (i == 0) {
-                            latestTee.put("adjusted", adjusted)
-                            latestTee.put("rating", rating)
-                            latestTee.put("slope", slope)
-                            latestTee.put("par", jsonObject.getInteger("TEE_PAR"))
+                            latestTee["adjusted"] = adjusted
+                            latestTee["rating"] = rating
+                            latestTee["slope"] = slope
+                            latestTee["par"] = jsonObject.getInteger("TEE_PAR")
                         }
 
                         var foundZero = false
@@ -93,7 +93,7 @@ class Handicap {
                         Arrays.sort(diffScores)
 
                         val localDateTime = LocalDateTime.parse(jsonObject.getString("TEE_TIME"))
-                        key = java.lang.Float.toString(handicapDifferential) + '\t' + formatter.format(
+                        key = handicapDifferential.toString() + '\t' + formatter.format(
                             localDateTime
                         )
                         key = if (key.indexOf('.') == 1) "0$key" else key
@@ -116,47 +116,68 @@ class Handicap {
                     var rowsUpdated = 0
                     usedClass = used[diffkeys[19]]
 
-                    golferScores.clearUsed(usedClass!!.pin).onSuccess { count ->
-                        rowsUpdated += count
+                    val pool = golferScores.getSqlPool()
 
-                        var idx = 19
-                        while (idx > -1 && diffkeys[idx] != "") {
-                            usedClass = used[diffkeys[idx]]
-                            if (usedClass != null && usedClass!!.used) {
-                                golferScores.setUsed(usedClass!!.pin, usedClass!!.course!!, usedClass!!.teeTime)
-                                    .onSuccess { usedCount ->
-                                        rowsUpdated += usedCount
-                                    }
-                                    .onFailure { err ->
-                                        LOGGER.severe(
-                                            String.format(
-                                                "%sError Setting Used - %s%s",
-                                                ColorUtilConstants.RED,
-                                                err.message,
-                                                ColorUtilConstants.RESET
+                    pool!!.rxGetConnection().subscribe { connection ->
+                        run {
+                            connection.rxBegin().subscribe()
+
+                            golferScores.clearUsed(connection, usedClass!!.pin).onSuccess { count ->
+                                rowsUpdated += count
+
+                                GroupedObservable.fromIterable(diffkeys.reversed().toMutableList())
+                                    .subscribe { diffKey ->
+                                        usedClass = used[diffKey]
+
+                                        if (usedClass != null && usedClass!!.used && diffKey != "") {
+                                            golferScores.setUsed(
+                                                connection,
+                                                usedClass!!.pin,
+                                                usedClass!!.course!!,
+                                                usedClass!!.teeTime
                                             )
-                                        )
+                                                .onSuccess { usedCount ->
+                                                    rowsUpdated += usedCount
+                                                }
+                                                .onFailure { err ->
+                                                    LOGGER.severe(
+                                                        String.format(
+                                                            "%sError Setting Used - %s%s",
+                                                            ColorUtilConstants.RED,
+                                                            err.message,
+                                                            ColorUtilConstants.RESET
+                                                        )
+                                                    )
+                                                }
+                                        }
                                     }
+                            }.onComplete {
+                                connection.transaction().rxCommit().doFinally {
+                                    connection.close().subscribe()
+                                    latestTee["handicap"] = handicap.toFloat()
+                                    handicapPromise.complete(latestTee)
+                                }.subscribe()
                             }
-                            idx--
-                        }
+                                .onFailure { err ->
+                                    LOGGER.severe(
+                                        String.format(
+                                            "%sError Clearing Used - %s%s",
+                                            ColorUtilConstants.RED,
+                                            err.message,
+                                            ColorUtilConstants.RESET
+                                        )
+                                    )
+                                    connection.transaction().rollback().doFinally {
+                                        connection.close().subscribe()
+                                        latestTee["handicap"] = handicap.toFloat()
+                                        handicapPromise.complete(latestTee)
+                                    }.subscribe()
+                                }
+                        }.onFailure { err -> LOGGER.severe("Error on Clear/Set Used: $err") }
                     }
-                        .onFailure { err ->
-                            LOGGER.severe(
-                                String.format(
-                                    "%sError Clearing Used - %s%s",
-                                    ColorUtilConstants.RED,
-                                    err.message,
-                                    ColorUtilConstants.RESET
-                                )
-                            )
-                        }
-                }
-                latestTee.put("handicap", handicap.toFloat())
-                handicapPromise.complete(latestTee)
+                }.onFailure { err -> LOGGER.severe("Error on setting golfer handicap: $err") }
             }
-        }
-
+        }.onFailure { err -> LOGGER.severe("Error on getting HandicapData: $err") }
         return handicapPromise.future()
     }
 
@@ -175,29 +196,20 @@ class Handicap {
         return BigDecimal(total.toString()).setScale(1, RoundingMode.DOWN)
     }
 
-    private fun setUsed(diffkey: String) {
-        usedClass = used[diffkey]
+    private fun setUsed(diffKey: String) {
+        usedClass = used[diffKey]
         if (usedClass != null) {
             usedClass!!.used = true
-            used[diffkey] = usedClass as Used
+            used[diffKey] = usedClass as Used
         }
     }
 
-    inner class Used(pin: String?, course: Int?, teeTime: String) {
-        var pin: String?
-        var course: Int?
-        var teeTime: String
+    inner class Used(var pin: String?, var course: Int?, var teeTime: String) {
         var used = false
         override fun toString(): String {
             return StringBuffer().append(pin).append(" ").append(course).append(" ")
                 .append(teeTime).append(" ").append(used)
                 .toString()
-        }
-
-        init {
-            this.pin = pin
-            this.course = course
-            this.teeTime = teeTime
         }
     }
 }

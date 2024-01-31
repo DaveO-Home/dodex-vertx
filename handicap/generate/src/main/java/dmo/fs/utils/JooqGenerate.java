@@ -48,14 +48,14 @@ public class JooqGenerate {
           jooqMetaName = "org.jooq.meta.h2.H2Database";
           dbUrl = dbMap.get("url") + dbMap.get("filename") + ";DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE";
         }
-        logger.info("Generate: "+dbUrl + " -- "+jooqMetaName + " -- "+databaseDbname);
+        logger.info("Generate: " + dbUrl + " -- " + jooqMetaName + " -- " + databaseDbname);
         generateJooqObjects(dbUrl, jooqMetaName, databaseDbname);
         System.exit(0);
       });
     } catch (SQLException | IOException | InterruptedException e) {
       e.printStackTrace();
     }
-    
+
     return;
   }
 
@@ -81,10 +81,10 @@ public class JooqGenerate {
                   .withExcludes(
                       "USERS|UNDELIVERED|MESSAGES|SQLITE_SEQUENCE"))
               .withGenerate(new Generate()
-                  .withDeprecated(false)
-              .withSequences(generateSequences)
-              .withDaos(false)
-              // .withEmptyCatalogs(true)
+                      .withDeprecated(false)
+                      .withSequences(generateSequences)
+                      .withDaos(false)
+                  // .withEmptyCatalogs(true)
               )
               .withTarget(new Target()
                   .withPackageName("golf.handicap.generated")

@@ -8,7 +8,7 @@ import handicap.grpc.*
 import io.grpc.stub.StreamObserver
 import io.vertx.core.Future
 import io.vertx.rxjava3.core.Promise
-import io.vertx.rxjava3.jdbcclient.JDBCPool
+import io.vertx.rxjava3.mysqlclient.MySQLClient
 import io.vertx.rxjava3.sqlclient.Tuple
 import org.jooq.*
 import org.jooq.impl.*
@@ -195,19 +195,23 @@ class PopulateScore : SqlConstants() {
                                 conn.preparedQuery(GETSCOREINSERT)
                                     .rxExecute(parameters)
                                     .doOnError { _ ->
-                                        tx.rollback()
-                                        conn.close()
+                                        tx.rollback().subscribe {
+                                            conn.close().subscribe()
+                                        }
                                     }
-                                    .doOnSuccess { rows ->
+                                    .doOnSuccess { _ ->
                                         if (DbConfiguration.isUsingMariadb()) {
                                             score.scoreId = 0
-                                            // rows.property(MySQLClient.LAST_INSERTED_ID).toInt();
                                         } else if (DbConfiguration.isUsingSqlite3()) {
-                                            score.scoreId = rows.property(JDBCPool.GENERATED_KEYS).getInteger(0)
+                                            score.scoreId = 0
                                         }
-                                        tx.commit()
-                                        conn.close()
-                                        updateGolfer(score).onSuccess { promise.complete(responseObserver) }
+                                        tx.commit().subscribe {
+                                            conn.close().subscribe {
+                                                updateGolfer(score).onSuccess {
+                                                    promise.complete(responseObserver)
+                                                }
+                                            }
+                                        }
                                     }
                                     .subscribe(
                                         {},
@@ -243,7 +247,8 @@ class PopulateScore : SqlConstants() {
                     } else {
                         conn.close()
                         updateScore(score).onSuccess {
-                            updateGolfer(score).onSuccess { promise.complete(responseObserver) }
+                            updateGolfer(score).onSuccess {
+                                promise.complete(responseObserver) }
                         }
                     }
                 }
@@ -326,13 +331,16 @@ class PopulateScore : SqlConstants() {
                                 .addInteger(if (score.golfer!!.public) 1 else 0)
                         }
                         parameters.addString(score.golfer!!.pin)
+
                         conn.preparedQuery(GETGOLFERUPDATECHECKED)
                             .rxExecute(parameters)
                             .doOnSuccess { _ ->
-                                tx.commit()
-                                conn.close()
-                                score.golfer!!.message = "Golfer public/overlap updated"
-                                promise.complete(score)
+                                tx.commit().subscribe {
+                                    conn.close().subscribe {
+                                        score.golfer!!.message = "Golfer public/overlap updated"
+                                        promise.complete(score)
+                                    }
+                                }
                             }
                             .doOnError { err: Throwable ->
                                 tx.rollback()

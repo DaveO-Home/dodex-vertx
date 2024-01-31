@@ -19,13 +19,14 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.logging.Logger
 
-class PopulateGolfer() : SqlConstants() {
+class PopulateGolfer : SqlConstants() {
     companion object {
         private val LOGGER = Logger.getLogger(PopulateGolfer::class.java.name)
-//        private val logger = KotlinLogging.logger {}
+
+        //        private val logger = KotlinLogging.logger {}
         @Throws(SQLException::class)
         @JvmStatic
-        public fun buildSql() {
+        fun buildSql() {
             val regEx = "\\$\\d".toRegex()
             GETGOLFER = if (qmark) setupGetGolfer().replace(regEx, "?") else setupGetGolfer()
 
@@ -171,7 +172,7 @@ class PopulateGolfer() : SqlConstants() {
         }
     }
 
-//    @Throws(SQLException::class, InterruptedException::class)
+    //    @Throws(SQLException::class, InterruptedException::class)
     fun getGolfer(golfer: Golfer, cmd: Int): Future<Golfer> {
         val promise: Promise<Golfer> = Promise.promise()
 
@@ -205,8 +206,10 @@ class PopulateGolfer() : SqlConstants() {
                             golfer.handicap = row.getFloat(3) // "HANDICAP")
                             golfer.country = row.getString(4) // "COUNTRY")
                             golfer.state = row.getString(5) // "STATE")
-                            golfer.overlap = if(DbConfiguration.isUsingSqlite3()) row.getInteger(6) == 1 else row.getBoolean(6) // "OVERLAP_YEARS")
-                            golfer.public = if(DbConfiguration.isUsingSqlite3()) row.getInteger(7) == 1 else row.getBoolean(7) // "PUBLIC")
+                            golfer.overlap =
+                                if (DbConfiguration.isUsingSqlite3()) row.getInteger(6) == 1 else row.getBoolean(6) // "OVERLAP_YEARS")
+                            golfer.public =
+                                if (DbConfiguration.isUsingSqlite3()) row.getInteger(7) == 1 else row.getBoolean(7) // "PUBLIC")
 
                             if (DbConfiguration.isUsingMariadb()) {
                                 val zdt: ZonedDateTime =
@@ -283,21 +286,21 @@ class PopulateGolfer() : SqlConstants() {
         val promise: Promise<StreamObserver<ListPublicGolfers?>> = Promise.promise()
 
         pool!!
-            .getConnection()
+            .connection
             .doOnSuccess { conn ->
                 val parameters: Tuple = Tuple.tuple()
                 val golfersBuilder = ListPublicGolfers.newBuilder()
 
                 val sql = GETPUBLICGOLFERS
-//                parameters.addInteger(1)
                 parameters.addBoolean(true)
+
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnSuccess { rows ->
                         var golferBuilder: handicap.grpc.Golfer.Builder?
 
                         for (row in rows) {
-                            var concatName = row!!.getString(0) + ", " + row.getString(1)
+                            val concatName = row!!.getString(0) + ", " + row.getString(1)
                             golferBuilder = handicap.grpc.Golfer.newBuilder()
 
                             golferBuilder.name = concatName
@@ -363,7 +366,7 @@ class PopulateGolfer() : SqlConstants() {
                 parameters.addBoolean(golfer.overlap).addBoolean(golfer.public)
 
                 if (DbConfiguration.isUsingMariadb()) parameters.addValue(ldt)
-                    else parameters.addValue(milliSeconds)
+                else parameters.addValue(milliSeconds)
 
                 val sql: String? = INSERTGOLFER
                 val zdt: ZonedDateTime = ZonedDateTime.of(localDateTime, ZoneId.systemDefault())
@@ -404,7 +407,7 @@ class PopulateGolfer() : SqlConstants() {
 
     private fun updateGolfer(golfer: Golfer, golferClone: Golfer?, cmd: Int): Future<Golfer> {
         val promise: Promise<Golfer> = Promise.promise()
-        var isLogin = cmd == 3 || golferClone?.pin?.length == 0
+        val isLogin = cmd == 3 || golferClone?.pin?.length == 0
 
         pool!!
             .connection
@@ -413,8 +416,8 @@ class PopulateGolfer() : SqlConstants() {
                 val ldt = LocalDateTime.now()
                 val milliSeconds =
                     ZonedDateTime.of(ldt, ZoneId.systemDefault()).toInstant().toEpochMilli()
-                var overlap = if (isLogin) golfer.overlap else golferClone?.overlap
-                var public = if (isLogin) golfer.public else golferClone?.public
+                val overlap = if (isLogin) golfer.overlap else golferClone?.overlap
+                val public = if (isLogin) golfer.public else golferClone?.public
 
                 parameters
                     .addString(if (isLogin) golfer.country else golferClone?.country)

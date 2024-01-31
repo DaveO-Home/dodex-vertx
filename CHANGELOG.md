@@ -1,5 +1,15 @@
 # Changelog
 
+## [v3.2.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.2.1) (2024-02-05)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.2.0..v3.2.1)
+
+* Upgraded to vertx 4.5.2
+* Fixed handicap to correctly update golfer scores with asterisk indicating which scores are used for handicap
+* Upgraded javascript dependencies
+* Fixed postgresql table "net_score" with proper precision
+  * use `ALTER TABLE scores ALTER COLUMN net_score TYPE numeric(4,1)` if table is already defined.
+
 ## [v3.2.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.2.0) (2024-01-05)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.1.2..v3.2.0)

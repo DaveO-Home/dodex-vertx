@@ -94,10 +94,10 @@ public abstract class DbPostgres extends DbDefinitionBase implements DodexDataba
 			"CREATE TABLE IF NOT EXISTS public.SCORES (" +
 					"PIN VARCHAR(8) NOT NULL," +
 					"GROSS_SCORE INTEGER NOT NULL," +
-					"NET_SCORE NUMERIC(3,1)," +
+					"NET_SCORE NUMERIC(4,1)," +
 					"ADJUSTED_SCORE INTEGER NOT NULL," +
 					"TEE_TIME TEXT NOT NULL," +
-					"HANDICAP NUMERIC(3,1)," +
+					"HANDICAP NUMERIC(4,1)," +
 					"COURSE_SEQ INTEGER," +
 					"COURSE_TEES INTEGER," +
 					"USED CHARACTER(1)," +

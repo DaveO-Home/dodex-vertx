@@ -1,7 +1,5 @@
 package golf.handicap.db
 
-// import golf.handicap.Course.key
-
 import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.*
@@ -9,11 +7,12 @@ import golf.handicap.generated.tables.references.COURSE
 import golf.handicap.generated.tables.references.GOLFER
 import golf.handicap.generated.tables.references.RATINGS
 import golf.handicap.generated.tables.references.SCORES
-import io.reactivex.rxjava3.core.Single
 import io.vertx.core.Future
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
 import io.vertx.rxjava3.core.Promise
+import io.vertx.rxjava3.sqlclient.Pool
+import io.vertx.rxjava3.sqlclient.SqlConnection
 import io.vertx.rxjava3.sqlclient.Tuple
 import org.jooq.*
 import org.jooq.impl.*
@@ -34,15 +33,13 @@ class PopulateGolferScores : SqlConstants() {
     private var beginDate: String? = null
     private var endDate: String? = null
     private var maxRows = 20
-    var gettingData = false
-    var beginGolfDate: java.util.Date? = null
-    var endGolfDate: java.util.Date? = null
-    var overlapYears = false
+    private var gettingData = false
+    private var beginGolfDate: java.util.Date? = null
+    private var endGolfDate: java.util.Date? = null
+    private var overlapYears = false
 
     companion object {
         private val LOGGER = Logger.getLogger(PopulateGolferScores::class.java.name)
-
-        //
         private val regEx = "\\$\\d".toRegex()
 
         @Throws(SQLException::class)
@@ -52,7 +49,7 @@ class PopulateGolferScores : SqlConstants() {
                 if (qmark) setupSetUsedUpdate().replace(regEx, "?")
                 else setupSetUsedUpdate().replace("\"", "")
             val dialect = create!!.dsl().dialect().toString()
-            if ("SQLITE".equals(dialect) || "DEFAULT".equals(dialect)) {
+            if ("SQLITE" == dialect || "DEFAULT" == dialect) {
                 GETSETUSEDSQLITEUPDATE =
                     if (qmark) setupSqliteSetUsedUpdate().replace(regEx, "?")
                     else setupSqliteSetUsedUpdate()
@@ -300,8 +297,8 @@ class PopulateGolferScores : SqlConstants() {
     fun setPeriod(year: String) {
         beginDate = "$year-01-01"
         endDate = (year.toInt() + 1).toString() + "-01-01"
-        beginGolfDate = teeDate.parse(beginDate, ParsePosition(0))
-        endGolfDate = teeDate.parse(endDate, ParsePosition(0))
+        beginGolfDate = beginDate?.let { teeDate.parse(it, ParsePosition(0)) }
+        endGolfDate = endDate?.let { teeDate.parse(it, ParsePosition(0)) }
     }
 
     fun useCurrentYearOnly(thisYearOnly: Boolean) {
@@ -316,26 +313,26 @@ class PopulateGolferScores : SqlConstants() {
 
         pool!!
             .rxGetConnection()
-            .flatMapCompletable { conn ->
-                conn.rxBegin().flatMapCompletable { tx ->
+            .subscribe { conn ->
+                conn.rxBegin().subscribe { tx ->
                     var parameters: Tuple = Tuple.tuple()
                     parameters.addFloat(golfer.handicap)
                     parameters.addString(golfer.pin)
 
-                    if (DbConfiguration.isUsingSqlite3()) {
-                        sql = GETHANDICAPSQLITEUPDATE
+                    sql = if (DbConfiguration.isUsingSqlite3()) {
+                        GETHANDICAPSQLITEUPDATE
                     } else {
-                        sql = GETHANDICAPUPDATE
+                        GETHANDICAPUPDATE
                     }
 
                     conn.preparedQuery(sql)
                         .rxExecute(parameters)
                         .doOnSuccess { rows ->
                             rowsUpdated += rows.rowCount()
-                            tx.commit()
+//                            tx.commit().subscribe()
                         }
                         .doOnError { err ->
-                            tx.rollback()
+                            tx.rollback().subscribe()
                             LOGGER.severe(
                                 String.format(
                                     "%sError Updating Handicap - %s%s",
@@ -347,10 +344,13 @@ class PopulateGolferScores : SqlConstants() {
 
                             handicapPromise.complete(0)
                         }
-                        .flatMap {
+                        .compose {
                             val score = golfer.score
                             if (score == null) {
-                                Single.just(0)
+                                conn.close().subscribe {
+                                    handicapPromise.complete(rowsUpdated)
+                                }
+                                it
                             } else {
                                 parameters = Tuple.tuple()
                                 parameters.addFloat(golfer.handicap)
@@ -359,14 +359,19 @@ class PopulateGolferScores : SqlConstants() {
                                 parameters.addString(golfer.pin)
                                 parameters.addString(score.teeTime)
 
-                                if (DbConfiguration.isUsingSqlite3()) {
-                                    sql = GETSCORESSQLITEUPDATE
+                                sql = if (DbConfiguration.isUsingSqlite3()) {
+                                    GETSCORESSQLITEUPDATE
                                 } else {
-                                    sql = GETSCORESUPDATE
+                                    GETSCORESUPDATE
                                 }
                                 conn.preparedQuery(sql)
                                     .rxExecute(parameters)
-                                    .doOnSuccess { rows -> rowsUpdated += rows.rowCount() }
+                                    .doOnSuccess { rows ->
+                                        rowsUpdated += rows.rowCount()
+                                        conn.close().subscribe {
+                                            handicapPromise.complete(rowsUpdated)
+                                        }
+                                    }
                                     .doOnError { err ->
                                         LOGGER.severe(
                                             String.format(
@@ -376,7 +381,8 @@ class PopulateGolferScores : SqlConstants() {
                                                 ColorUtilConstants.RESET
                                             )
                                         )
-                                        tx.rxRollback()
+                                        tx.rxRollback().subscribe()
+                                        handicapPromise.complete(rowsUpdated)
                                     }
                             }
                         }
@@ -389,14 +395,10 @@ class PopulateGolferScores : SqlConstants() {
                                     ColorUtilConstants.RESET
                                 )
                             )
-                        }
-                        .flatMapCompletable { _ ->
-                            tx.commit()
-                            conn.close()
-                        }
+                            handicapPromise.complete(0)
+                        }.subscribe()
                 }
             }
-            .subscribe { handicapPromise.complete(rowsUpdated) }
 
         return handicapPromise.future()
     }
@@ -404,7 +406,7 @@ class PopulateGolferScores : SqlConstants() {
     @Throws(Exception::class)
     fun getGolferScores(golfer: Golfer, rows: Int): Future<Map<String, Any?>>? {
         val oldRows = this.maxRows
-        var golferScores: Promise<Map<String, Any?>>? = Promise.promise()
+        val golferScores: Promise<Map<String, Any?>>? = Promise.promise()
         this.maxRows = rows
         gettingData = true
         getGolferScores(golfer)!!.onSuccess { data ->
@@ -432,7 +434,7 @@ class PopulateGolferScores : SqlConstants() {
                 val maximumRows = " limit $maxRows"
 
                 if (gettingData) {
-                    if (golferPin == null || golferPin.length == 0) {
+                    if (golferPin.isNullOrEmpty()) {
                         parameters.addString(golfer.firstName)
                         parameters.addString(golfer.lastName)
                         sql = GETGOLFERPUBLICDATA + maximumRows
@@ -451,15 +453,14 @@ class PopulateGolferScores : SqlConstants() {
                     .rxExecute(parameters)
                     .doOnSuccess { rows ->
                         val columns = rows.columnsNames().size
-                        var x = 0
                         var y: Int
-                        val tableArray: JsonArray = JsonArray()
+                        val tableArray = JsonArray()
 
                         for (row in rows) {
                             y = 0
                             val rowObject = JsonObject()
                             while (y < columns) {
-                                val name = row.getColumnName(y).uppercase();
+                                val name = row.getColumnName(y).uppercase()
 
                                 if ("NET_SCORE" == name || "HANDICAP" == name) {
                                     rowObject.put(
@@ -472,13 +473,12 @@ class PopulateGolferScores : SqlConstants() {
                                     rowObject.put(name, row.getValue(y++))
                                 }
                             }
-                            x++
                             tableArray.add(rowObject)
                         }
 
                         val tableMap: MutableMap<String, Any> = HashMap()
                         if (tableArray.size() != 0) {
-                            tableMap.put("array", tableArray)
+                            tableMap["array"] = tableArray
                         }
                         scoresPromise.complete(tableMap)
                     }
@@ -503,124 +503,104 @@ class PopulateGolferScores : SqlConstants() {
     }
 
     @Throws(Exception::class)
-    fun setUsed(pin: String?, course: Int, teeTime: String): Future<Int> {
+    fun setUsed(conn: SqlConnection, pin: String?, course: Int, teeTime: String): Future<Int> {
         val usedPromise: Promise<Int> = Promise.promise()
-        var count: Int = 0
+        var count = 0
 
-        pool!!
-            .rxGetConnection()
-            .doOnSuccess { conn ->
-                conn.rxBegin()
-                    .flatMap { tx ->
-                        var sql: String?
-                        val parameters: Tuple = Tuple.tuple()
-                        parameters.addString("*")
-                        parameters.addString(pin)
-                        parameters.addInteger(course)
-                        parameters.addString(teeTime)
+        val parameters: Tuple = Tuple.tuple()
+        parameters.addString("*")
+        parameters.addString(pin)
+        parameters.addInteger(course)
+        parameters.addString(teeTime)
 
-                        if (DbConfiguration.isUsingSqlite3()) {
-                            sql = GETSETUSEDSQLITEUPDATE
-                        } else {
-                            sql = GETSETUSEDUPDATE
-                        }
+        val sql: String? = if (DbConfiguration.isUsingSqlite3()) {
+            GETSETUSEDSQLITEUPDATE
+        } else {
+            GETSETUSEDUPDATE
+        }
 
-                        conn.preparedQuery(sql)
-                            .rxExecute(parameters)
-                            .doOnSuccess { rows ->
-                                count += rows.rowCount()
-                                tx.commit()
-                                conn.close()
-                                usedPromise.complete(count)
-                            }
-                            .doOnError { _ ->
-                                usedPromise.complete(count)
-                                conn.close()
-                                LOGGER.warning(
-                                    String.format(
-                                        "Used Parameters/Sql: %s %s",
-                                        parameters.deepToString(),
-                                        sql
-                                    )
-                                )
-                            }
-                    }
-                    .subscribe(
-                        {},
-                        { err ->
-                            LOGGER.severe(
-                                String.format(
-                                    "%sError Updating Used - %s%s %s",
-                                    ColorUtilConstants.RED,
-                                    err.message,
-                                    ColorUtilConstants.RESET,
-                                    err.stackTraceToString()
-                                )
-                            )
-                        }
-                    )
+        conn.preparedQuery(sql)
+            .rxExecute(parameters)
+            .doOnSuccess { rows ->
+                count += rows.rowCount()
+                usedPromise.complete(count)
             }
-            .subscribe()
+            .doOnError { _ ->
+                usedPromise.complete(count)
+                LOGGER.warning(
+                    String.format(
+                        "Used Parameters/Sql: %s %s",
+                        parameters.deepToString(),
+                        sql
+                    )
+                )
+            }
+            .subscribe(
+                {},
+                { err ->
+                    LOGGER.severe(
+                        String.format(
+                            "%sError Updating Used - %s%s %s",
+                            ColorUtilConstants.RED,
+                            err.message,
+                            ColorUtilConstants.RESET,
+                            err.stackTraceToString()
+                        )
+                    )
+                }
+            )
 
         return usedPromise.future()
     }
 
     @Throws(Exception::class)
-    fun clearUsed(pin: String?): Future<Int> {
+    fun clearUsed(connection: SqlConnection, pin: String?): Future<Int> {
         val usedPromise: Promise<Int> = Promise.promise()
-        var count: Int = 0
-        pool!!
-            .rxGetConnection()
-            .doOnSuccess { conn ->
-                conn.rxBegin()
-                    .flatMap { tx ->
-                        var sql: String?
-                        val parameters: Tuple = Tuple.tuple()
-                        parameters.addString(null)
+        var count = 0
+        val parameters: Tuple = Tuple.tuple()
+        parameters.addString(null)
 
-                        if (DbConfiguration.isUsingSqlite3()) {
-                            sql = GETRESETUSEDSQLITEUPDATE
-                        } else {
-                            sql = GETRESETUSEDUPDATE
-                        }
-                        parameters.addString(pin)
-                        parameters.addString("*")
+        val sql: String? = if (DbConfiguration.isUsingSqlite3()) {
+            GETRESETUSEDSQLITEUPDATE
+        } else {
+            GETRESETUSEDUPDATE
+        }
+        parameters.addString(pin)
+        parameters.addString("*")
 
-                        conn.preparedQuery(sql)
-                            .rxExecute(parameters)
-                            .doOnSuccess { rows ->
-                                count += rows.rowCount()
-                                tx.commit()
-                                conn.close()
-                                usedPromise.complete(count)
-                            }
-                            .doOnError { _ ->
-                                usedPromise.complete(count)
-                                conn.close()
-                            }
-                    }
-                    .subscribe(
-                        {},
-                        { err ->
-                            LOGGER.severe(
-                                String.format(
-                                    "%sError Cleaning Used - %s%s",
-                                    ColorUtilConstants.RED,
-                                    err.message,
-                                    ColorUtilConstants.RESET
-                                )
-                            )
-                        }
-                    )
+        connection.preparedQuery(sql)
+            .rxExecute(parameters)
+            .doOnSuccess { rows ->
+                count += rows.rowCount()
+                usedPromise.complete(count)
             }
-            .subscribe()
+            .doOnError { _ ->
+                connection.transaction().rollback().subscribe {
+                    connection.close().subscribe()
+                    usedPromise.complete(count)
+                }
+            }.subscribe(
+                {},
+                { err ->
+                    LOGGER.severe(
+                        String.format(
+                            "%sError Cleaning Used - %s%s",
+                            ColorUtilConstants.RED,
+                            err.message,
+                            ColorUtilConstants.RESET
+                        )
+                    )
+                    usedPromise.complete(count)
+                }
+            )
+
         return usedPromise.future()
     }
 
     @Throws(Exception::class)
     fun removeLastScore(golferPIN: String?): Future<String> {
         val usedPromise: Promise<String> = Promise.promise()
-        var count: Int = 0
+        var count = 0
 
         pool!!
             .rxGetConnection()
@@ -690,6 +670,10 @@ class PopulateGolferScores : SqlConstants() {
             .subscribe()
 
         return usedPromise.future()
+    }
+
+    fun getSqlPool(): Pool? {
+        return pool
     }
 
     init {

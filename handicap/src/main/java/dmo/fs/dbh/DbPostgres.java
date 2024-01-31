@@ -92,7 +92,7 @@ public abstract class DbPostgres extends DbDefinitionBase implements HandicapDat
 				"NET_SCORE NUMERIC(3,1)," +
 				"ADJUSTED_SCORE INTEGER NOT NULL," +
 				"TEE_TIME TEXT NOT NULL," +
-				"HANDICAP NUMERIC(3,1)," +
+				"HANDICAP NUMERIC(4,1)," +
 				"COURSE_SEQ INTEGER," +
 				"COURSE_TEES INTEGER," +
 				"USED CHARACTER(1)," +

@@ -9,6 +9,8 @@ import golf.handicap.routes.HandicapRoutes
 import io.vertx.core.Promise
 import io.vertx.core.http.HttpServerOptions
 import io.vertx.core.json.JsonObject
+import io.vertx.grpc.server.GrpcServer
+import io.vertx.grpc.server.GrpcServiceBridge
 import io.vertx.rxjava3.core.AbstractVerticle
 import io.vertx.rxjava3.core.Vertx
 import io.vertx.rxjava3.ext.web.Router
@@ -16,9 +18,9 @@ import java.io.IOException
 import java.util.logging.LogManager
 import java.util.logging.Logger
 
-class MainVerticle : AbstractVerticle() {
+class HandicapGrpcServer : AbstractVerticle() {
     companion object {
-        private val LOGGER = Logger.getLogger(MainVerticle::class.java.name)
+        private val LOGGER = Logger.getLogger(GrpcServer::class.java.name)
         var port = 8888
         private var enableHandicap: Boolean?
         var enableHandicapAdmin: Boolean?
@@ -26,7 +28,7 @@ class MainVerticle : AbstractVerticle() {
 
         @Throws(IOException::class)
         private fun setupLogging() {
-            MainVerticle::class.java.getResourceAsStream("/vertx-default-jul-logging.properties").use { f
+            GrpcServer::class.java.getResourceAsStream("/vertx-default-jul-logging.properties").use { f
                 ->
                 LogManager.getLogManager().readConfiguration(f)
             }
@@ -47,8 +49,6 @@ class MainVerticle : AbstractVerticle() {
         }
 
         init {
-//            setupLogging()
-
             config = Vertx.currentContext().config()
             val appConfig = getAlternateConfig()
 
@@ -74,28 +74,29 @@ class MainVerticle : AbstractVerticle() {
             enableHandicap =
                 if(System.getProperty("USE_HANDICAP") != null) "true" == System.getProperty("USE_HANDICAP")
                 else enableHandicap
-
             if (useHandicap || "false" == System.getenv("USE_HANDICAP")) {
                 enableHandicap = useHandicap
             }
-            if(true != appConfig.getBoolean("grpc.server")) {
+
+            if(true != appConfig.getBoolean("grpc.server") || appConfig.getBoolean("grpc.server") == null) {
                 var useGrpcServer =
-                    if (System.getenv("GRPC_SERVER") != null) "true" == System.getProperty("GRPC_SERVER")
+                    if (System.getenv("GRPC_SERVER") != null) "true" == System.getenv("GRPC_SERVER")
                     else false
                 useGrpcServer =
-                    if (System.getenv("GRPC_SERVER") != null) "true" == System.getenv("GRPC_SERVER")
+                    if (System.getenv("GRPC_SERVER") != null) "true" == System.getProperty("GRPC_SERVER")
                     else useGrpcServer
+
                 if (enableHandicap!! && !useGrpcServer) {
                     LOGGER.warning("Initializing Handicap Verticle")
                 }
             }
         }
 
-        fun getAlternateConfig(): JsonObject {
+        private fun getAlternateConfig(): JsonObject {
             val jsonMapper = ObjectMapper()
             var node: JsonNode?
 
-            MainVerticle::class.java.getResourceAsStream("/application-conf.json").use { inputStream ->
+            GrpcServer::class.java.getResourceAsStream("/application-conf.json").use { inputStream ->
                 node = jsonMapper.readTree(inputStream)
             }
 
@@ -120,18 +121,22 @@ class MainVerticle : AbstractVerticle() {
     val grpcPromise: Promise<Void> = Promise.promise()
     routes.setRoutePromise(grpcPromise)
 
-    vertx
+    val grpcServer: GrpcServer = GrpcServer.server(vertx.delegate)
+    GrpcServiceBridge
+        .bridge(GrpcRoutes.HandicapIndexService())
+        .bind(grpcServer)
+
+    vertx.delegate
         .createHttpServer(HttpServerOptions().setLogActivity(true))
-        .requestHandler(router)
-        .rxListen(port)
-        .doOnSuccess {
+        .requestHandler(grpcServer).requestHandler(router.delegate)
+        .listen(port)
+        .onSuccess {
           startPromise.complete()
           if (enableHandicap!!) {
             grpcPromise.complete()
             LOGGER.warning(String.format("%sHandicap Started on port: %s%s",
                 ColorUtilConstants.YELLOW, port, ColorUtilConstants.RESET))
           }
-        }
-        .subscribe({}, { err -> LOGGER.severe(err.message) })
+        }.onFailure { err -> LOGGER.severe(err.message) }
   }
 }

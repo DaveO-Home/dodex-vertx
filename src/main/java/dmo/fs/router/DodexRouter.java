@@ -76,7 +76,7 @@ public class DodexRouter {
         if (context.isPresent()) {
             final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
             try {
-                final JsonObject config = jsonObject.isPresent() ? jsonObject.get() : new JsonObject();
+                final JsonObject config = jsonObject.orElseGet(JsonObject::new);
                 final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
                 if (runClean.isPresent() && runClean.get()) {
                     final CleanOrphanedUsers clean = new CleanOrphanedUsers();
@@ -145,7 +145,7 @@ public class DodexRouter {
                         promise.complete(-1L);
                         Future<Long> deleted = null;
 
-                        if (command[0].length() > 0 && ";removeuser".equals(command[0])) {
+                        if (!command[0].isEmpty() && ";removeuser".equals(command[0])) {
                             try {
                                 deleted = dodexDatabase.deleteUser(ws, messageUser);
                             } catch (InterruptedException | SQLException e) {
@@ -159,7 +159,7 @@ public class DodexRouter {
                         if (deleted != null) {
                             deleted.onSuccess(handler1 -> {
                                 String selectedUsers = "";
-                                if (computedMessage[0].length() > 0) {
+                                if (!computedMessage[0].isEmpty()) {
                                     // private users to send message
                                     selectedUsers = returnObject.get("selectedUsers");
                                     final Set<String> websockets = clients.keySet();
@@ -173,7 +173,7 @@ public class DodexRouter {
                                                 query = ParseQueryUtilHelper
                                                         .getQueryMap(wsChatSessions.get(webSocket.remoteAddress().toString()));
                                                 final String handle = query.get("handle");
-                                                if (selectedUsers.length() == 0 && command[0].length() == 0) {
+                                                if (selectedUsers.isEmpty() && command[0].isEmpty()) {
                                                     webSocket.writeTextMessage(
                                                             messageUser.getName() + ": " + computedMessage[0]);
                                                     // private message
@@ -190,12 +190,12 @@ public class DodexRouter {
                                                     onlineUsers.add(handle);
                                                 }
                                             } else {
-                                                if (selectedUsers.length() == 0 && command[0].length() > 0) {
+                                                if (selectedUsers.isEmpty() && !command[0].isEmpty()) {
                                                     ws.writeTextMessage("Private user not selected");
                                                 } else {
                                                     ws.writeTextMessage("ok");
                                                     if (ke != null) {
-                                                        if (selectedUsers.length() > 0) {
+                                                        if (!selectedUsers.isEmpty()) {
                                                             ke.setValue("private", 1);
                                                         } else {
                                                             ke.setValue(1); // broadcast
@@ -208,7 +208,7 @@ public class DodexRouter {
                                 }
 
                                 // calculate difference between selected and online users
-                                if (selectedUsers.length() > 0) {
+                                if (!selectedUsers.isEmpty()) {
                                     final List<String> selected = Arrays.asList(selectedUsers.split(","));
                                     final List<String> disconnectedUsers = selected.stream()
                                             .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
@@ -239,17 +239,15 @@ public class DodexRouter {
                 /*
                  * websocket.onConnection()
                  */
-                
-                handle = "";
-                String id = "";
-                Map<String, String> query = null;
+                String id;
+                Map<String, String> query;
 
                 query = ParseQueryUtilHelper.getQueryMap(wsChatSessions.get(ws.remoteAddress().toString()));
 
-                handle = query.get("handle");
+                String userHandle = query.get("handle");
                 id = query.get("id");
 
-                messageUser.setName(handle);
+                messageUser.setName(userHandle);
                 messageUser.setPassword(id);
                 messageUser.setIp(ws.remoteAddress().toString());
 

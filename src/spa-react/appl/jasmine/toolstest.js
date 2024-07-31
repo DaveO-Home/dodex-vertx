@@ -45,10 +45,10 @@ export default function (Tools, Helpers, React, timer) {
     }, 3000);
 
         it("setup and click events executed.", done =>  {
-            const numbers = timer(50, 50);
+            const numbers = timer(100, 50);
             const observable = numbers.subscribe(timer => {
                 afterValue = tools.find("tbody").find("tr:nth-child(1)").find("td:nth-child(2)").text();
-                if (afterValue !== beforeValue || timer === 50) {
+                if (afterValue !== beforeValue || timer === 100) {
                     newReduxValue = $("#tools-state").text().split(" ", 1);
                     observable.unsubscribe();
                     done();

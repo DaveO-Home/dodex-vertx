@@ -9,7 +9,7 @@ import io.vertx.core.net.SocketAddress
 import io.vertx.grpc.*
 import io.vertx.grpc.client.*
 import io.vertx.junit5.VertxExtension
-import io.vertx.kotlin.coroutines.await
+import io.vertx.kotlin.coroutines.coAwait
 import io.vertx.kotlin.coroutines.dispatcher
 import io.vertx.rxjava3.core.Vertx
 import kotlinx.coroutines.runBlocking
@@ -64,10 +64,10 @@ class AppTest {
                                             err
                                     ) // execute "gradlew test --rerun --info" to get output
                                 }
-                                .await()
+                                .coAwait()
                 request.send()
                 // val req = request.await()
-                val responseJson = request!!.response().result().body().await()
+                val responseJson = request!!.response().result().body().coAwait()
                 request.end()
                 val data: String = responseJson.toString()
                 assertNotEquals("", data)
@@ -113,7 +113,7 @@ class AppTest {
                             throw Exception(fail.message)
                         }
                         .onSuccess { requestMade = true }
-                        .await()
+                        .coAwait()
 
                 assertTrue(requestMade, "gRpc request made")
             }
@@ -158,7 +158,7 @@ class AppTest {
                     .onFailure { err ->
                             println("Error on client Response: " + err.message)
                         }
-                    .await()
+                    .coAwait()
 
                 assertTrue(responseMade, "gRpc response from server")
                 assertEquals(3, cmd, "Returned cmd value")

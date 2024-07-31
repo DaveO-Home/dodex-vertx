@@ -1,0 +1,102 @@
+# Save the output of this file and use kubectl create -f to import
+# it into Kubernetes.
+#
+# Created with podman-4.3.1
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    io.kubernetes.cri-o.ContainerType/dodex-vertx: container
+    io.kubernetes.cri-o.TTY/dodex-vertx: "true"
+    io.podman.annotations.autoremove/dodex-vertx: "FALSE"
+    io.podman.annotations.init/dodex-vertx: "true"
+    io.podman.annotations.privileged/dodex-vertx: "FALSE"
+    io.podman.annotations.publish-all/dodex-vertx: "FALSE"
+    creationTimestamp: "2023-03-15T17:14:30Z"
+  name: vertx-deploy
+  labels:
+    app: vertx-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vertx-app
+  template:
+    metadata:
+      labels:
+        app: vertx-app
+    spec:
+      containers:
+        - name: dodex-vertx
+          image: dufferdo2/dodex-vertx:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DEFAULT_DB
+              value: "mariadb"  # sqlite3 or postgres or mariadb
+            - name: USE_HANDICAP
+              value: "true"
+            - name: storage__root_directory
+              value: /data/sqlite3
+          ports:
+            - containerPort: 8070
+              hostPort: 8070
+            - containerPort: 8880
+              hostPort: 8880
+          volumeMounts:
+            - mountPath: /data/sqlite3
+              name: vertx-storage
+          securityContext:
+            capabilities:
+              drop:
+              - CAP_MKNOD
+              - CAP_NET_RAW
+              - CAP_AUDIT_WRITE
+          tty: true
+          resources:  # if there are problems, reduce these
+            limits:
+              memory: 512mi # .5 gig
+              cpu: 1000m   # 1 cpu
+      volumes:
+        - name: vertx-storage
+          persistentVolumeClaim:
+            claimName: vertx-pvc
+      enableServiceLinks: true
+      hostname: vertx-pod
+      restartPolicy: Always
+status: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vertx-service
+  labels:
+    app: vertx-app
+spec:
+  selector:
+    app: vertx-app
+  type: NodePort
+  ports:
+    - port: 8880
+      nodePort: 30080
+      targetPort: 8880
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vertx-grpc
+  labels:
+    app: vertx-app
+spec:
+  selector:
+    app: vertx-app
+  type: NodePort
+  ports:
+    - port: 8070
+      nodePort: 30070
+      targetPort: 8070
+      protocol: TCP
+      name: http

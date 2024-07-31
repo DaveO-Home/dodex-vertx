@@ -1,4 +1,10 @@
 # Ignore Gradle project-specific cache directory
+src/main/resources/META-INF/resources/dist
+csize
+*.jar
+bin
+handicap/bin/
+handicap/generate/bin
 .project
 .settings
 .idea
@@ -16,6 +22,7 @@ allure*
 my*
 dodexvmX*
 src/main/resources/static/dist*
+src/main/resources/static/*.jpg
 handicap/src/main/resources/static/dist*
 jsoneditor-icons-STGDAB4I.svg
 src/dist*

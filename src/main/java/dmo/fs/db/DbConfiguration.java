@@ -7,7 +7,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dmo.fs.db.cassandra.DodexCassandra;
-import dmo.fs.db.cassandra.DodexDatabaseCassandra;
+import dmo.fs.db.cassandra.DodexDbCassandra;
 import dmo.fs.db.cubrid.DodexDatabaseCubrid;
 import dmo.fs.db.db2.DodexDatabaseIbmDB2;
 import dmo.fs.db.firebase.DodexDatabaseFirebase;
@@ -120,7 +120,7 @@ public abstract class DbConfiguration {
           isUsingH2 = true;
       } else if (defaultDb.equals(DbTypes.CASSANDRA.db)) {
           dodexCassandra =
-                  dodexCassandra == null ? new DodexDatabaseCassandra() : dodexCassandra;
+                  dodexCassandra == null ? new DodexDbCassandra() : dodexCassandra;
           isUsingCassandra = true;
           return (T) dodexCassandra;
       } else if (defaultDb.equals(DbTypes.FIREBASE.db)) {
@@ -165,7 +165,7 @@ public abstract class DbConfiguration {
           isUsingH2 = true;
       } else if (defaultDb.equals(DbTypes.CASSANDRA.db)) {
           dodexCassandra = dodexCassandra == null
-                  ? new DodexDatabaseCassandra(overrideMap, overrideProps)
+                  ? new DodexDbCassandra(overrideMap, overrideProps)
                   : dodexCassandra;
           isUsingCassandra = true;
           return (T) dodexCassandra;

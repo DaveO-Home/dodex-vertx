@@ -432,7 +432,7 @@ public abstract class DbDefinitionBase {
 
       String sql = DbConfiguration.isUsingIbmDB2()
           || DbConfiguration.isUsingSqlite3()
-          || DbConfiguration.isUsingMariadb()
+//          || DbConfiguration.isUsingMariadb()
           || DbConfiguration.isUsingH2() ? getSqliteUpdateUser() : getUpdateUser();
 
       conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {

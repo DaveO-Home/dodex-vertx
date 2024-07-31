@@ -14,7 +14,7 @@
             "credentials": {
             },
             "config": {
-                "filename": "/data/sqlite3/dodex.db",
+                "filename": "/data/dodex.db",
                 "url": "jdbc:sqlite:"
             }
         }
@@ -38,7 +38,7 @@
                 "ssl": "false"
             },
             "config": {
-                "filename": "file:/data/h2/dodexh2G.db",
+                "filename": "file:/data/dodexh2G.db",
                 "url": "jdbc:h2:"
             }
         }
@@ -51,8 +51,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "//192.168.49.1",
-                "host2": "192.168.49.1",
+                "host": "//0.0.0.0",
+                "host2": "0.0.0.0",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
                 "dbname": "/dodex",
@@ -66,8 +66,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "//192.168.49.1",
-                "host2": "192.168.49.1",
+                "host": "//0.0.0.0",
+                "host2": "0.0.0.0",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
                 "dbname": "/dodex",

@@ -302,11 +302,11 @@ public abstract class SqlBuilder {
         pool.rxGetConnection().doOnSuccess(conn -> {
             Timestamp timeStamp = new Timestamp(new Date().getTime());
             OffsetDateTime time = OffsetDateTime.now();
-            Long date = new Date().getTime();
+            long date = new Date().getTime();
             String sql = getUpdateLogin();
             LocalDateTime lTime = LocalDateTime.now();
 
-            Object dateTime = DbConfiguration.isUsingIbmDB2() ? lTime
+            Object dateTime = DbConfiguration.isUsingIbmDB2() || DbConfiguration.isUsingMariadb() ? lTime
                     : DbConfiguration.isUsingSqlite3() ? date
                             : DbConfiguration.isUsingCubrid() ? timeStamp : time;
 
@@ -321,12 +321,12 @@ public abstract class SqlBuilder {
                     conn.close();
                     promise.complete(rows.rowCount());
                 }).doOnError(err -> {
-                    logger.error(String.format("%sError Updating login: %s%s",
+                    logger.error(String.format("%sError Spa Updating login: %s%s",
                             ColorUtilConstants.RED, err, ColorUtilConstants.RESET));
                 }).subscribe(rows -> {
                     //
                 }, err -> {
-                    logger.error(String.format("%sError Updating login: %s%s",
+                    logger.error(String.format("%sError Spa Updating login: %s%s",
                             ColorUtilConstants.RED, err, ColorUtilConstants.RESET));
                     err.printStackTrace();
                     conn.close();

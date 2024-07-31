@@ -209,8 +209,13 @@ public class Routes {
       }
       case "cassandra" -> {
         try {
-          CassandraRouter cassandraRouter = new CassandraRouter(vertx);
-          cassandraRouter.setWebSocket(server);
+          if("true".equals(Server.getUseMqtt())) {
+            CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+            cassandraRouter.setWebSocket(server);
+          } else {
+            CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+            cassandraRouter.setWebSocket(server);
+          }
         } catch (Exception ex) {
           ex.printStackTrace();
           throw ex;

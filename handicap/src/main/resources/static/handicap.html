@@ -1,50 +1,47 @@
-<!DOCTYPE html>
-<html lang=en>
-
-<head>
-  <meta charset=UTF-8>
-  <meta name=viewport content="width=device-width,initial-scale=1">
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Golf Handicap Index</title>
-  <link rel=icon href=./favicon.ico>
-  <script async src="https://srv1.weatherwidget.org/js/?id=ww_389965eee721b"></script>
-<script defer=defer src=./dist/runtime.b2baef672025f27a030a.js></script><script defer=defer src=./dist/288.63a796d10eb95eb6efc2.js></script><script defer=defer src=./dist/main.56f7cc90f5fe34326d4a.js></script><link href=./dist/288.ce66158e977776e33ac3.css rel=stylesheet><link href=./dist/main.fe395884910eb8dcb3f3.css rel=stylesheet></head>
+  <link rel="icon" href="./favicon.ico">
+  <script async="" src="https://srv1.weatherwidget.org/js/?id=ww_389965eee721b"></script>
+<link rel="stylesheet" href="dist/main-QW5X5VWX.css"></head>
 
 <body>
   <div class="container mt-5 w-7-c fs-15">
-    <div class=nav-item>
-      <span class=dodex--open>
-        <img src=./dodex_g.ico>
+    <div class="nav-item">
+      <span class="dodex--open">
+        <img src="./dodex_g.ico">
       </span>
     </div>
-    <ul class="m-0 nav nav-fill nav-justified nav-tabs" id=myTab role=tablist>
-      <li class=nav-item role=presentation>
-        <button class="active nav-link" id=handicap-tab data-bs-toggle=tab data-bs-target=#handicap-page type=button role=tab aria-controls=handicap-page aria-selected=true> <i class="fa-solid fa-golf-ball-tee"></i>
+    <ul class="m-0 nav nav-fill nav-justified nav-tabs" id="myTab" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="active nav-link" id="handicap-tab" data-bs-toggle="tab" data-bs-target="#handicap-page" type="button" role="tab" aria-controls="handicap-page" aria-selected="true"> <i class="fa-solid fa-golf-ball-tee"></i>
           Handicap
         </button>
       </li>
-      <li class=nav-item role=presentation>
-        <button class=nav-link id=scores-tab data-bs-toggle=tab data-bs-target=#scores type=button role=tab aria-controls=scores aria-selected=false> <i class="fa-solid fa-list"></i>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="scores-tab" data-bs-toggle="tab" data-bs-target="#scores" type="button" role="tab" aria-controls="scores" aria-selected="false"> <i class="fa-solid fa-list"></i>
           Scores
         </button>
       </li>
-      <li class=nav-item role=presentation>
-        <button class=nav-link id=weather-tab data-bs-toggle=tab data-bs-target=#weather type=button role=tab aria-controls=weather aria-selected=false> <i class="fa-solid fa-bolt"></i>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="weather-tab" data-bs-toggle="tab" data-bs-target="#weather" type="button" role="tab" aria-controls="weather" aria-selected="false"> <i class="fa-solid fa-bolt"></i>
           Weather
         </button>
       </li>
-      <li class=nav-item role=presentation>
-        <button class=nav-link id=settings-tab data-bs-toggle=tab data-bs-target=#settings type=button role=tab aria-controls=settings aria-selected=false> <i class="fa fa-music" aria-hidden=true></i>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="settings-tab" data-bs-toggle="tab" data-bs-target="#settings" type="button" role="tab" aria-controls="settings" aria-selected="false"> <i class="fa fa-music" aria-hidden="true"></i>
           Music
         </button>
       </li>
     </ul>
-    <div class="border-grey page-bg-c tab-content">
-      <div class="tab-pane active hrem-40" id=handicap-page role=tabpanel aria-labelledby=hanicap-tab>
-        <div class=container>
+    <div class="border-grey page-bg-c tab-content overflow-scroll">
+      <div class="tab-pane active hrem-40" id="handicap-page" role="tabpanel" aria-labelledby="hanicap-tab">
+        <div class="container">
           <div class="container-flex form-bg-c">
-            <div class=messagePopup id=popupMessage>
-              <div id=message class="alert alert-dismissible messageBorder" role=alert hidden>
-                <span class=replace></span>
+            <div class="messagePopup" id="popupMessage">
+              <div id="message" class="alert alert-dismissible messageBorder" role="alert" hidden="">
+                <span class="replace"></span>
               </div>
             </div>
             <form>
@@ -54,168 +51,168 @@
                 </div>
               </div>
               <div class="row gx-2 d-flex justify-content-center pt-2">
-                <div class=col-md-2>
-                  <label for=pin class=form-label>Pin</label>
-                  <input type=password class="form-control form-control-c h-40" id=pin pattern=^[A-Za-z]{2}.{4,6}>
+                <div class="col-md-2">
+                  <label for="pin" class="form-label">Pin</label>
+                  <input type="password" class="form-control form-control-c h-40" id="pin" pattern="^[A-Za-z]{2}.{4,6}">
                 </div>
-                <div class=col-md-2>
-                  <label for=fname class=form-label>First Name</label>
-                  <input type=text class="form-control form-control-c form-control-md h-40" id=fname pattern=^.{3,20}$>
+                <div class="col-md-2">
+                  <label for="fname" class="form-label">First Name</label>
+                  <input type="text" class="form-control form-control-c form-control-md h-40" id="fname" pattern="^.{3,20}$">
                 </div>
-                <div class=col-md-4>
-                  <label for=lname class=form-label>Last Name</label>
-                  <input type=text class="form-control form-control-c h-40" id=lname pattern=^.{5,40}$>
+                <div class="col-md-4">
+                  <label for="lname" class="form-label">Last Name</label>
+                  <input type="text" class="form-control form-control-c h-40" id="lname" pattern="^.{5,40}$">
                 </div>
-                <div class=col-md-2>
-                  <label for=login id=lfor><i class="" id=ggc></i></label>
-                  <button type=text class="form-control h-40 btn btn-c mt-2 btn-dark shadow-none" id=login>Login</button>
+                <div class="col-md-2">
+                  <label for="login" id="lfor"><i class="" id="ggc"></i></label>
+                  <button type="text" class="form-control h-40 btn btn-c mt-2 btn-dark shadow-none" id="login">Login</button>
                 </div>
               </div>
               <div class="row gx-2 d-flex justify-content-center ms-6-c">
-                <div class=col-md-6>
-                  <label for=course class=form-label>Course</label>
-                  <input list=courses id=course class="form-control form-control-c h-rem" placeholder="Add or Select Course" pattern=^.{8,80}$>
-                  <datalist id=courses>
+                <div class="col-md-6">
+                  <label for="course" class="form-label">Course</label>
+                  <input list="courses" id="course" class="form-control form-control-c h-rem" placeholder="Add or Select Course" pattern="^.{8,80}$">
+                  <datalist id="courses">
                     <option value=""></option>
                   </datalist>
                   <div class="col-md-12 my-2">
-                    <label for=country class=form-label>Country</label>
-                    <select id=country class="form-select form-select-c shadow-none h-rem">
+                    <label for="country" class="form-label">Country</label>
+                    <select id="country" class="form-select form-select-c shadow-none h-rem">
                       <option>select country</option>
                     </select>
                   </div>
                   <div class="col-md-12 mb-2">
-                    <label for=state class=form-label>State</label>
-                    <span id=state-code></span>
+                    <label for="state" class="form-label">State</label>
+                    <span id="state-code"></span>
                   </div>
                 </div>
                 <div class="col-md-2 ps-4">
-                  <label for=tees>Change</label>
-                  <input type=color class="form-control form-control-color shadow-none py-1" value=#ffffff id=tees>
+                  <label for="tees">Change</label>
+                  <input type="color" class="form-control form-control-color  shadow-none py-1" value="#ffffff" id="tees">
                   Colors
                   
                 </div>
-                <div class=col-md-2>
+                <div class="col-md-2">
                   <row-fluid>
-                    <div class=form-check>
-                      <input class="form-check-input bg-secondary shadow-none" type=radio name=radio-color id=radio-color1 value=0>
-                      <label class="form-check-label text-white text-center w-100" for=radio-color1 style=background-color:#000000>
-                        
+                    <div class="form-check">
+                      <input class="form-check-input bg-secondary shadow-none" type="radio" name="radio-color" id="radio-color1" value="0">
+                      <label class="form-check-label text-white text-center w-100" for="radio-color1" style="background-color:#000000">
+                        <!-- Black -->
                         &nbsp;
                       </label>
                     </div>
-                    <div class=form-check>
-                      <input class="form-check-input bg-secondary shadow-none" type=radio name=radio-color id=radio-color2 value=1>
-                      <label class="form-check-label text-white text-center w-100" for=radio-color2 style=background-color:#0000ff>
-                        
+                    <div class="form-check">
+                      <input class="form-check-input bg-secondary shadow-none" type="radio" name="radio-color" id="radio-color2" value="1">
+                      <label class="form-check-label text-white text-center w-100" for="radio-color2" style="background-color:#0000ff">
+                        <!-- Blue -->
                         &nbsp;
                       </label>
                     </div>
-                    <div class=form-check>
-                      <input class="form-check-input bg-secondary shadow-none" type=radio name=radio-color id=radio-color3 value=2 checked=checked>
-                      <label class="form-check-label text-black text-center w-100" for=radio-color3 style=background-color:#ffffff>
-                        
+                    <div class="form-check">
+                      <input class="form-check-input bg-secondary shadow-none" type="radio" name="radio-color" id="radio-color3" value="2" checked="">
+                      <label class="form-check-label text-black text-center w-100" for="radio-color3" style="background-color:#ffffff">
+                        <!-- White -->
                         &nbsp;
                       </label>
                     </div>
-                    <div class=form-check>
-                      <input class="form-check-input bg-secondary shadow-none" type=radio name=radio-color id=radio-color4 value=3>
-                      <label class="form-check-label text-black text-center w-100" style=background-color:#ffc107 for=radio-color4>
-                        
+                    <div class="form-check">
+                      <input class="form-check-input bg-secondary shadow-none" type="radio" name="radio-color" id="radio-color4" value="3">
+                      <label class="form-check-label text-black text-center w-100" style="background-color:#ffc107" for="radio-color4">
+                        <!-- Gold -->
                         &nbsp;
                       </label>
                     </div>
-                    <div class=form-check>
-                      <input class="form-check-input bg-secondary shadow-none" type=radio name=radio-color id=radio-color5 value=4>
-                      <label class="form-check-label text-black text-center w-100" for=radio-color5 style=background-color:#dc3545>
-                        
+                    <div class="form-check">
+                      <input class="form-check-input bg-secondary shadow-none" type="radio" name="radio-color" id="radio-color5" value="4">
+                      <label class="form-check-label text-black text-center w-100" for="radio-color5" style="background-color:#dc3545">
+                        <!-- Red -->
                         &nbsp;
                       </label>
                     </div>
                 </row-fluid></div>
               </div>
               <div class="row gx-2 d-flex justify-content-center ms-6-c">
-                <div class=col-md-3>
-                  <label for=rating class=form-label>Course Rating</label>
-                  <input type=text class="form-control form-control-c h-40" id=rating pattern=^[3-7][0-9]\.[0-9]$ autocomplete=off>
+                <div class="col-md-3">
+                  <label for="rating" class="form-label">Course Rating</label>
+                  <input type="text" class="form-control form-control-c h-40" id="rating" pattern="^[3-7][0-9]\.[0-9]$" autocomplete="off">
                 </div>
-                <div class=col-md-3>
-                  <label for=slope class=form-label>Course Slope</label>
-                  <input type=text class="form-control form-control-c h-40" id=slope pattern=^[1-9]\d{1,2}$ autocomplete=off>
+                <div class="col-md-3">
+                  <label for="slope" class="form-label">Course Slope</label>
+                  <input type="text" class="form-control form-control-c h-40" id="slope" pattern="^[1-9]\d{1,2}$" autocomplete="off">
                 </div>
-                <div class=col-md-2>
-                  <label for=par class=form-label>Par</label>
-                  <input type=text class="form-control form-control-c h-40" id=par pattern=^[2-7]\d$ autocomplete=off>
+                <div class="col-md-2">
+                  <label for="par" class="form-label">Par</label>
+                  <input type="text" class="form-control form-control-c h-40" id="par" pattern="^[2-7]\d$" autocomplete="off">
                 </div>
-                <div class=col-md-2>
-                  <label for=add-course></label>
-                  <button type=text class="form-control h-40 btn btn-c btn-dark shadow-none mt-2" id=add-course>
+                <div class="col-md-2">
+                  <label for="add-course"></label>
+                  <button type="text" class="form-control h-40 btn btn-c btn-dark shadow-none mt-2" id="add-course">
                     Add Tee
                   </button>
                 </div>
               </div>
               <div class="row gx-2 d-flex justify-content-center ms-6-c">
-                <div class=col-md-2>
-                  <label for=total-score class=form-label>Gross Score</label>
-                  <input type=text class="form-control form-control-c h-40" id=total-score autocomplete=off pattern=\d{2,3}>
+                <div class="col-md-2">
+                  <label for="total-score" class="form-label">Gross Score</label>
+                  <input type="text" class="form-control form-control-c h-40" id="total-score" autocomplete="off" pattern="\d{2,3}">
                 </div>
-                <div class=col-md-2>
-                  <label for=net-score class=form-label>Net Score</label>
-                  <input type=text class="form-control form-control-c h-40" id=net-score disabled=disabled>
+                <div class="col-md-2">
+                  <label for="net-score" class="form-label">Net Score</label>
+                  <input type="text" class="form-control form-control-c h-40" id="net-score" disabled="">
                 </div>
-                <div class=col-md-3>
-                  <label for=adjusted-score class=form-label>Adjusted Score</label>
-                  <input type=text class="form-control form-control-c h-40" id=adjusted-score autocomplete=off pattern=\d{2,3}>
+                <div class="col-md-3">
+                  <label for="adjusted-score" class="form-label">Adjusted Score</label>
+                  <input type="text" class="form-control form-control-c h-40" id="adjusted-score" autocomplete="off" pattern="\d{2,3}">
                 </div>
-                <div class=col-md-1></div>
-                <div class=col-md-2>
-                  <label for=handicap class=form-label>Handicap</label>
-                  <input type=text class="form-control form-control-c h-40" id=handicap disabled=disabled>
+                <div class="col-md-1"></div>
+                <div class="col-md-2">
+                  <label for="handicap" class="form-label">Handicap</label>
+                  <input type="text" class="form-control form-control-c h-40" id="handicap" disabled="">
                 </div>
               </div>
               <div class="row gx-2 d-flex justify-content-center ms-6-c">
-                <div class=col-md-3>
-                  <label for=teetime class=form-label>Tee Time</label>
-                  <input name=tee_time type=text class="p1-c form-control form-control-c h-40" id=teetime placeholder="Click for Calendar" autocomplete=off pattern="^\d{4}-\d{2}-\d{2}, \d{2}:\d{2}$">
+                <div class="col-md-3">
+                  <label for="teetime" class="form-label">Tee Time</label>
+                  <input name="tee_time" type="text" class="p1-c form-control form-control-c h-40" id="teetime" placeholder="Click for Calendar" autocomplete="off" pattern="^\d{4}-\d{2}-\d{2}, \d{2}:\d{2}$">
                 </div>
-                <div class=col-md-1></div>
+                <div class="col-md-1"></div>
                 <ul class="col-md-4 ul-style-c">
                   <li>
                     <div class="form-check mt-md-3">
-                      <input class="form-check-input shadow-none check-box-c" type=checkbox id=overlap>
-                      <label class=form-check-label for=overlap>
+                      <input class="form-check-input shadow-none check-box-c" type="checkbox" id="overlap">
+                      <label class="form-check-label" for="overlap">
                         Overlap Years
                       </label>
                     </div>
                   </li>
                   <li>
                     <div class="form-check mt-2">
-                      <input class="form-check-input shadow-none check-box-c" type=checkbox id=public>
-                      <label class=form-check-label for=public>
+                      <input class="form-check-input shadow-none check-box-c" type="checkbox" id="public">
+                      <label class="form-check-label" for="public">
                         Public
                       </label>
                     </div>
                   </li>
                 </ul>
-                <div class=col-md-2>
-                  <label for=course-handicap class=form-label>Course</label>
-                  <input type=text class="p1-c form-control form-control-c h-10" id=course-handicap disabled=disabled>
+                <div class="col-md-2">
+                  <label for="course-handicap" class="form-label">Course</label>
+                  <input type="text" class="p1-c form-control form-control-c h-10" id="course-handicap" disabled="">
                   Handicap
                 </div>
               </div>
               <div class="row gx-2 d-flex justify-content-center ms-6-c pb-3">
-                <div class=col-md-2>
-                  <button type=text class="form-control btn btn-c btn-dark shadow-none p-1" id=add-score>
+                <div class="col-md-2">
+                  <button type="text" class="form-control btn btn-c btn-dark shadow-none p-1" id="add-score">
                     Add Score
                   </button>
                 </div>
-                <div class=col-md-2>
-                  <button type=text class="form-control btn btn-c btn-dark shadow-none p-1" id=cancel>
+                <div class="col-md-2">
+                  <button type="text" class="form-control btn btn-c btn-dark shadow-none p-1" id="cancel">
                     Cancel
                   </button>
                 </div>
-                <div class=col-md-4>
-                  <button type=text class="form-control btn btn-c btn-dark shadow-none p-1" id=remove-last>
+                <div class="col-md-4">
+                  <button type="text" class="form-control btn btn-c btn-dark shadow-none p-1" id="remove-last">
                     Remove Last Score
                   </button>
                 </div>
@@ -224,137 +221,133 @@
           </div>
         </div>
       </div>
-      <div class=tab-pane id=weather role=tabpanel aria-labelledby=weather-tab>
+      <div class="tab-pane" id="weather" role="tabpanel" aria-labelledby="weather-tab">
 
         <pre>
-
 
         </pre>
         <p>
-          </p><div id=ww_389965eee721b v=1.20 loc=auto a='{"t":"responsive","lang":"en","ids":[],"cl_bkg":"#00796B","cl_font":"#FFFFFF","cl_cloud":"#FFFFFF","cl_persp":"#FFFFFF","cl_sun":"#FFC107","cl_moon":"#FFC107","cl_thund":"#FF5722","sl_tof":"7","sl_sot":"fahrenheit","sl_ics":"one_a","font":"Arial","cl_odd":"#0000000a"}'><a href=https://wetter-heute.org/ id=ww_389965eee721b_u target=_blank>Wetter Heute</a></div>
+          </p><div id="ww_389965eee721b" v="1.20" loc="auto" a="{&quot;t&quot;:&quot;responsive&quot;,&quot;lang&quot;:&quot;en&quot;,&quot;ids&quot;:[],&quot;cl_bkg&quot;:&quot;#00796B&quot;,&quot;cl_font&quot;:&quot;#FFFFFF&quot;,&quot;cl_cloud&quot;:&quot;#FFFFFF&quot;,&quot;cl_persp&quot;:&quot;#FFFFFF&quot;,&quot;cl_sun&quot;:&quot;#FFC107&quot;,&quot;cl_moon&quot;:&quot;#FFC107&quot;,&quot;cl_thund&quot;:&quot;#FF5722&quot;,&quot;sl_tof&quot;:&quot;7&quot;,&quot;sl_sot&quot;:&quot;fahrenheit&quot;,&quot;sl_ics&quot;:&quot;one_a&quot;,&quot;font&quot;:&quot;Arial&quot;,&quot;cl_odd&quot;:&quot;#0000000a&quot;}"><a href="https://wetter-heute.org/" id="ww_389965eee721b_u" target="_blank">Wetter Heute</a></div>
         <p></p>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+<!--        <script>-->
+<!--          (function(d, s, id) {-->
+<!--              if (d.getElementById(id)) {-->
+<!--                  if (window.__TOMORROW__) {-->
+<!--                      window.__TOMORROW__.renderWidget();-->
+<!--                  }-->
+<!--                  return;-->
+<!--              }-->
+<!--              const fjs = d.getElementsByTagName(s)[0];-->
+<!--              const js = d.createElement(s);-->
+<!--              js.id = id;-->
+<!--              js.src = "https://www.tomorrow.io/v1/widget/sdk/sdk.bundle.min.js";-->
+<!--              fjs.parentNode.insertBefore(js, fjs);-->
+<!--          })(document, 'script', 'tomorrow-sdk');-->
+<!--          </script>-->
+
+<!--          <div class="tomorrow"-->
+<!--             data-location-id="125020"-->
+<!--             data-language="EN"-->
+<!--             data-unit-system="IMPERIAL"-->
+<!--             data-skin="dark"-->
+<!--             data-widget-type="upcoming"-->
+<!--             style="padding-bottom:22px;position:relative;"-->
+<!--          >-->
+<!--            <a-->
+<!--              href="https://www.tomorrow.io/weather-api/"-->
+<!--              rel="nofollow noopener noreferrer"-->
+<!--              target="_blank"-->
+<!--              style="position: absolute; bottom: 0; transform: translateX(-50%); left: 50%;"-->
+<!--            >-->
+<!--              <img-->
+<!--                alt="Powered by the Tomorrow.io Weather API"-->
+<!--                src="https://weather-website-client.tomorrow.io/img/powered-by.svg"-->
+<!--                width="250"-->
+<!--                height="18"-->
+<!--              />-->
+<!--            </a>-->
+<!--          </div>-->
+
+<!--          <script>-->
+<!--            (function(d, s, id) {-->
+<!--                if (d.getElementById(id)) {-->
+<!--                    if (window.__TOMORROW__) {-->
+<!--                        window.__TOMORROW__.renderWidget();-->
+<!--                    }-->
+<!--                    return;-->
+<!--                }-->
+<!--                const fjs = d.getElementsByTagName(s)[0];-->
+<!--                const js = d.createElement(s);-->
+<!--                js.id = id;-->
+<!--                js.src = "https://www.tomorrow.io/v1/widget/sdk/sdk.bundle.min.js";-->
+
+<!--                fjs.parentNode.insertBefore(js, fjs);-->
+<!--            })(document, 'script', 'tomorrow-sdk');-->
+<!--            </script>-->
+
+<!--            <div class="tomorrow"-->
+<!--               data-location-id="125020"-->
+<!--               data-language="EN"-->
+<!--               data-unit-system="IMPERIAL"-->
+<!--               data-skin="dark"-->
+<!--               data-widget-type="aqiPollen"-->
+<!--               style="padding-bottom:22px;position:relative;"-->
+<!--            >-->
+<!--              <a-->
+<!--                href="https://www.tomorrow.io/weather-api/"-->
+<!--                rel="nofollow noopener noreferrer"-->
+<!--                target="_blank"-->
+<!--                style="position: absolute; bottom: 0; transform: translateX(-50%); left: 50%;"-->
+<!--              >-->
+<!--                <img-->
+<!--                  alt="Powered by the Tomorrow.io Weather API"-->
+<!--                  src="https://weather-website-client.tomorrow.io/img/powered-by.svg"-->
+<!--                  width="250"-->
+<!--                  height="18"-->
+<!--                />-->
+<!--              </a>-->
+<!--            </div>-->
 
         <pre>
-
 
 
         </pre>
       </div>
-      <div class=tab-pane id=scores role=tabpanel aria-labelledby=scores-tab>
-        <label class="mt-md-3 mb-md-3 ms-md-3 me-md-2 font-weight-bold" for=golfers>Golfers:</label>
+      <div class="tab-pane" id="scores" role="tabpanel" aria-labelledby="scores-tab">
+        <label class="mt-md-3 mb-md-3 ms-md-3 me-md-2 font-weight-bold" for="golfers">Golfers:</label>
 
-        <select id=golfers class="w-25 h-rem">
+        <select id="golfers" class="w-25 h-rem">
           <option></option>
         </select>
 
-        <table id=table data-pagination=true data-page-size=10 data-page-list="[5, 10, 20]" data-show-footer=true data-side-pagination=client>
+        <table id="table" data-pagination="true" data-page-size="10" data-page-list="[5, 10, 20]" data-show-footer="true" data-side-pagination="client">
           <thead>
             <tr>
-              <th data-field=COURSE_NAME>COURSE_NAME</th>
-              <th data-field=GROSS_SCORE>GROSS_SCORE</th>
-              <th data-field=NET_SCORE>NET_SCORE</th>
-              <th data-field=ADJUSTED_SCORE>ADJUSTED_SCORE</th>
-              <th data-field=HANDICAP>HANDICAP</th>
-              <th data-field=COURSE_TEES>COURSE_TEES</th>
-              <th data-field=TEE_TIME> TEE_TIME &nbsp;</th>
-              <th data-field=USED>USED</th>
+              <th data-field="COURSE_NAME">COURSE_NAME</th>
+              <th data-field="GROSS_SCORE">GROSS_SCORE</th>
+              <th data-field="NET_SCORE">NET_SCORE</th>
+              <th data-field="ADJUSTED_SCORE">ADJUSTED_SCORE</th>
+              <th data-field="HANDICAP">HANDICAP</th>
+              <th data-field="COURSE_TEES">COURSE_TEES</th>
+              <th data-field="TEE_TIME"> TEE_TIME &nbsp;</th>
+              <th data-field="USED">USED</th>
             </tr>
           </thead>
         </table>
       </div>
-      <div class=tab-pane id=settings role=tabpanel aria-labelledby=settings-tab>
+      <div class="tab-pane" id="settings" role="tabpanel" aria-labelledby="settings-tab">
         <pre>
-
 
         </pre>
-          <iframe width=100% height=250 scrolling=no frameborder=no allow=autoplay src=https://jazzdeville.com/embed/embed.html></iframe>
+          <iframe width="100%" height="450" src="https://jazzdeville.com"></iframe>
         <pre>
-
 
 
         </pre>
       </div>
     </div>
   </div>
-  <div id=jsoneditor class=editor style="z-index: -1"></div>
-</body>
-</html>
+  <div id="jsoneditor" class="editor" style="z-index: -1"></div>
+
+<script src="dist/main-4KGAJG5D.js" defer=""></script></body></html>

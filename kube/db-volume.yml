@@ -10,7 +10,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   hostPath:
-    path: "/data/sqlite3"
+    path: "/data/db/"
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

@@ -41,7 +41,7 @@ import io.vertx.rxjava3.core.shareddata.SharedData;
 public class FirebaseRouter {
     private static final Logger logger = LoggerFactory.getLogger(FirebaseRouter.class.getName());
     protected Vertx vertx;
-    private Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
+    private final Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
     private DodexFirebase dodexFirebase;
     private static final String DODEX_PROJECT_ID = "dodex-firebase";
     Firestore dbf;
@@ -68,15 +68,13 @@ public class FirebaseRouter {
             ke = new KafkaEmitterDodex();
         }
     }
-
+    /**
+     * You can customize the db config here by: Map = db configuration, Properties =
+     * credentials e.g. Map overrideMap = new Map(); Properties overrideProperties =
+     * new Properties(); set override or additional values... dodexDatabase =
+     * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
+     */
     public void setWebSocket(final HttpServer server) throws InterruptedException, IOException, SQLException {
-        /**
-         * You can customize the db config here by: Map = db configuration, Properties =
-         * credentials e.g. Map overrideMap = new Map(); Properties overrideProperties =
-         * new Properties(); set override or additional values... dodexDatabase =
-         * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
-         */
-
         dodexFirebase = DbConfiguration.getDefaultDb();
         dodexFirebase.setVertx(vertx);
         dodexFirebase.setFirestore(dbf);
@@ -92,29 +90,20 @@ public class FirebaseRouter {
             @Override
             public void handle(ServerWebSocket ws) {
 
-                try {
-                    String handle = URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query())
-                        .get("handle"), StandardCharsets.UTF_8.name());
-                    logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle, ColorUtilConstants.RESET);
-                } catch (final UnsupportedEncodingException e) {
-                    logger.error(String.join("", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
-                            ColorUtilConstants.RESET));
-                }
+              String handle = URLDecoder.decode(ParseQueryUtilHelper.getQueryMap(ws.query())
+                  .get("handle"), StandardCharsets.UTF_8);
+              logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle, ColorUtilConstants.RESET);
 
-                final DodexUtil dodexUtil = new DodexUtil();
+              final DodexUtil dodexUtil = new DodexUtil();
 
                 if (!"/dodex".equals(ws.path())) {
                     ws.reject();
                 } else {
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                     final MessageUser messageUser = dodexFirebase.createMessageUser();
-                    try {
-                        wsChatSessions.put(ws.remoteAddress().toString(),
-                                URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8.name()));
-                    } catch (final UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                    clients.put(ws.remoteAddress().toString(), ws);
+                  wsChatSessions.put(ws.remoteAddress().toString(),
+                          URLDecoder.decode(ws.uri(), StandardCharsets.UTF_8));
+                  clients.put(ws.remoteAddress().toString(), ws);
                     if(ke != null) {
                         ke.setValue("sessions", wsChatSessions.size());
                     }
@@ -163,7 +152,7 @@ public class FirebaseRouter {
                             if(continued != null) {
                                 continued.onSuccess(result -> {
                                     String selectedUsers = "";
-                                    if (computedMessage[0].length() > 0) {
+                                    if (!computedMessage[0].isEmpty()) {
                                         // private users to send message
                                         selectedUsers = returnObject.get("selectedUsers");
                                         final Set<String> websockets = clients.keySet();
@@ -177,7 +166,7 @@ public class FirebaseRouter {
                                                     query = ParseQueryUtilHelper
                                                             .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
                                                     final String handle = query.get("handle");
-                                                    if (selectedUsers.length() == 0 && command[0].length() == 0) {
+                                                    if (selectedUsers.isEmpty() && command[0].isEmpty()) {
                                                         webSocket.writeTextMessage(
                                                                 messageUser.getName() + ": " + computedMessage[0]);
                                                         // private message
@@ -194,12 +183,12 @@ public class FirebaseRouter {
                                                         onlineUsers.add(handle);
                                                     }
                                                 } else {
-                                                    if (selectedUsers.length() == 0 && command[0].length() > 0) {
+                                                    if (selectedUsers.isEmpty() && !command[0].isEmpty()) {
                                                         ws.writeTextMessage("Private user not selected");
                                                     } else {
                                                         ws.writeTextMessage("ok");
                                                         if(ke != null) {
-                                                            if(selectedUsers.length() > 0) {
+                                                            if(!selectedUsers.isEmpty()) {
                                                                 ke.setValue("private", 1);
                                                             } else {
                                                                 ke.setValue(1); // broadcast
@@ -212,7 +201,7 @@ public class FirebaseRouter {
                                     }
 
                                     // calculate difference between selected and online users
-                                    if (selectedUsers.length() > 0) {
+                                    if (!selectedUsers.isEmpty()) {
                                         final List<String> selected = Arrays.asList(selectedUsers.split(","));
                                         final List<String> disconnectedUsers = selected.stream()
                                                 .filter(user -> !onlineUsers.contains(user)).collect(Collectors.toList());
@@ -238,16 +227,16 @@ public class FirebaseRouter {
                     /*
                      * websocket.onConnection()
                      */
-                    String handle = "";
-                    String id = "";
-                    Map<String, String> query = null;
+                    String userHandle;
+                    String id;
+                    Map<String, String> query;
 
                     query = ParseQueryUtilHelper.getQueryMap(wsChatSessions.get(ws.remoteAddress().toString()));
 
-                    handle = query.get("handle");
+                    userHandle = query.get("handle");
                     id = query.get("id");
 
-                    messageUser.setName(handle);
+                    messageUser.setName(userHandle);
                     messageUser.setPassword(id);
                     messageUser.setIp(ws.remoteAddress().toString());
 

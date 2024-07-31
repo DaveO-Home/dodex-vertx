@@ -11,7 +11,7 @@ metadata:
     io.kubernetes.cri-o.TTY/dodex-vertx: "true"
     io.podman.annotations.autoremove/dodex-vertx: "FALSE"
     io.podman.annotations.init/dodex-vertx: "true"
-    io.podman.annotations.privileged/dodex-vertx: "FALSE"
+    io.podman.annotations.privileged/dodex-vertx: "true"
     io.podman.annotations.publish-all/dodex-vertx: "FALSE"
     creationTimestamp: "2023-03-15T17:14:30Z"
   name: vertx-deploy
@@ -30,29 +30,42 @@ spec:
       containers:
         - name: dodex-vertx
           image: dufferdo2/dodex-vertx:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Never #IfNotPresent
           env:
             - name: DEFAULT_DB
-              value: "mariadb"  # sqlite3 or postgres or mariadb
+              value: "h2"  # h2 or sqlite3, postgres or mariadb
             - name: USE_HANDICAP
               value: "true"
             - name: storage__root_directory
-              value: /data/sqlite3
+              value: /data/db
           ports:
             - containerPort: 8070
               hostPort: 8070
             - containerPort: 8880
               hostPort: 8880
           volumeMounts:
-            - mountPath: /data/sqlite3
+            - mountPath: /data/db
               name: vertx-storage
           securityContext:
+#            runAsUser: 1000
+#            privileged: true
+#            allowPrivilegeEscalation: true
             capabilities:
+#              add:
+#                - ALL
+          #            capabilities:
               drop:
               - CAP_MKNOD
               - CAP_NET_RAW
               - CAP_AUDIT_WRITE
           tty: true
+          resources:
+            requests:
+              memory: 1024Mi
+              cpu: 2000m
+            limits:
+              memory: 1024Mi
+              cpu: 2000m
       volumes:
         - name: vertx-storage
           persistentVolumeClaim:

@@ -1,0 +1,48 @@
+
+FROM envoyproxy/envoy:v1.29-latest AS builder
+FROM ubuntu:latest
+
+COPY --from=builder /usr/local/bin/envoy /usr/bin/
+COPY --from=builder /usr/local/bin/envoy /root
+
+USER root:root
+
+COPY envoy.yaml /etc/envoy/envoy.yaml
+RUN chmod go+r /etc/envoy/envoy.yaml
+
+RUN apt-get update && \
+    apt-get install -y openjdk-21-jre-headless && \
+    apt-get clean;
+
+RUN adduser dodex --disabled-password
+
+RUN mkdir /envoy && mkdir /data && chown 1000 /data && chmod o+w /data && mkdir /data/db
+
+EXPOSE 8880
+EXPOSE 8070
+
+COPY run_dodex.sh /usr/bin
+RUN chmod o+x /usr/bin/run_dodex.sh
+
+USER dodex:dodex
+
+ENV JAVA_HOME /usr/lib/jvm/java-21-openjdk-amd64/
+RUN export JAVA_HOME
+
+RUN mkdir /home/dodex/vertx && mkdir /home/dodex/vertx/logs
+VOLUME ~
+
+COPY dodex-vertx-3.1.0-prod.jar /home/dodex/vertx/dodex-vertx-3.1.0-prod.jar
+
+WORKDIR /home/dodex/vertx
+
+# make vertx http run on this address
+ENV DOCKER_HOST 0.0.0.0
+# Can change to either "postgres" or "mariadb" or override in docker create/run
+ENV DEFAULT_DB=h2
+ENV USE_HANDICAP=true
+
+USER dodex
+
+CMD /usr/bin/bash -c /usr/bin/run_dodex.sh
+

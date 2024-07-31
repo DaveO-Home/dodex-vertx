@@ -21,15 +21,15 @@
   "author": "DaveO",
   "license": "ISC",
   "dependencies": {
-    "firebase": "^10.7.2",
-    "firebase-admin": "^12.0.0",
-    "firebase-tools": "^13.1.0"
+    "firebase": "^10.12.4",
+    "firebase-admin": "^12.3.0",
+    "firebase-tools": "^13.14.2"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^3.0.1",
-    "@types/mocha": "^10.0.6",
+    "@firebase/rules-unit-testing": "^3.0.4",
+    "@types/mocha": "^10.0.7",
     "@types/uuid": "^9.0.8",
-    "mocha": "^10.2.0",
+    "mocha": "^10.7.0",
     "typescript": "^4.9.5",
     "uuid": "^9.0.1"
   }

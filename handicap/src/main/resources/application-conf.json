@@ -8,5 +8,6 @@
     "handicap.port": 8888,
     "prod.handicap.port": 8890,
     "grpc:port": 15002,
-    "prod:grpc:port": 15002
+    "prod:grpc:port": 15002,
+    "grpc.server": true
 }

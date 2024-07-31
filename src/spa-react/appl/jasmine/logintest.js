@@ -40,12 +40,12 @@ export default function (Start, React, LoginC, timer) {
             Start.base = true;
             // Note: if page does not refresh, increase the timer time.
             // Using RxJs instead of Promise.
-            const numbers = timer(50, 50);
+            const numbers = timer(100, 50);
             const observable = numbers.subscribe(timer => {
                modal = $("#modalTemplate");
                form = modal.find("form:first");
 
-                if ((modal.length === 1 && form.length === 1) || timer === 50) {
+                if ((modal.length === 1 && form.length === 1) || timer === 100) {
                     nameObject = $("#inputUsername");
                     pwrdObject = $("#inputPassword");
                     pwrdObject2 = $("#inputPassword2");

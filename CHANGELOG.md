@@ -1,5 +1,18 @@
 # Changelog
 
+## [v3.3.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.0) (2024-07-31)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.2.1..v3.3.0)
+
+* Upgraded to vertx 4.5.9
+* Implemented new gRPC server as described in the docs:  
+  ''Vert.x gRPC Server is a new gRPC server powered by Vert.x HTTP server superseding the integrated Netty based gRPC client.  
+  This server provides a gRPC request/response oriented API as well as a the generated stub approach with a service bridge.''
+  * see __.../handicap/src/main/kotlin/golf/handicap/vertx/HandicapGrpcServer.kt__, however, the Netty configuration is still default.
+  * To use the new gRPC Vert.x server, execute `export GRPC_SERVER=true` or change `"grpc.server": true` in .../src/main/resources/application-conf.json for a permanent change
+* Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ micro-service client to process __dodex-mess__ messages.
+  * see the __dodex-vertx__ [README](https://github.com/DaveO-Home/dodex-vertx/blob/master/README.md) for the broker and __dodex-akka__ [README](https://github.com/DaveO-Home/dodex-akka/blob/master/README.md) for the client
+
 ## [v3.2.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.2.1) (2024-02-05)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.2.0..v3.2.1)

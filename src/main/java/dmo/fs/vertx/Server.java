@@ -3,6 +3,7 @@ package dmo.fs.vertx;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dmo.fs.mqtt.DodexMqttServer;
 import dmo.fs.router.CassandraRouter;
 import dmo.fs.router.Routes;
 import dmo.fs.spa.SpaApplication;
@@ -33,9 +34,9 @@ import java.util.List;
 import java.util.Locale;
 
 public class Server extends AbstractVerticle {
-  private static Logger logger;
-  private int startupPort;
-  private int port = startupPort = 0;
+  private static final Logger logger;
+  private int startupPort = 0;
+  private int port = 0;
 
 
   public Server() {
@@ -61,17 +62,18 @@ public class Server extends AbstractVerticle {
     logger = LoggerFactory.getLogger(Server.class.getName());
   }
 
-  private static String OS = System.getProperty("os.name").toLowerCase();
+  private static final String OS = System.getProperty("os.name").toLowerCase();
   private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
   private static String useKafka = System.getenv("DODEX_KAFKA");
-  private HttpServer server;
+  private static String useMqtt = System.getenv("USE_MQTT");
+  private static HttpServer server;
   private JsonObject config;
   private JsonObject alternateConfig;
 
   @Override
   public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException,
       IOException, SQLException, NumberFormatException {
-    if (development == null || "".equals(development)
+    if (development == null || development.isEmpty()
         || development.toLowerCase().startsWith("prod")) {
       development = "prod";
     } else if ("dev".equalsIgnoreCase(development)) {
@@ -90,6 +92,9 @@ public class Server extends AbstractVerticle {
     }
     if (useKafka == null) {
       useKafka = config.getString("dodex.kafka");
+    }
+    if (useMqtt == null) {
+      useMqtt = config.getString("use.mqtt");
     }
     if ("true".toLowerCase().equals(useKafka)) {
       logger.info("{}Using Kafka - make sure it is running with ZooKeeper.{}",
@@ -173,8 +178,20 @@ vertx.deployVerticle("dmo.fs.vertx.Server", options);
             Handicap Verticle
            */
           if (Boolean.TRUE.equals(golf.handicap.vertx.MainVerticle.getEnableHandicap())) {
-                Verticle handicapVerticle = new golf.handicap.vertx.MainVerticle();
-                vertx.deployVerticle(handicapVerticle).subscribe();
+            boolean useGrpcServer = alternateConfig.getBoolean("grpc.server") != null ?
+                alternateConfig.getBoolean("grpc.server") : false;
+
+            useGrpcServer = System.getenv("GRPC_SERVER") != null ? "true".equals(System.getenv("GRPC_SERVER")) : useGrpcServer;
+
+            useGrpcServer = System.getProperty("GRPC_SERVER") != null ? "true".equals(System.getProperty("GRPC_SERVER")) : useGrpcServer;
+
+            Verticle handicapVerticle;
+            if(useGrpcServer) {
+              handicapVerticle = new golf.handicap.vertx.HandicapGrpcServer();
+            } else {
+              handicapVerticle = new golf.handicap.vertx.MainVerticle();
+            }
+            vertx.deployVerticle(handicapVerticle).subscribe();
           }
           /*
             Test Java 21 Virtual Threads
@@ -199,25 +216,29 @@ vertx.deployVerticle("dmo.fs.vertx.Server", options);
         " database", ColorUtilConstants.RESET);
 
     if ("cassandra".equals(defaultDb)) {
-      TcpEventBusBridge bridge = TcpEventBusBridge.create(vertx,
-          new BridgeOptions().addInboundPermitted(new PermittedOptions().setAddress("vertx"))
-              .addOutboundPermitted(new PermittedOptions().setAddress("akka"))
-              .addInboundPermitted(new PermittedOptions().setAddress("akka"))
-              .addOutboundPermitted(new PermittedOptions().setAddress("vertx")));
+      if("true".equals(useMqtt)) {
+        new DodexMqttServer();
+      } else {
+        TcpEventBusBridge bridge = TcpEventBusBridge.create(vertx,
+            new BridgeOptions().addInboundPermitted(new PermittedOptions().setAddress("vertx"))
+                .addOutboundPermitted(new PermittedOptions().setAddress("akka"))
+                .addInboundPermitted(new PermittedOptions().setAddress("akka"))
+                .addOutboundPermitted(new PermittedOptions().setAddress("vertx")));
 
-      int eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
-          : config.getInteger(development + "bridge.port");
+        int eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
+            : config.getInteger(development + "bridge.port");
 
-      bridge.rxListen(eventBridgePort).doOnSuccess(res -> {
-        logger.info(String.format("%s%s%d%s", ColorUtilConstants.GREEN_BOLD_BRIGHT,
-            "TCP Event Bus Bridge Started: ", eventBridgePort, ColorUtilConstants.RESET));
-        setupEventBridge();
-      }).doOnError(err -> {
-        logger.error(String.format("%s%s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
-            err.getCause().getMessage(), ColorUtilConstants.RESET));
-      }).subscribe();
+        bridge.rxListen(eventBridgePort).doOnSuccess(res -> {
+          logger.info(String.format("%s%s%d%s", ColorUtilConstants.GREEN_BOLD_BRIGHT,
+              "TCP Event Bus Bridge Started: ", eventBridgePort, ColorUtilConstants.RESET));
+          setupEventBridge();
+
+        }).doOnError(err -> {
+          logger.error(String.format("%s%s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
+              err.getCause().getMessage(), ColorUtilConstants.RESET));
+        }).subscribe();
+      }
     }
-
   }
 
   private void setupEventBridge() {
@@ -227,7 +248,7 @@ vertx.deployVerticle("dmo.fs.vertx.Server", options);
     SpaApplication.setEb(eb);
     CassandraRouter.setEb(eb);
     logger.info("{}{}{}", ColorUtilConstants.BLUE_BOLD_BRIGHT,
-        "Dodex Connected to Event Bus Bridge%s", ColorUtilConstants.RESET);
+        "Dodex Connected to Event Bus Bridge", ColorUtilConstants.RESET);
   }
 
   private HttpServer configureLinuxOptions(Vertx vertx) {
@@ -319,11 +340,15 @@ vertx.deployVerticle("dmo.fs.vertx.Server", options);
     return new JsonObject(node.toString());
   }
 
-  public HttpServer getServer() {
+  public static HttpServer getServer() {
     return server;
   }
 
   public static Boolean getUseKafka() {
     return Boolean.parseBoolean(useKafka);
+  }
+
+  public static Boolean getUseMqtt() {
+    return "true".equals(useMqtt);
   }
 }

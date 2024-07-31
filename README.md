@@ -3,12 +3,19 @@
 
 ## Install Assumptions
 
-1. Using Vertx4 @ <https://vertx.io/introduction-to-vertx-and-reactive/>
+1. Using [Vertx4](<https://vertx.io/introduction-to-vertx-and-reactive/>)
 2. Java 17 or higher installed with JAVA_HOME set.
 3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.5`
 4. Node with npm javascript package manager installed.
 
 **Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web applicaion requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.
+
+## New Additions(7/24)
+
+1. Added Vert.x gRPC Server, see [Grpc README](<https://github.com/DaveO-Home/dodex-vertx/blob/master/handicap/README.md>)
+2. Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ micro-service client to process __dodex-mess__ messages.
+    * see __Mqtt Broker__ section below for the broker and __dodex-akka__ [README](https://github.com/DaveO-Home/dodex-akka/blob/master/README.md) for the client
+
 
 ## Getting Started
 
@@ -29,7 +36,7 @@
 
 1. Execute `./gradlew tasks` to view all tasks.
 2. Execute `./gradlew shadowJar` to build the production fat jar.
-3. Execute `java -jar build/libs/dodex-vertx-3.1.0-prod.jar` to start up the production server.
+3. Execute `java -jar build/libs/dodex-vertx-3.3.0-prod.jar` to start up the production server.
 4. Execute url `http://localhost:8880/dodex` or `.../dodex/bootstrap.html` in a browser. 
    * **Note:** This is a different port and url than development. 
    * **Note:** The default database on the backend is "h2", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
@@ -37,6 +44,14 @@
 6. The environment variable `VERTXWEB_ENVIRONMENT` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.
 7. When Dodex-vertx is configured for the Cubrid database, the database must be created using UTF-8. For example `cubrid createdb dodex en_US.utf8`.
 8. Version 1.3.0 adds an auto user clean up process. See `application-conf.json` for configuration. It is turned off by default. Users and messages may be orphaned when clients change a handle when the server is offline.
+
+## Mqtt Broker for Dodex-Mess via Dodex-Akka
+
+* By default, __dodex-vertx__ uses a __TCP/Event Bus__ to communicate with __dodex-akka__ with a backend __Cassandra__ database.
+* __Dodex-Vertx__ can be configured to use __Mqtt__ as the transport between __Vert.x__ and __Akka__. This allows the __dodex-mess__ application to send messages among __dodex__ users.
+  * Execute __`export USE_MQTT=true`__, __`export DEFAULT_DB=cassandra`__ and __`execute gradlew run`__
+  * For a permanent change, set __"use.mqtt": true__ in __.../src/main/resource/application-conf.json__
+  * Startup the __dodex-akka__ micro-service configured with __Mqtt__
 
 ## Debug
 
@@ -244,9 +259,9 @@ __Note:__ By default the entry `"dodex.groups.checkForOwner"` in __application-c
     * stop the vertx server - ctrl-c
     * build the production fat jar - execute __`./gradlew clean(optional) shadowJar`__
         * **Important** When building the **Fat** jar, set **DEFAULT_DB**=sqlite3 or postgres and **USE_HANDICAP**=true
-    * verify the jar's name - if different than `dodex-vertx-3.1.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
+    * verify the jar's name - if different than `dodex-vertx-3.3.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
 
-3. execute __`cp build/libs/dodex-vertx-3.1.0-prod.jar`__ to **kube/**
+3. execute __`cp build/libs/dodex-vertx-3.3.0-prod.jar`__ to **kube/**
 4. execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
 5. execute __`docker create -t -p 8880:8880 -p 8070:8070 -p 9901:9901 --name dodex_vertx dufferdo2/dodex-vertx`__
 6. execute __`docker start dodex_vertx`__, make sure **envoy** is not running on the host.
@@ -272,7 +287,7 @@ __Note:__ When running the dufferdo2/dodex-vertx image based on ./kube/Dockerfil
 1. execute __`minikube start`__
 2. to make sure the dufferdo2/dodex-vertx image is setup, execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
 3. edit kube/vertx.yml and change **env:** to desired database(DEFAULT_DB) - defaults to **sqlite3**, no database configuration necessary otherwise set **DEFAULT_DB** to **mariadb** or **postgres**
-4. execute `kubectl create -f kube/sqlite3-volume.yml`
+4. execute `kubectl create -f kube/db-volume.yml`
 5. execute `kubectl create -f kube/vertx.yml`
 6. execute `minikube service vertx-service` to start **dodex-vertx** in the default browser - add **--url** to get just the URL
 7. verify that **dodex-vertx** started properly - execute `./execpod` and `cat ./logs/vertx.log` - enter `exit` to exit the pod  
@@ -307,8 +322,8 @@ and database_config.json(also in ../dodex-vertx/generate...resources/database(_s
 3. build the **fat** jar and **image** as described in the **Operation** and **Building an *image* and *container* with docker** sections, e.g.
     * build the production fat jar - __`./gradlew shadowJar`__
         * **Important** When building the **fat** jar, set **DEFAULT_DB**=sqlite3 or mariadb or postgres and **USE_HANDICAP**=true
-        * verify the jar's name - if different than **dodex-vertx-3.1.0-prod.jar**, change in **./kube/Dockerfile**
-    * copy the build/**dodex-vertx-3.1.0-prod.jar** to **./kube**
+        * verify the jar's name - if different than **dodex-vertx-3.3.0-prod.jar**, change in **./kube/Dockerfile**
+    * copy the build/**dodex-vertx-3.3.0-prod.jar** to **./kube**
     * if the **dodex_vertx** and/or the **dufferdo2/dodex-vertx** exist, remove them `docker rm dodex_vertx` and `docker rmi dufferdo2/dodex-vertx`
     * build the image `docker build -t dufferdo2/dodex-vertx:latest -f ./kube/Dockerfile ./kube`
 4. execute `./deleteapp`

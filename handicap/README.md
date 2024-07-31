@@ -49,6 +49,16 @@
   * Optionally remove **handicap/src/main/kotlin/golf/handicap/generated** directory
   * Run **`./gradlew jooqGenerate`**
 
+### Vert.x gRPC Server
+
+* Implemented new gRPC server as described in the docs:  
+  ''Vert.x gRPC Server is a new gRPC server powered by Vert.x HTTP server superseding the integrated Netty based gRPC client.  
+  This server provides a gRPC request/response oriented API as well as a the generated stub approach with a service bridge.''
+  * see __.../handicap/src/main/kotlin/golf/handicap/vertx/HandicapGrpcServer.kt__, however, the Netty configuration is still default.
+  * To use the new gRPC Vert.x server, execute __`export GRPC_SERVER=true`__ or change __`"grpc.server": true`__ in .../src/main/resources/application-conf.json for a permanent change
+
+
+
 ### Production Build
 
 * In **dodex-vertx/handicap/src/grpc/client** execute **`npm run webpack:prod`** or **`npm run esbuild:prod`**

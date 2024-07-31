@@ -7,8 +7,8 @@ import dmo.fs.dbh.HandicapDatabase;
 
 public abstract class DbH2 extends DbDefinitionBase implements DodexDatabase, HandicapDatabase {
 	public static final String CHECKUSERSQL = "SELECT table_name FROM  INFORMATION_SCHEMA.TABLES where table_name = 'users' and table_type='BASE TABLE' and table_schema = 'PUBLIC'";
-    protected static final String CHECKMESSAGESSQL = "SELECT table_name FROM  INFORMATION_SCHEMA.TABLES where table_name = 'messages'";
-    protected static final String CHECKUNDELIVEREDSQL = "SELECT table_name FROM  INFORMATION_SCHEMA.TABLES where table_name = 'undelivered'";
+  protected static final String CHECKMESSAGESSQL = "SELECT table_name FROM  INFORMATION_SCHEMA.TABLES where table_name = 'messages'";
+  protected static final String CHECKUNDELIVEREDSQL = "SELECT table_name FROM  INFORMATION_SCHEMA.TABLES where table_name = 'undelivered'";
 	protected static final String CHECKGROUPSSQL = "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE table_type='BASE TABLE' AND table_name = 'groups'";
 	protected static final String CHECKMEMBERSQL = "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE table_type='BASE TABLE' AND table_name = 'member'";
 	protected final static String CHECKHANDICAPSQL = "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE table_type='BASE TABLE' AND table_name in ('golfer', 'course', 'scores', 'ratings', 'groups', 'member')";

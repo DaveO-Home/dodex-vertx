@@ -241,6 +241,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             val populateScores = PopulateGolferScores()
             val requestJson = JsonObject(request.json)
             val golfer = requestJson.mapTo(Golfer::class.java)
+
             if (request.cmd == 10) {
                 val names = request.key.split("&#44;")
                 golfer.lastName = names[0]

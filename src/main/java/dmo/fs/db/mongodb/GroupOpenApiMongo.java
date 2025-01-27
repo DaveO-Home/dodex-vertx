@@ -49,12 +49,12 @@ public class GroupOpenApiMongo implements GroupOpenApi {
 
     try {
       addGroup(addGroupJson, mongoClient).onSuccess(groupJson -> {
-        String entry0 = selectedUsers.get(0);
+        String entry0 = selectedUsers.getFirst();
         if (groupJson.getInteger("status") == 0 &&
-            entry0 != null && !"".equals(entry0)) {
+            entry0 != null && !entry0.isEmpty()) {
           try {
             addMembers(selectedUsers, groupJson, mongoClient).onSuccess(promise::complete).onFailure(err -> {
-              logger.error("Add group/member err: " + err.getMessage());
+              logger.error("Add group/member err: {}", err.getMessage());
               addGroupJson.put("status", -1);
               addGroupJson.put("errorMessage", err.getMessage());
               mongoClient.close().doOnComplete(() -> promise.complete(groupJson)).subscribe();
@@ -427,7 +427,9 @@ public class GroupOpenApiMongo implements GroupOpenApi {
 
     mongoClient.findOne("group_member", groupQuery, new JsonObject()).doOnSuccess(group -> {
       JsonArray membersArray = group.getJsonArray("members");
+      @SuppressWarnings("unchecked")
       List<String> members = membersArray.getList();
+
       for (String user : selectedList) {
         if (!members.contains(user)) {
           newSelected.add(user);

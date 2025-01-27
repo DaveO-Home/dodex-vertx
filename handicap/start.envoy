@@ -1,3 +1,3 @@
 #!/usr/bin/bash
 
-envoy --log-path ./logs/logfile.log --enable-fine-grain-logging  -l info -c handicap.yaml
+envoy --log-path ./logs/logfile.log --enable-fine-grain-logging --base-id 1 -l info -c handicap.yaml

@@ -20,7 +20,7 @@ import java.util.logging.Logger
 
 class HandicapGrpcServer : AbstractVerticle() {
     companion object {
-        private val LOGGER = Logger.getLogger(GrpcServer::class.java.name)
+        private val LOGGER = Logger.getLogger(HandicapGrpcServer::class.java.name)
         var port = 8888
         private var enableHandicap: Boolean?
         var enableHandicapAdmin: Boolean?
@@ -28,7 +28,7 @@ class HandicapGrpcServer : AbstractVerticle() {
 
         @Throws(IOException::class)
         private fun setupLogging() {
-            GrpcServer::class.java.getResourceAsStream("/vertx-default-jul-logging.properties").use { f
+            HandicapGrpcServer::class.java.getResourceAsStream("/vertx-default-jul-logging.properties").use { f
                 ->
                 LogManager.getLogManager().readConfiguration(f)
             }
@@ -96,7 +96,7 @@ class HandicapGrpcServer : AbstractVerticle() {
             val jsonMapper = ObjectMapper()
             var node: JsonNode?
 
-            GrpcServer::class.java.getResourceAsStream("/application-conf.json").use { inputStream ->
+            HandicapGrpcServer::class.java.getResourceAsStream("/application-conf.json").use { inputStream ->
                 node = jsonMapper.readTree(inputStream)
             }
 

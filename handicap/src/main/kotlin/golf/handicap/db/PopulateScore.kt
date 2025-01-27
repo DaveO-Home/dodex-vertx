@@ -8,7 +8,6 @@ import handicap.grpc.*
 import io.grpc.stub.StreamObserver
 import io.vertx.core.Future
 import io.vertx.rxjava3.core.Promise
-import io.vertx.rxjava3.mysqlclient.MySQLClient
 import io.vertx.rxjava3.sqlclient.Tuple
 import org.jooq.*
 import org.jooq.impl.*

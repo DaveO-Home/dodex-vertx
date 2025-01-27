@@ -19,39 +19,39 @@ import org.jooq.impl.UpdatableRecordImpl
 @Suppress("UNCHECKED_CAST")
 open class GolferRecord() : UpdatableRecordImpl<GolferRecord>(Golfer.GOLFER), Record9<String?, String?, String?, Float?, String?, String?, Boolean?, Boolean?, Long?> {
 
-    var pin: String?
+    open var pin: String?
         set(value): Unit = set(0, value)
         get(): String? = get(0) as String?
 
-    var firstName: String?
+    open var firstName: String?
         set(value): Unit = set(1, value)
         get(): String? = get(1) as String?
 
-    var lastName: String?
+    open var lastName: String?
         set(value): Unit = set(2, value)
         get(): String? = get(2) as String?
 
-    var handicap: Float?
+    open var handicap: Float?
         set(value): Unit = set(3, value)
         get(): Float? = get(3) as Float?
 
-    var country: String?
+    open var country: String?
         set(value): Unit = set(4, value)
         get(): String? = get(4) as String?
 
-    var state: String?
+    open var state: String?
         set(value): Unit = set(5, value)
         get(): String? = get(5) as String?
 
-    var overlapYears: Boolean?
+    open var overlapYears: Boolean?
         set(value): Unit = set(6, value)
         get(): Boolean? = get(6) as Boolean?
 
-    var `public`: Boolean?
+    open var `public`: Boolean?
         set(value): Unit = set(7, value)
         get(): Boolean? = get(7) as Boolean?
 
-    var lastLogin: Long?
+    open var lastLogin: Long?
         set(value): Unit = set(8, value)
         get(): Long? = get(8) as Long?
 

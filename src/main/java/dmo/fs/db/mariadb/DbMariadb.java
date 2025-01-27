@@ -25,7 +25,7 @@ public abstract class DbMariadb extends DbDefinitionBase implements DodexDatabas
 		CREATEMESSAGES(
 				"CREATE TABLE messages (" +
 						"id INT NOT NULL AUTO_INCREMENT," +
-						"message MEDIUMTEXT NOT NULL," +
+						"message MEDIUMBLOB NOT NULL," +
 						"from_handle VARCHAR(255) CHARACTER SET utf8mb4 collate  utf8mb4_bin NOT NULL," +
 						"post_date DATETIME NOT NULL," +
 						"PRIMARY KEY (id));"),

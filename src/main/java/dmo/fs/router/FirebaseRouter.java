@@ -15,6 +15,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import dmo.fs.db.DbConfiguration;
+import io.vertx.rxjava3.core.http.ServerWebSocketHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.google.auth.oauth2.GoogleCredentials;
@@ -62,8 +63,13 @@ public class FirebaseRouter {
 
     public FirebaseRouter(final Vertx vertx) throws InterruptedException {
         this.vertx = vertx;
+        vertx.exceptionHandler(e -> {
+            e.printStackTrace();
+        });
+
         dbf = firestoreOptions.getService();
         dbf.collection("users").get(); // dummy call to get firestore ready, helps on initial thread blockage
+
         if(Server.getUseKafka()) {
             ke = new KafkaEmitterDodex();
         }
@@ -97,8 +103,9 @@ public class FirebaseRouter {
               final DodexUtil dodexUtil = new DodexUtil();
 
                 if (!"/dodex".equals(ws.path())) {
-                    ws.reject();
+                    server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
                 } else {
+                    server.webSocketHandshakeHandler(ServerWebSocketHandshake::accept);
                     final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                     final MessageUser messageUser = dodexFirebase.createMessageUser();
                   wsChatSessions.put(ws.remoteAddress().toString(),
@@ -164,7 +171,8 @@ public class FirebaseRouter {
                                                 if (!websocket.equals(ws.remoteAddress().toString())) {
                                                     // broadcast message
                                                     query = ParseQueryUtilHelper
-                                                            .getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
+                                                        .getQueryMap(URLDecoder.decode(webSocket.query(), StandardCharsets.UTF_8));
+                                                        //.getQueryMap(wsChatSessions.get(webSocket.textHandlerID()));
                                                     final String handle = query.get("handle");
                                                     if (selectedUsers.isEmpty() && command[0].isEmpty()) {
                                                         webSocket.writeTextMessage(

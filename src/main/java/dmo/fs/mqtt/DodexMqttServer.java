@@ -81,7 +81,7 @@ public class DodexMqttServer {
             for (String t : unsubscribe.topics()) {
               logger.debug("Subscription for {}", t);
             }
-//
+
             endpoint.unsubscribeAcknowledge(unsubscribe.messageId());
           });
 

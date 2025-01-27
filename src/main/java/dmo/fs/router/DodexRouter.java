@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 import dmo.fs.db.DbConfiguration;
+import io.vertx.rxjava3.core.http.ServerWebSocketHandshake;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import dmo.fs.admin.CleanOrphanedUsers;
@@ -102,8 +103,9 @@ public class DodexRouter {
           final DodexUtil dodexUtil = new DodexUtil();
 
             if (!("/dodex").equals(ws.path())) {
-                ws.reject();
+              server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
             } else {
+                server.webSocketHandshakeHandler(ServerWebSocketHandshake::accept);
                 final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                 final MessageUser messageUser = dodexDatabase.createMessageUser();
                 // final PgPool pgPool = dodexDatabase.getPool4();

@@ -7,12 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import org.influxdb.BatchOptions;
-import org.influxdb.InfluxDB;
-import org.influxdb.InfluxDBFactory;
-import org.influxdb.dto.Point;
-import org.influxdb.dto.Query;
-import org.influxdb.dto.QueryResult;
+// import org.influxdb.BatchOptions;
+// import org.influxdb.InfluxDB;
+// import org.influxdb.InfluxDBFactory;
+// import org.influxdb.dto.Point;
+// import org.influxdb.dto.Query;
+// import org.influxdb.dto.QueryResult;
 import org.junit.Rule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;

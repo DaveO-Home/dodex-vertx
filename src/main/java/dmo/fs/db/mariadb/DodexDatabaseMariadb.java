@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
+import io.vertx.rxjava3.mysqlclient.MySQLBuilder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,7 +23,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.rxjava3.mysqlclient.MySQLPool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
 import io.vertx.rxjava3.sqlclient.RowSet;
@@ -32,7 +33,6 @@ public class DodexDatabaseMariadb extends DbMariadb {
   private final static Logger logger =
       LoggerFactory.getLogger(DodexDatabaseMariadb.class.getName());
   protected Disposable disposable;
-  protected MySQLPool pool4;
   protected Properties dbProperties = new Properties();
   protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
   protected Map<String, String> dbMap = new ConcurrentHashMap<>();
@@ -118,11 +118,15 @@ public class DodexDatabaseMariadb extends DbMariadb {
     PoolOptions poolOptions =
         new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
-    // Create the client pool
-    pool4 = MySQLPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    pool = MySQLBuilder
+        .pool()
+        .with(poolOptions)
+        .connectingTo(connectOptions)
+        .using(DodexUtil.getVertx())
+        .build();
 
     Completable completable =
-        pool4.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
+        pool.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
             .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(rows -> {
               RowIterator<Row> ri = rows.iterator();
               Long val = null;
@@ -266,14 +270,15 @@ public class DodexDatabaseMariadb extends DbMariadb {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(pool);
           } catch (SQLException e) {
             e.printStackTrace();
           }
         }
       });
     }, err -> {
-      logger.info(String.format("Tables Create Error: %s", err.getMessage()));
+      logger.info("Tables Create Error: {}", err.getMessage());
+      err.printStackTrace();
     });
   }
 
@@ -286,6 +291,6 @@ public class DodexDatabaseMariadb extends DbMariadb {
   @Override
   @SuppressWarnings("unchecked")
   public <R> R getPool4() {
-    return (R) pool4;
+    return (R) pool;
   }
 }

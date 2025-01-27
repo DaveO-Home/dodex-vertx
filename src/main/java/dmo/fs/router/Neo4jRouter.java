@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import dmo.fs.db.DbConfiguration;
+import io.vertx.rxjava3.core.http.ServerWebSocketHandshake;
 import org.neo4j.driver.Driver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -106,8 +107,9 @@ public class Neo4jRouter {
                 final DodexUtil dodexUtil = new DodexUtil();
 
                 if (!"/dodex".equals(ws.path())) {
-                    ws.close();
+                    server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
                 } else {
+                    server.webSocketHandshakeHandler(ServerWebSocketHandshake::accept);
                     final MessageUser messageUser = dodexNeo4j.createMessageUser();
                     try {
                         wsChatSessions.put(ws.remoteAddress().toString(), URLDecoder

@@ -1,0 +1,183 @@
+<!--<meta-->
+<!--    name="author"-->
+<!--    content="Aniqa"/>-->
+
+<div class="containerx center">
+    <header class="container text-md-start  mt-3 ">
+        <div class="row align-items-center">
+            <h3 class="stay col-md-5">Weather Conditions</h3>
+            <div class="w-100 d-md-none d-block"></div>
+            <form class="input-group col p-1 search-form">
+                <button
+                        class="btn btn-outline-primary"
+                        id="geolocation-btn"
+                        type="button"
+                        title="Fetch local weather">
+                    <i class="fa-solid fa-location-arrow"></i>
+                </button>
+
+                <input
+                        type="search"
+                        placeholder="Search City..."
+                        class="form-control"
+                        id="search-input"
+                        autocapitalize="on"
+                        autocomplete="off"/>
+                <ul class="search-suggestions"></ul>
+                <button
+                        type="submit"
+                        class="btn btn-outline-primary me-2 search-btn">
+                    <i class="fa-solid fa-magnifying-glass-location"></i>
+                </button>
+            </form>
+
+            <div class="form-check form-switch ps-2 align-self-center col-1 me-4 me-md-1">
+                <input
+                        class="form-check-input"
+                        type="checkbox"
+                        id="flexSwitchCheckChecked"
+                        role="switch"/>
+            </div>
+        </div>
+    </header>
+    <div class="d-flex">
+        <div class="local-overview col ms-md-0 mt-4">
+            <div class="mx-3 my-4 strong">
+                <div>Forecast in <span id="location"></span></div>
+                <div id="today"></div>
+            </div>
+            <div class="container flex-md-row flex-column">
+                <div class="row">
+                    <section class="temp-overview col-md-5">
+                        <div class="current-weather cardw">
+                            <div class="card-body">
+                                <div class="d-flex">
+                                    <h1 class="flex-grow-1">
+                                        <span id="temp-now"></span>°<span class="fahrenheit">F </span>
+                                        <span class="toggle-temps"
+                                        >/
+													<a
+                                                            href="#"
+                                                            class="celsius"
+                                                    >C</a
+                                                    ></span
+                                        >
+                                    </h1>
+
+                                    <div class="text-end pt-2 strong">
+                                        <small>High</small>
+                                        <span
+                                                class="temps"
+                                                id="high-temp"></span
+                                        >°<span class="fahrenheit">F</span>
+                                        <br/>
+
+                                        <small>Low </small>
+                                        <span
+                                                class="temps"
+                                                id="low-temp"
+                                        >30</span
+                                        >°<span class="fahrenheit">F</span>
+                                    </div>
+                                </div>
+                                <br/><br/>
+                                <div class="d-flex">
+                                    <div class="flex-grow-1">
+                                        <p>
+                                            <span id="description-temp">Mostly Sunny</span><br/>
+                                            Feels like
+                                            <span
+                                                    class="temps"
+                                                    id="feels-like"></span
+                                            >°<span class="fahrenheit">F</span>
+                                            <br/>
+                                            <small id="condition-msg"></small>
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <img
+                                                src="./assets/loading.svg"
+                                                width="85"
+                                                class="weather-icon default-main-icon"
+                                                alt="Loading icon"/>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                    <div class="w-100 d-md-none d-block"></div>
+                    <section class="temp-details col-md-4 mt-3 mt-md-2 mt-lg-0">
+                        <div class="cardw p-1 initial">
+                            <ul class="list-group list-group-flush">
+                                <li class="list-group-item d-flex">
+                                    <strong class="flex-grow-1">Visibility&nbsp</strong>
+                                    <span id="visibility">0</span>km&nbsp
+                                    <i class="fa-solid fa-eye-slash align-self-center"></i>
+                                </li>
+                                <li class="list-group-item d-flex">
+                                    <strong class="flex-grow-1">Dew Point </strong
+                                    ><span
+                                        id="dew-point"
+                                        class="temps strong">?</span
+                                >°<span class="fahrenheit">F </span>&nbsp
+                                    <i class="fa-solid fa-droplet align-self-center"></i>
+                                </li>
+                                <li class="list-group-item d-flex">
+                                    <strong class="flex-grow-1">Wind </strong>
+                                    <span id="wind">0</span>
+                                    <span id="wind-unit">&nbspmph</span>&nbsp
+                                    <i class="fa-solid fa-wind align-self-center"></i>
+                                </li>
+
+                                <li class="list-group-item d-flex">
+                                    <strong class="flex-grow-1"> Humidity</strong>
+                                    <span id="humidity">0</span>%&nbsp
+                                    <i class="fa-solid fa-water align-self-center"></i>
+                                </li>
+
+                                <li class="list-group-item d-flex">
+                                    <strong class="flex-grow-1">Clouds </strong>
+                                    <span id="clouds"></span>%&nbsp
+                                    <i class="fa-solid fa-cloud align-self-center"></i>
+                                </li>
+                            </ul>
+                        </div>
+                    </section>
+                    <div class="w-100 d-md-none d-block"></div>
+                    <section class="sun-time col-md-3">
+                        <div class="card cardw" style="transform-origin: 0; transform: rotateX(0);">
+                            <img
+                                    src="./assets/day-landscape.png"
+                                    class="card-img w-100"
+                                    id="scenery"
+                                    alt="Landscape scenery"/>
+                            <div class="card-img-overlay text-center">
+                                <i class="fa-solid fa-sun"></i>
+                                <div>Sunrise</div>
+                                <div id="sunrise-time"></div>
+                                <br/>
+                                <i class="fa-solid fa-moon"></i>
+                                <div>Sunset</div>
+                                <div id="sunset-time"></div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+            <section class="full-forecast d-flex justify-content-md-around my-4"></section>
+        </div>
+    </div>
+</div>
+<footer class="text-center my-3 stay">
+    <i class="fa-solid fa-code"></i>
+    Designed & Coded by
+    <strong
+    ><a
+            href="https://x.com/aniqatc"
+            target="_blank"
+            rel="noreferrer"
+            id="credits"
+    >Aniqa</a
+    >
+    </strong>
+</footer>

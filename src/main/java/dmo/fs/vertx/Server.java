@@ -10,9 +10,14 @@ import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import io.vertx.core.*;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.core.ThreadingModel;
+import io.vertx.core.Verticle;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
+import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Route;
@@ -66,9 +71,11 @@ public class Server extends AbstractVerticle {
   private static String development = System.getenv("VERTXWEB_ENVIRONMENT");
   private static String useKafka = System.getenv("DODEX_KAFKA");
   private static String useMqtt = System.getenv("USE_MQTT");
+  private static String useSsl = System.getenv("USE_SSL");
   private static HttpServer server;
   private JsonObject config;
   private JsonObject alternateConfig;
+  private HttpServerOptions httpServerOptions;
 
   @Override
   public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException,
@@ -96,6 +103,9 @@ public class Server extends AbstractVerticle {
     if (useMqtt == null) {
       useMqtt = config.getString("use.mqtt");
     }
+    if (useSsl == null) {
+      useSsl = config.getString("use.ssl");
+    }
     if ("true".toLowerCase().equals(useKafka)) {
       logger.info("{}Using Kafka - make sure it is running with ZooKeeper.{}",
           ColorUtilConstants.GREEN, ColorUtilConstants.RESET);
@@ -110,11 +120,10 @@ public class Server extends AbstractVerticle {
       ColorUtilConstants.colorOff();
     }
 
-/* Using virtual threads - java 21
-DeploymentOptions options = new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER);
-vertx.deployVerticle("dmo.fs.vertx.Server", options);
-*/
-
+  /* Using virtual threads - java 21
+    DeploymentOptions options = new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER);
+    vertx.deployVerticle("dmo.fs.vertx.Server", options);
+  */
     if (isUnix()) {
       server = configureLinuxOptions(vertx);
     } else {
@@ -135,15 +144,13 @@ vertx.deployVerticle("dmo.fs.vertx.Server", options);
       port = System.getenv("VERTX_PORT") == null ? config.getInteger(overridePort, secondaryPort)
           : Integer.parseInt(System.getenv("VERTX_PORT"));
     } catch (NumberFormatException ex) {
-      ex.printStackTrace();
+      logger.info("{}Port Invalid: value: {} -- {}{}",
+          ColorUtilConstants.RED, port, ex.getMessage(), ColorUtilConstants.RESET);
       throw ex;
     }
 
-    // SpaRoutes allRoutes = new SpaRoutes(vertx, server, routes.getRouter(),
-    // routes.getFirestore());
-    routes.getRouter().onSuccess(router -> { // allRoutes.getRouter();
+    routes.getRouter().onSuccess(router -> {
       new SpaRoutes(vertx, server, router, routes.getFirestore());
-      // Router allRouter = router;
 
       server.getDelegate().requestHandler(router);
 
@@ -253,18 +260,23 @@ vertx.deployVerticle("dmo.fs.vertx.Server", options);
 
   private HttpServer configureLinuxOptions(Vertx vertx) {
     // Available on Linux
-    return vertx.createHttpServer(new HttpServerOptions().setTcpFastOpen(true).setTcpCork(true)
-        .setTcpQuickAck(true).setReusePort(true).setLogActivity(true)
-    // https - generate and get signed your certificate
-    // Self signed for testing, per;
-    // sslshopper.com/article-most-common-java-keytool-keystore-commands.html
+    httpServerOptions = new HttpServerOptions().setTcpFastOpen(true).setTcpCork(true)
+        .setTcpQuickAck(true).setReusePort(true).setLogActivity(true);
+
+    /* Self signed for testing, per;
+       sslshopper.com/article-most-common-java-keytool-keystore-commands.html
+    */
     // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks
-    // -storepass password -validity 360 -keysize 2048
-    // .setKeyStoreOptions(new JksOptions()
-    // .setPath("keystore.jks") // good until April 9, 2022
-    // .setPassword("apassword"))
-    // .setSsl(true)
-    );
+    // -storepass some-password -validity 360 -keysize 2048
+
+    if("true".equals(useSsl)) {
+      Buffer selfSignedBuffer = vertx.getDelegate().fileSystem().readFileBlocking("keystore.jks");
+      httpServerOptions.setSsl(true)
+          .setKeyCertOptions(new JksOptions()
+          .setValue(selfSignedBuffer)
+          .setPassword("some-password"));
+    }
+    return vertx.createHttpServer(httpServerOptions);
   }
 
   private void checkInstallation (FileSystem fs) {

@@ -29,5 +29,6 @@
   "prod:grpc:port": 15003,
   "dodex.virtual.threads": false,
   "grpc.server": false,
-  "use.mqtt": false
+  "use.mqtt": false,
+  "use.ssl": false
 }

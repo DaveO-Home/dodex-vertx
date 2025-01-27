@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
+import io.vertx.rxjava3.db2client.DB2Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,7 +18,6 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.db2client.DB2ConnectOptions;
-import io.vertx.rxjava3.db2client.DB2Pool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
@@ -31,7 +31,6 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
   protected DodexUtil dodexUtil = new DodexUtil();
-  protected DB2Pool pool4;
 
   public DodexDatabaseIbmDB2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
@@ -88,9 +87,15 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
     // .setCachePreparedStatements(true)
     ;
 
-    pool4 = DB2Pool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+//    pool4 = DB2Pool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    pool = DB2Builder
+        .pool()
+        .with(poolOptions)
+        .connectingTo(connectOptions)
+        .using(DodexUtil.getVertx())
+        .build();
 
-    Completable completable = pool4.rxGetConnection()
+    Completable completable = pool.rxGetConnection()
         .flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
             tx -> conn.query(CHECKUSERSQL.replace("DB2INST1", dbMap.get("tabschema"))).rxExecute()
                 .doOnSuccess(rows -> {
@@ -98,7 +103,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
                     final String usersSql = getCreateTable("USERS");
 
                     Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute().doOnError(err -> {
-                      logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                      logger.info("Users Table Error: {}", err.getMessage());
                     }).doOnSuccess(result -> {
                       logger.info("Users Table Added.");
                     });
@@ -106,11 +111,11 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
                     crow.subscribe(result -> {
                       //
                     }, err -> {
-                      logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                      logger.info("Users Table Error1: {}", err.getMessage());
                     });
                   }
                 }).doOnError(err -> {
-                  logger.info(String.format("Users Table Error: %s", err.getMessage()));
+                  logger.info("Users Table Error2: {}", err.getMessage());
 
                 })
                 .flatMap(result -> conn
@@ -120,7 +125,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
                         final String sql = getCreateTable("MESSAGES");
 
                         Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
-                          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                          logger.info("Messages Table Error: {}", err.getMessage());
                         }).doOnSuccess(row2 -> {
                           logger.info("Messages Table Added.");
                         });
@@ -128,11 +133,11 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
                         crow.subscribe(res -> {
                           //
                         }, err -> {
-                          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                          logger.info("Messages Table Error2: {}", err.getMessage());
                         });
                       }
                     }).doOnError(err -> {
-                      logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                      logger.info("Messages Table Error3: {}", err.getMessage());
 
                     }))
                 .flatMap(result -> conn
@@ -143,7 +148,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 
                         Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
                           logger
-                              .info(String.format("Undelivered Table Error: %s", err.getMessage()));
+                              .info("Undelivered Table Error: {}", err.getMessage());
                         }).doOnSuccess(row2 -> {
                           logger.info("Undelivered Table Added.");
                         });
@@ -151,31 +156,31 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
                         crow.subscribe(result2 -> {
                           //
                         }, err -> {
-                          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+                          logger.info("Table create Error: {}", err.getMessage());
                         });
                         tx.commit();
                         conn.close();
                       }
                     }).doOnError(err -> {
-                      logger.info(String.format("Messages Table Error: %s", err));
+                      logger.info("Table create Error2: {}", err.getMessage());
                     }))
                 .flatMapCompletable(res -> Completable.complete())));
 
     completable.subscribe(() -> {
       try {
-        setupSql(pool4);
+        setupSql(pool);
       } catch (SQLException e) {
         e.printStackTrace();
       }
     }, err -> {
-      logger.info(String.format("Tables Create Error: %s", err.getMessage()));
+      logger.info("Tables Create Error: {}", err.getMessage());
     });
   }
 
   @Override
   @SuppressWarnings("unchecked")
   public <T> T getPool4() {
-    return (T) pool4;
+    return (T) pool;
   }
 
   @Override

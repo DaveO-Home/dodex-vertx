@@ -8,14 +8,18 @@ import golf.handicap.generated.DefaultSchema
 import golf.handicap.generated.keys.MEMBER__MEMBER_GROUP_ID_FOREIGN
 import golf.handicap.generated.tables.records.MemberRecord
 
+import java.util.function.Function
+
 import kotlin.collections.List
 
 import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.Name
 import org.jooq.Record
+import org.jooq.Records
 import org.jooq.Row2
 import org.jooq.Schema
+import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -101,8 +105,12 @@ open class Member(
 
         return _groups;
     }
+
+    val groups: Groups
+        get(): Groups = groups()
     override fun `as`(alias: String): Member = Member(DSL.name(alias), this)
     override fun `as`(alias: Name): Member = Member(alias, this)
+    override fun `as`(alias: Table<*>): Member = Member(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -114,8 +122,24 @@ open class Member(
      */
     override fun rename(name: Name): Member = Member(name, null)
 
+    /**
+     * Rename this table
+     */
+    override fun rename(name: Table<*>): Member = Member(name.getQualifiedName(), null)
+
     // -------------------------------------------------------------------------
     // Row2 type methods
     // -------------------------------------------------------------------------
     override fun fieldsRow(): Row2<Int?, Int?> = super.fieldsRow() as Row2<Int?, Int?>
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    fun <U> mapping(from: (Int?, Int?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    fun <U> mapping(toType: Class<U>, from: (Int?, Int?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
 }

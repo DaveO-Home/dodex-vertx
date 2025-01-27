@@ -14,7 +14,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import dmo.fs.utils.DodexUtil;
 import io.reactivex.rxjava3.disposables.Disposable;
 
-
 public class DodexDbCassandra extends DbCassandraBase implements DodexCassandra {
 	private final static Logger logger =
 			LoggerFactory.getLogger(DodexDbCassandra.class.getName());

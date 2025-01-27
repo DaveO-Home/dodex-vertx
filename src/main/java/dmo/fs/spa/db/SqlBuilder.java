@@ -14,6 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.Date;
 
 import dmo.fs.db.DbConfiguration;
+import io.vertx.pgclient.impl.PgPoolImpl;
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
@@ -24,10 +25,7 @@ import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
-import io.vertx.rxjava3.db2client.DB2Pool;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
-import io.vertx.rxjava3.mysqlclient.MySQLPool;
-import io.vertx.rxjava3.pgclient.PgPool;
 import io.vertx.rxjava3.sqlclient.Pool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.Tuple;
@@ -46,20 +44,18 @@ public abstract class SqlBuilder {
     private static String GETLOGINBYID;
     private static String GETSQLITEUPDATELOGIN;
     private Boolean isTimestamp;
-    private static Pool pool;
+    protected static Pool pool;
     private static Boolean qmark = true;
 
     public static <T> void setupSql(T pool4) throws SQLException {
         // Non-Blocking Drivers
-        if (pool4 instanceof PgPool) {
-            pool = (PgPool) pool4;
+        if (((Pool)pool4).getDelegate() instanceof PgPoolImpl) {
+            pool = (Pool)pool4;
             qmark = false;
-        } else if (pool4 instanceof MySQLPool) {
-            pool = (MySQLPool) pool4;
-        } else if (pool4 instanceof DB2Pool) {
-            pool = (DB2Pool) pool4;
         } else if (pool4 instanceof JDBCPool) {
             pool = (JDBCPool) pool4;
+        } else {
+            pool = (Pool)pool4;
         }
 
         Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible

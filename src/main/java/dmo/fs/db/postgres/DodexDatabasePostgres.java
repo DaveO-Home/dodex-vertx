@@ -11,6 +11,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
+import io.vertx.rxjava3.pgclient.PgBuilder;
+import io.vertx.rxjava3.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,7 +23,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.rxjava3.pgclient.PgPool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
 import io.vertx.rxjava3.sqlclient.RowSet;
@@ -32,7 +33,6 @@ public class DodexDatabasePostgres extends DbPostgres {
   private final static Logger logger =
       LoggerFactory.getLogger(DodexDatabasePostgres.class.getName());
   protected Disposable disposable;
-  protected PgPool pool4;
   protected Properties dbProperties = new Properties();
   protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
   protected Map<String, String> dbMap = new ConcurrentHashMap<>();
@@ -121,10 +121,14 @@ public class DodexDatabasePostgres extends DbPostgres {
         .setIdleTimeout(1)
     // .setCachePreparedStatements(true)
     ;
+    Pool pool = PgBuilder
+        .pool()
+        .with(poolOptions)
+        .connectingTo(connectOptions)
+        .using(DodexUtil.getVertx())
+        .build();
 
-    pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
-
-    Completable completable = pool4.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
+    Completable completable = pool.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -310,7 +314,7 @@ public class DodexDatabasePostgres extends DbPostgres {
           }
         })).flatMapCompletable(res -> Completable.complete())));
 
-    completable.toCompletionStage(pool4).whenComplete((pool4, err) -> {
+    completable.toCompletionStage(pool).whenComplete((pool4, err) -> {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
@@ -329,7 +333,7 @@ public class DodexDatabasePostgres extends DbPostgres {
   @Override
   @SuppressWarnings("unchecked")
   public <T> T getPool4() {
-    return (T) pool4;
+    return (T) pool;
   }
 
   @Override

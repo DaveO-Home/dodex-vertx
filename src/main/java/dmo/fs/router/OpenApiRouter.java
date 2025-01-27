@@ -148,9 +148,10 @@ public class OpenApiRouter {
           .setDeleteUploadedFilesOnEnd(true).setHandleFileUploads(true).getDelegate());
       routerBuilder.rootHandler(RoutingContext::next);
 
-      openApiPromise.complete(routerBuilder.createRouter());
+       openApiPromise.complete(routerBuilder.createRouter());
 
     }).onFailure(Throwable::printStackTrace);
+
 
     return openApiPromise.future();
   }

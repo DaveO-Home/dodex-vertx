@@ -21,19 +21,19 @@ import org.jooq.impl.UpdatableRecordImpl
 @Suppress("UNCHECKED_CAST")
 open class LoginRecord() : UpdatableRecordImpl<LoginRecord>(Login.LOGIN), Record4<Int?, String?, String?, OffsetDateTime?> {
 
-    var id: Int?
+    open var id: Int?
         set(value): Unit = set(0, value)
         get(): Int? = get(0) as Int?
 
-    var name: String?
+    open var name: String?
         set(value): Unit = set(1, value)
         get(): String? = get(1) as String?
 
-    var password: String?
+    open var password: String?
         set(value): Unit = set(2, value)
         get(): String? = get(2) as String?
 
-    var lastLogin: OffsetDateTime?
+    open var lastLogin: OffsetDateTime?
         set(value): Unit = set(3, value)
         get(): OffsetDateTime? = get(3) as OffsetDateTime?
 

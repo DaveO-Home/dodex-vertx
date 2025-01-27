@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.mqtt.DodexMqttServer;
 
+import io.vertx.rxjava3.core.http.ServerWebSocketHandshake;
 import org.modellwerkstatt.javaxbus.EventBus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,8 +111,9 @@ public class CassandraRouter {
           final DodexUtil dodexUtil = new DodexUtil();
 
           if (!"/dodex".equals(ws.path())) {
-            ws.reject();
+            server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
           } else {
+            server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
             final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
             final MessageUser messageUser = dodexCassandra.createMessageUser();
 

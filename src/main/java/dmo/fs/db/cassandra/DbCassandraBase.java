@@ -30,8 +30,6 @@ public abstract class DbCassandraBase<T> {
   private final Map<String, Promise<MessageUser>> mUserPromises = new ConcurrentHashMap<>();
   private final Map<String, Promise<mjson.Json>> mJsonPromises = new ConcurrentHashMap<>();
   private String vertxConsumer = "";
-  private String mqttConsumer = null;
-
 
   private Vertx vertx;
 
@@ -98,31 +96,28 @@ public abstract class DbCassandraBase<T> {
 
       mqttServer.publish("dodex-topic", jsonPayLoad);
 
-//      if (mqttConsumer == null) {
-        mqttConsumer = "mqtt";
-        MqttEndpoint endpoint = mqttServer.getMqttEndpoint();
-        endpoint.publishHandler(message -> {
+      MqttEndpoint endpoint = mqttServer.getMqttEndpoint();
+      endpoint.publishHandler(message -> {
 
-          logger.debug("Just received message [{}] with QoS [{}]",
-              message.payload().toString(Charset.defaultCharset()), message.qosLevel());
+        logger.debug("Just received message [{}] with QoS [{}]",
+            message.payload().toString(Charset.defaultCharset()), message.qosLevel());
 
-          mqttMessageConsumer(message);
+        mqttMessageConsumer(message);
 
-          if (message.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
-            endpoint.publishAcknowledge(message.messageId());
-          } else if (message.qosLevel() == MqttQoS.EXACTLY_ONCE) {
-            endpoint.publishReceived(message.messageId());
-          }
+        if (message.qosLevel() == MqttQoS.AT_LEAST_ONCE) {
+          endpoint.publishAcknowledge(message.messageId());
+        } else if (message.qosLevel() == MqttQoS.EXACTLY_ONCE) {
+          endpoint.publishReceived(message.messageId());
+        }
 
-        }).publishReleaseHandler(endpoint::publishComplete);
-//      }
+      }).publishReleaseHandler(endpoint::publishComplete);
     } else {
       EventBus eb = (EventBus) transport;
       if ("".equals(vertxConsumer)) {
         eb.consumer("vertx", setEbConsumer());
         vertxConsumer = "vertx";
       }
-      // Send database request to the Akka client micro-service -
+      // Send database request to the Akka client microservice -
       // the response is passed back to the requester via the promise completed in the
       // consumer handler
       eb.send("akka", jsonPayLoad);

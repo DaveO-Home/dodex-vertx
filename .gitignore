@@ -20,7 +20,8 @@ jersey
 .cache
 allure*
 my*
-dodexvmX*
+*X*
+*.pem
 src/main/resources/static/dist*
 src/main/resources/static/*.jpg
 handicap/src/main/resources/static/dist*
@@ -40,3 +41,5 @@ node_modules
 bin/main
 cp*.sh
 scripts/*.java
+handicap/src/main/resources/static/json
+handicap/src/main/resources/static/assets

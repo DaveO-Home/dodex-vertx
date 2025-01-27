@@ -13,14 +13,14 @@
       * Execute either **`npm run esbuild:build`** or **`npm run webpack:build`** to package the javascript development client. The output is located in **handicap/src/main/resources/static**. When making changes to javascript/html/css, simply rerun **`npm run esbuild:build`**, if the verticle is running, it will rebuild. For proto3 changes, rerun **`./proto protos/handicap`** first.
 
         **Note:**
-          * **esbuild** is best for development(very fast) and **webpack** is better for production, e.g. **`npm run webpack:prod`**.
-          * See handicap/src/grpc/client/js/client.js to setup **ipinfo.io** so the form will default to local **country/state**.
+          * **`esbuild`** is best for development(very fast) and **webpack** is better for production, e.g. **`npm run webpack:prod`**.
+          * See handicap/src/grpc/client/js/client.js to set up **`ipinfo.io`** so the form will default to local **country/state**.
 
 #### Server:
 
 * The server **./proto3/gRPC** classes are auto generated from the gradle build script to **handicap/build/classes/java/main/handicap/grpc/**. 
 
-* From the dodex-vertx directory, execute **`./gradlew run`** to build and execute the application.  The **`./gradlew jooqGenerate`** task executes the **jooq** code generator. The generated code can be found in `handicap/src/main/kotlin/golf/handicap/generated`. Objects can then be used to define the queries. By default the code is included with the project.
+* From the dodex-vertx directory, execute **`./gradlew run`** to build and execute the application.  The **`./gradlew jooqGenerate`** task executes the **jooq** code generator. The generated code can be found in `handicap/src/main/kotlin/golf/handicap/generated`. Objects can then be used to define the queries. By default, the code is included with the project.
 
     **Note**: The gradle configuration is a 3 level composite build, it does the following:
 
@@ -53,7 +53,7 @@
 
 * Implemented new gRPC server as described in the docs:  
   ''Vert.x gRPC Server is a new gRPC server powered by Vert.x HTTP server superseding the integrated Netty based gRPC client.  
-  This server provides a gRPC request/response oriented API as well as a the generated stub approach with a service bridge.''
+  This server provides a gRPC request/response oriented API as well as the generated stub approach with a service bridge.''
   * see __.../handicap/src/main/kotlin/golf/handicap/vertx/HandicapGrpcServer.kt__, however, the Netty configuration is still default.
   * To use the new gRPC Vert.x server, execute __`export GRPC_SERVER=true`__ or change __`"grpc.server": true`__ in .../src/main/resources/application-conf.json for a permanent change
 
@@ -66,23 +66,23 @@
 * Make sure your database configurations are correct; **./src/main/resources/database...**, **./handicap/src/main/resources/database...**, **./handicap/generate/src/main/resources/database...**
 * In **dodex-vertx** execute **`./gradlew shadowJar`** -  **Note:** The default database should be **sqlite3**
 * To start the production verticle, execute **`java -jar build/libs/dodex-vertx-3.1.0-prod.jar`**
-* For the stand alone handicap application execute `java -jar handicap/build/libs/handicap-0.0.1-fat.jar`
+* For the stand-alone handicap application execute `java -jar handicap/build/libs/handicap-0.0.1-fat.jar`
 * Production runs on ports, **8880** and **8890**.
 
 ### Operation
 
 The following are the steps to add golfer info, courses with tee data and golfer scores.
 
-* First time login simply enter a **pin**(2 alpha characters with between 4-6 addition alpha-numeric characters) with first and last name. Click the login button to create/login to the application. On subsequent logins only the `pin` is needed, don't forget it. The **Country** and **State** should also be selected before creating a **pin** as default values. However, you can change the defaults on any login. Also, **Overlap Years** and **Public** should be set.
+* First time login simply enter a **pin**(2 alpha characters with between 4-6 addition alphanumeric characters) with first and last name. Click the login button to create/login to the application. On subsequent logins only the `pin` is needed, don't forget it. The **Country** and **State** should also be selected before creating a **pin** as default values. However, you can change the defaults on any login. Also, **Overlap Years** and **Public** should be set.
 
     * Overlap will use the previous year's scores for the handicap if needed.
     * Public will allow your scores to show up in the **Scores** tab for public viewing.
     
 
-* Add a course by entering it's name with one radio button selected for the tee. You can also change the tee's color. The **rating**, **slope** and **par** values are also required. Click the **Add Tee** button. After the first added tee, the others can be added when needed.
+* Add a course by entering its name with one radio button selected for the tee. You can also change the tee's color. The **rating**, **slope** and **par** values are also required. Click the **Add Tee** button. After the first added tee, the others can be added when needed.
 * When re-logging in and selecting a previously added course the settings for the default tee(white) may not show. Simply select another radio button and then the default button.
 
-  **Note**: You can disable the course/tee add function by setting **handicap.enableAdmin** to **true** in the **...\resources\application-conf.json** file. And then use the default **admin.pin** to administer the courses/tees. When using this pin, a first and last name must be entered on initial use.
+  **Note**: You can disable the course/tee add function by setting **handicap.enableAdmin** to **true** in the **...\resources\application-conf.json** file. And then use the default **`admin.pin`** to administer the courses/tees. When using this pin, a first and last name must be entered on initial use.
 
 * To add a score, select a course and tee with values for **Gross Score**, **Adjusted Score** and **Tee Time**. Click the **Add Score** button to add the score. The **Remove Last Score** will remove the last entered score, multiple clicks will remove multiple scores.
 

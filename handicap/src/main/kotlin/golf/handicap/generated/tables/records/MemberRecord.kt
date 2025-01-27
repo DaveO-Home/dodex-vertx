@@ -18,11 +18,11 @@ import org.jooq.impl.TableRecordImpl
 @Suppress("UNCHECKED_CAST")
 open class MemberRecord() : TableRecordImpl<MemberRecord>(Member.MEMBER), Record2<Int?, Int?> {
 
-    var groupId: Int?
+    open var groupId: Int?
         set(value): Unit = set(0, value)
         get(): Int? = get(0) as Int?
 
-    var userId: Int?
+    open var userId: Int?
         set(value): Unit = set(1, value)
         get(): Int? = get(1) as Int?
 

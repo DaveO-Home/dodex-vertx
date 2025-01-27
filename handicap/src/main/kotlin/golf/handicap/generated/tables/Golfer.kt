@@ -9,14 +9,18 @@ import golf.handicap.generated.keys.GOLFER_NAMES_UNIQUE
 import golf.handicap.generated.keys.GOLFER_PKEY
 import golf.handicap.generated.tables.records.GolferRecord
 
+import java.util.function.Function
+
 import kotlin.collections.List
 
 import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.Name
 import org.jooq.Record
+import org.jooq.Records
 import org.jooq.Row9
 import org.jooq.Schema
+import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -129,6 +133,7 @@ open class Golfer(
     override fun getUniqueKeys(): List<UniqueKey<GolferRecord>> = listOf(GOLFER_NAMES_UNIQUE)
     override fun `as`(alias: String): Golfer = Golfer(DSL.name(alias), this)
     override fun `as`(alias: Name): Golfer = Golfer(alias, this)
+    override fun `as`(alias: Table<*>): Golfer = Golfer(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -140,8 +145,24 @@ open class Golfer(
      */
     override fun rename(name: Name): Golfer = Golfer(name, null)
 
+    /**
+     * Rename this table
+     */
+    override fun rename(name: Table<*>): Golfer = Golfer(name.getQualifiedName(), null)
+
     // -------------------------------------------------------------------------
     // Row9 type methods
     // -------------------------------------------------------------------------
     override fun fieldsRow(): Row9<String?, String?, String?, Float?, String?, String?, Boolean?, Boolean?, Long?> = super.fieldsRow() as Row9<String?, String?, String?, Float?, String?, String?, Boolean?, Boolean?, Long?>
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    fun <U> mapping(from: (String?, String?, String?, Float?, String?, String?, Boolean?, Boolean?, Long?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    fun <U> mapping(toType: Class<U>, from: (String?, String?, String?, Float?, String?, String?, Boolean?, Boolean?, Long?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
 }

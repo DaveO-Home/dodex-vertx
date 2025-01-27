@@ -83,7 +83,11 @@ public abstract class DbMongoBase {
     mongoClient.findWithOptions("message_user", query, findOptions).doOnSuccess(data -> {
       for(JsonObject message : data) {
         String fromHandle = message.getString("from_handle");
-        ZonedDateTime postDate = ZonedDateTime.parse(message.getString("post_date"));
+        String messagePostdate = message.getString("post_date");
+        if(!messagePostdate.endsWith("Z")) {
+          messagePostdate = messagePostdate.concat("Z");
+        }
+        ZonedDateTime postDate = ZonedDateTime.parse(messagePostdate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd-HH:mm:ss");
         ws.writeTextMessage(fromHandle + postDate.format(formatter) + " " + message.getString("message"));
         Integer count = counts.get("messages") + 1;

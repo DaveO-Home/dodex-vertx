@@ -89,7 +89,7 @@ const validateForm = function(isValid, isCourse=false, isScore=false) {
                || adjusted.value < 25 || adjusted.value > 200) {
           adjusted.setCustomValidity("Adjusted Score has form 99(9)");
           isValid = false;
-        } else if(adjusted.value > total.value) {
+        } else if(+adjusted.value > +total.value) {
           adjusted.setCustomValidity("Adjusted Score must be <= Total Score");
           isValid = false;
         } else if(!isTeeTime) {

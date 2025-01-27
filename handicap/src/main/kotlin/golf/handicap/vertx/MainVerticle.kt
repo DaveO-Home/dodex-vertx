@@ -47,7 +47,6 @@ class MainVerticle : AbstractVerticle() {
         }
 
         init {
-//            setupLogging()
 
             config = Vertx.currentContext().config()
             val appConfig = getAlternateConfig()

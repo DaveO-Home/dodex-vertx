@@ -11,6 +11,7 @@ import golf.handicap.generated.keys.LOGIN_PKEY
 import golf.handicap.generated.tables.records.LoginRecord
 
 import java.time.OffsetDateTime
+import java.util.function.Function
 
 import kotlin.collections.List
 
@@ -19,8 +20,10 @@ import org.jooq.ForeignKey
 import org.jooq.Identity
 import org.jooq.Name
 import org.jooq.Record
+import org.jooq.Records
 import org.jooq.Row4
 import org.jooq.Schema
+import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -109,6 +112,7 @@ open class Login(
     override fun getUniqueKeys(): List<UniqueKey<LoginRecord>> = listOf(LOGIN_NAME_UNIQUE, LOGIN_PASSWORD_UNIQUE)
     override fun `as`(alias: String): Login = Login(DSL.name(alias), this)
     override fun `as`(alias: Name): Login = Login(alias, this)
+    override fun `as`(alias: Table<*>): Login = Login(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -120,8 +124,24 @@ open class Login(
      */
     override fun rename(name: Name): Login = Login(name, null)
 
+    /**
+     * Rename this table
+     */
+    override fun rename(name: Table<*>): Login = Login(name.getQualifiedName(), null)
+
     // -------------------------------------------------------------------------
     // Row4 type methods
     // -------------------------------------------------------------------------
     override fun fieldsRow(): Row4<Int?, String?, String?, OffsetDateTime?> = super.fieldsRow() as Row4<Int?, String?, String?, OffsetDateTime?>
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    fun <U> mapping(from: (Int?, String?, String?, OffsetDateTime?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    fun <U> mapping(toType: Class<U>, from: (Int?, String?, String?, OffsetDateTime?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
 }

@@ -21,23 +21,23 @@ import org.jooq.impl.UpdatableRecordImpl
 @Suppress("UNCHECKED_CAST")
 open class GroupsRecord() : UpdatableRecordImpl<GroupsRecord>(Groups.GROUPS), Record5<Int?, String?, Int?, OffsetDateTime?, OffsetDateTime?> {
 
-    var id: Int?
+    open var id: Int?
         set(value): Unit = set(0, value)
         get(): Int? = get(0) as Int?
 
-    var name: String?
+    open var name: String?
         set(value): Unit = set(1, value)
         get(): String? = get(1) as String?
 
-    var owner: Int?
+    open var owner: Int?
         set(value): Unit = set(2, value)
         get(): Int? = get(2) as Int?
 
-    var created: OffsetDateTime?
+    open var created: OffsetDateTime?
         set(value): Unit = set(3, value)
         get(): OffsetDateTime? = get(3) as OffsetDateTime?
 
-    var updated: OffsetDateTime?
+    open var updated: OffsetDateTime?
         set(value): Unit = set(4, value)
         get(): OffsetDateTime? = get(4) as OffsetDateTime?
 

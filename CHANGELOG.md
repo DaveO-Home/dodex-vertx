@@ -1,5 +1,16 @@
 # Changelog
 
+## [v3.3.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.1) (2025-01-27)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.3.0..v3.3.1)
+
+* Upgraded to vertx 4.5.12
+* Upgraded Java and Javascript dependencies
+* Fixed deprecated database pool creation, now using a **`builder pattern`**
+* Fixed the gRPC javascript client to handle latest `google-protobuf` version
+* Added new weather widget to the handicap client
+* Made the static router a little more performant
+
 ## [v3.3.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.0) (2024-07-31)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.2.1..v3.3.0)
@@ -7,10 +18,10 @@
 * Upgraded to vertx 4.5.9
 * Implemented new gRPC server as described in the docs:  
   ''Vert.x gRPC Server is a new gRPC server powered by Vert.x HTTP server superseding the integrated Netty based gRPC client.  
-  This server provides a gRPC request/response oriented API as well as a the generated stub approach with a service bridge.''
+  This server provides a gRPC request/response oriented API as well as the generated stub approach with a service bridge.''
   * see __.../handicap/src/main/kotlin/golf/handicap/vertx/HandicapGrpcServer.kt__, however, the Netty configuration is still default.
   * To use the new gRPC Vert.x server, execute `export GRPC_SERVER=true` or change `"grpc.server": true` in .../src/main/resources/application-conf.json for a permanent change
-* Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ micro-service client to process __dodex-mess__ messages.
+* Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ microservice client to process __dodex-mess__ messages.
   * see the __dodex-vertx__ [README](https://github.com/DaveO-Home/dodex-vertx/blob/master/README.md) for the broker and __dodex-akka__ [README](https://github.com/DaveO-Home/dodex-akka/blob/master/README.md) for the client
 
 ## [v3.2.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.2.1) (2024-02-05)
@@ -32,7 +43,7 @@
 * Made "h2" the default DB - with latest java jdbc-client, sqlite3 no longer returns "generated key"
 * Added a verticle for Java21 Virtual Threads; "localhost:8881/threads" when "dodex.virtual.threads" is set to "true" in "application-conf.json"
 * Made "static" router a little less problematic (removed unnecessary routing)
-* Removed future deprecations from PMD - dodexstart.xml
+* Removed future deprecations from PMD - `dodexstart.xml`
 * Added "mongodb" for use with "dodex"
 * Organized the db package
 
@@ -86,11 +97,11 @@
 * Upgraded to vertx 4.4.1 final
 * Upgraded to gradle 8.0.2
 * Upgraded java/javascript dependencies
-* Major upgrade of react to v18.2.0
+* Major upgrade of React to v18.2.0
 * Added docker config for grpc
 * Added minikube with exposure to internet
 * Cleaned up gradle warnings and dependency conflicts
-* Changed centos/Dockfile to handle latest dependencies
+* Changed `centos/Dockfile` to handle latest dependencies
 * Added content to handicap dodex widget
 * Process Changes:
   * Must run **./gradlew clean** before building production jar
@@ -131,12 +142,12 @@
 * Upgraded to vertx 4.2.5 final
 * Upgraded spa-react dependencies
 * Fixed pointer on tools dropdown
-* Added custom @metahub package in karma to remove deprecation
+* Added custom `@metahub` package in karma to remove deprecation
 * Changed vertx static handler to remove deprecation
 * Upgraded marked to latest.
-* Upgraded react router to v6 - Needed changes to "MenuLinks" and "routertest.js"
-* Upgraded Bootstap 4 -> 5 - New layout
-* Upgraded fontawesome 4 -> 5
+* Upgraded react router to v6 - Needed changes to "MenuLinks" and `"routertest.js"`
+* Upgraded `Bootstap 4` -> 5 - New layout
+* Upgraded `fontawesome 4` -> 5
 
 ## [v2.2.2](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.2) (2021-10-29)
 
@@ -149,7 +160,7 @@
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.2.0...v2.2.1)
 
-* Upgraded and modified firebase tests - src/firebase/testsrc/dodex.tests.ts
+* Upgraded and modified firebase tests - `src/firebase/testsrc/dodex.tests.ts`
 * Made dodex connections to server more generic - index.html, bootstrap.html, entry.jsx
 
 ## [v2.2.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.2.0) (2021-08-01)
@@ -157,7 +168,7 @@
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.1.0...v2.2.0)
 
 * Added VERTX_PORT environment variable to change port at execution time
-* Setup graalvm with both java8 and java11 - dodexvm8 & dodexvm11
+* Setup graalvm with both java8 and java11 - `dodexvm8` & `dodexvm11`
 * Upgraded javascript modules in spa react demo
 * Upgraded javascript modules in firebase setup 
 * Added Firebase to spa react demo for 'login' table  
@@ -166,13 +177,13 @@
 * Fixed AKKA connection problem
 * Fixed Postgres SPA login problem
 * Code clean-up - based on PMD and SonarLint
-* Seperated out Cubrid database code from DbDefinitionBase.java to DbCubridOverride.java - fixed in 4.2.0?
+* Separated out `Cubrid` database code from DbDefinitionBase.java to `DbCubridOverride.java` - fixed in 4.2.0?
 
 ## [v2.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v2.1.0) (2021-05-10)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.6...v2.1.0)
 
-* Added Firebase/Firestore as a backend.
+* Added `Firebase/Firestore` as a backend.
 * Cleaned up some code.
 * Fixed startup messages.
 
@@ -182,14 +193,14 @@
 
 * Display current database
 * Display regex route patterns
-* Changed sql "Update" to "Insert" form for Cubrid, Update,Select,Delete are still problematic
+* Changed sql "Update" to "Insert" form for `Cubrid`, Update,Select,Delete are still problematic
 
 ## [v2.0.5](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.5) (2021-04-14)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.4...v2.0.5)
 
 * Upgraded to Vertx 4.0.3
-* Upgraded Cubrid jdbc driver to v11, did not fix null exception
+* Upgraded `Cubrid` jdbc driver to v11, did not fix null exception
 * Upgraded javascript React app (removed potentially dangerous vulnerabilities)
 * Fixed deprecated karma server configuration
 * Added keystore to easily test ssl(commented out by default), see Server.java
@@ -206,8 +217,8 @@
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v2.0.2...v2.0.3)
 
-* Upgraded the react spa app to remove many vulnerablities.
-* Made jsoneditor default to z-index -1 to allow table pager
+* Upgraded the React spa app to remove many vulnerabilities.
+* Made `jsoneditor` default to z-index -1 to allow table pager
 
 ## [v2.0.2](https://github.com/DaveO-Home/dodex-vertx/tree/v2.0.2) (2020-12-31)
 
@@ -228,8 +239,8 @@
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.9.1...v2.0.0)
 
 * Migrated to Vertx4 - basically a re-write
-* Converted 'davidmoten:rxjava2-jdbc' library to 'io.vertx.reactivex.*'
-* Using Vertx4 PostgreSQL, MySQL, DB2 and JDBC clients
+* Converted `'davidmoten:rxjava2-jdbc'` library to 'io.vertx.reactivex.*'
+* Using Vertx4 `PostgreSQL`, MySQL, DB2 and JDBC clients
 
 **Just a note:** 😞 Wondering if anyone tries this code out. **No Issues!!** not even a 👍.
 
@@ -245,7 +256,7 @@
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v1.8.4...v1.9.0)
 
-* Added Cassandra database via an Akka micro-service as an Event-Bus client, see; <https://www.npmjs.com/package/dodex-akka>
+* Added Cassandra database via an Akka microservice as an Event-Bus client, see; <https://www.npmjs.com/package/dodex-akka>
 * Added turning off color in application-conf.json. Also with `ColorUtilConstants.colorOff()` and `colorOn()`
   
 ## [v1.8.4](https://github.com/DaveO-Home/dodex-vertx/tree/v1.8.4) (2020-06-29)

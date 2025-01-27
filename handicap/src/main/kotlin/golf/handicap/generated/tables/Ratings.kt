@@ -9,14 +9,18 @@ import golf.handicap.generated.keys.RATINGS_PKEY
 import golf.handicap.generated.keys.RATINGS__FK_COURSE_RATINGS
 import golf.handicap.generated.tables.records.RatingsRecord
 
+import java.util.function.Function
+
 import kotlin.collections.List
 
 import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.Name
 import org.jooq.Record
+import org.jooq.Records
 import org.jooq.Row6
 import org.jooq.Schema
+import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -124,8 +128,12 @@ open class Ratings(
 
         return _course;
     }
+
+    val course: Course
+        get(): Course = course()
     override fun `as`(alias: String): Ratings = Ratings(DSL.name(alias), this)
     override fun `as`(alias: Name): Ratings = Ratings(alias, this)
+    override fun `as`(alias: Table<*>): Ratings = Ratings(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -137,8 +145,24 @@ open class Ratings(
      */
     override fun rename(name: Name): Ratings = Ratings(name, null)
 
+    /**
+     * Rename this table
+     */
+    override fun rename(name: Table<*>): Ratings = Ratings(name.getQualifiedName(), null)
+
     // -------------------------------------------------------------------------
     // Row6 type methods
     // -------------------------------------------------------------------------
     override fun fieldsRow(): Row6<Int?, Int?, String?, Float?, Int?, Int?> = super.fieldsRow() as Row6<Int?, Int?, String?, Float?, Int?, Int?>
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    fun <U> mapping(from: (Int?, Int?, String?, Float?, Int?, Int?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    fun <U> mapping(toType: Class<U>, from: (Int?, Int?, String?, Float?, Int?, Int?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
 }

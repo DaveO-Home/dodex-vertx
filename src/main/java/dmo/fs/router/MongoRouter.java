@@ -15,6 +15,7 @@ import io.vertx.rxjava3.core.Context;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
+import io.vertx.rxjava3.core.http.ServerWebSocketHandshake;
 import io.vertx.rxjava3.core.shareddata.LocalMap;
 import io.vertx.rxjava3.core.shareddata.SharedData;
 import io.vertx.rxjava3.ext.mongo.MongoClient;
@@ -36,10 +37,8 @@ public class MongoRouter {
   private final Map<String, ServerWebSocket> clients = new ConcurrentHashMap<>();
   private DodexMongo dodexMongo;
   protected Promise<MongoClient> dbPromise;
-  private static final String LOGFORMAT = "{}{}{}{}";
-  private static SharedData sd;
+  private static final String LOG_FORMAT = "{}{}{}{}";
   private static LocalMap<Object, Object> wsChatSessions;
-  private final Context context;
   private KafkaEmitterDodex ke;
 
   public MongoRouter(final Vertx vertx) {
@@ -47,8 +46,8 @@ public class MongoRouter {
     if (Server.getUseKafka()) {
       ke = new KafkaEmitterDodex();
     }
-    context = Vertx.currentContext();
-    sd = vertx.sharedData();
+//    context = Vertx.currentContext();
+    SharedData sd = vertx.sharedData();
     wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
   }
 
@@ -70,7 +69,7 @@ public class MongoRouter {
     String startupMessage = "In Production";
 
     startupMessage = "dev".equals(DodexUtil.getEnv()) ? "In Development" : startupMessage;
-    logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, startupMessage,
+    logger.info(LOG_FORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, startupMessage,
         ColorUtilConstants.RESET, "");
 
     Handler<ServerWebSocket> handler = ws -> {
@@ -78,14 +77,15 @@ public class MongoRouter {
       String handle = URLDecoder.decode(
           ParseQueryUtilHelper.getQueryMap(ws.query()).get("handle"),
           StandardCharsets.UTF_8);
-      logger.info(LOGFORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle,
+      logger.info(LOG_FORMAT, ColorUtilConstants.BLUE_BOLD_BRIGHT, handle,
           ColorUtilConstants.RESET, "");
 
       final DodexUtil dodexUtil = new DodexUtil();
 
       if (!"/dodex".equals(ws.path())) {
-        ws.close();
+        server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
       } else {
+        server.webSocketHandshakeHandler(ServerWebSocketHandshake::accept);
         final MessageUser messageUser = dodexMongo.createMessageUser();
         wsChatSessions.put(ws.remoteAddress().toString(), URLDecoder
             .decode(ws.uri().toString(), StandardCharsets.UTF_8));
@@ -219,8 +219,7 @@ public class MongoRouter {
               if (!webSocket.isClosed()) {
                 if (!websocket.equals(ws.remoteAddress().toString())) {
                   // broadcast message
-                  query = ParseQueryUtilHelper.getQueryMap((String) wsChatSessions
-                      .get(webSocket.textHandlerID()));
+                  query = ParseQueryUtilHelper.getQueryMap(URLDecoder.decode(webSocket.query(), StandardCharsets.UTF_8));
                   final String handle = query.get("handle");
                   if (selectedUsers.isEmpty()
                       && command[0].isEmpty()) {

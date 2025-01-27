@@ -5,11 +5,7 @@
  */
 package golf.handicap
 
-import golf.handicap.Course
-import golf.handicap.Golfer
 import java.io.Serializable
-import java.sql.Timestamp
-import java.time.LocalDateTime
 
 class Score
     : Serializable {

@@ -1,13 +1,15 @@
 import { validateForm, popupMessage, sleep } from "./validate/validate-form.js";
-import("jquery").then(jQuery => {
-  window.$ = jQuery.default;
-});
+//import("jquery").then(jQuery => {
+//  window.$ = jQuery.default;
+//});
+import "./jquery.js";
 import {
   Command, HandicapSetup, RepeatHandicapSetup,
   HandicapData, Course, ListCouresResponse
 } from "./handicap/protos/handicap_pb.js";
 import { HandicapIndexClient } from "./handicap/protos/handicap_grpc_web_pb.js";
 import "../css/app.css";
+import "../css/styles.css";
 import "bootstrap";
 import "../css/dtsel/dtsel.css";
 import dtselFunction from "./dtsel/dtsel.js";
@@ -17,6 +19,9 @@ import protobuf from "protobufjs";
 // per https://www.html-code-generator.com/html/drop-down/state-name
 import countryState from "./country-states/js/country-states.js";
 import "./dodex";
+import axios from "axios";
+window.axios = axios;
+import "./weather.js";
 dtselFunction();
 countryState("US");
 
@@ -33,6 +38,7 @@ const loopSite = ".loophole.site";
 const loopSite2 = "2" + loopSite;
 let port = isNaN(window.location.hostname.split(".").join("")) ? ":8070" : ":30070"; // for minikube
 port = location.hostname === "127.0.0.1" ? ":8070" : port;
+
 let grpcHost = location.hostname.replace(locaLt, locaLt2);
 if(!grpcHost.endsWith(locaLt)) {
     grpcHost = location.hostname.replace(loopSite, loopSite2);
@@ -186,14 +192,15 @@ async function getCourses(dataOnly = false) {
             }
           }
         }
-        for (let i = 0; i < response.array[0].length; i++) {
+        const courses = response.getCoursesList();
+        for (let i = 0; i < courses.length; i++) {
           const att = document.createAttribute("key");
-          att.value = response.array[0][i][0];
+          att.value = courses[i].getId();
 
           var option = document.createElement("option");
           option.setAttributeNode(att);
-          option.value = String.fromHtmlEntities(response.array[0][i][1]);
-          option.innerHTML = String.fromHtmlEntities(response.array[0][i][1]);
+          option.value = String.fromHtmlEntities(courses[i].getName());
+          option.innerHTML = String.fromHtmlEntities(courses[i].getName());
           list[0].parentNode.insertBefore(option, list[0].lastSibling);
         }
       }
@@ -306,13 +313,14 @@ const submitGolferScores = async (event) => {
 
 const submitGetGolfers = async (event) => {
   command.setCmd(9);
-  
+
   await client.listGolfers(command, {}, (err, response) => {
     if (err) {
       console.error(`Unexpected error for get golfers: code = ${err.code}` +
         `, message = "${err.message}"`);
     } else {
       const list = document.querySelectorAll("#golfers > option")
+
       if (list.length > 1) {
         for (const opt of list) {
           if (opt.value !== "") {
@@ -320,9 +328,11 @@ const submitGetGolfers = async (event) => {
           }
         }
       }
-      for (let i = 0; i < response.array[0].length; i++) {
+      const golfers = response.getGolferList();
+
+      for (let i = 0; i < golfers.length; i++) {
         var option = document.createElement("option");
-        const name = String.fromHtmlEntities(response.array[0][i][0]);
+        const name = String.fromHtmlEntities(golfers[i].getName());
         option.value = name;
         option.innerHTML = name;
         list[0].parentNode.insertBefore(option, list[0].lastSibling);
@@ -366,9 +376,10 @@ const submitRemoveScore = async (event) => {
 function findCourse(name) {
   let course = null;
   if (coursesData !== null) {
-    for (let i = 0; i < coursesData.array[0].length; i++) {
-      course = coursesData.array[0][i];
-      if (course[1] === name) {
+    const courses = coursesData.getCoursesList();
+    for (let i = 0; i < courses.length; i++) {
+      course = courses[i];
+      if (course.getName() === name) {
         break;
       }
       course = null;
@@ -395,17 +406,19 @@ function setTees(event) {
   const selectTee = selectedTee();
   const labels = selectTee.labels;
 
-  for (const tee in course[2]) {
-    if (typeof course[2][tee][0] === "undefined") { // protobuf treats 0 as null(undefined)
-      course[2][tee][0] = 0;
+  for (const tee in course.getRatingsList()) {
+    const ratings = course.toObject().ratingsList;
+    if (typeof ratings[tee].tee === "undefined") { // protobuf treats 0 as null(undefined)
+      ratings[tee].tee = 0;
     }
-    if (checked == course[2][tee][0]) {
-      if (typeof course[2][tee][1] !== "undefined" && course[2][tee][1]) {
-        rating.value = course[2][tee][1];
-        slope.value = course[2][tee][2];
-        par.value = course[2][tee][3];
-        if (course[2][tee][4]) {
-          document.getElementById("tees").value = course[2][tee][4];
+
+    if (checked == ratings[tee].tee) {
+      if (typeof ratings[tee].rating !== "undefined" && ratings[tee].rating) {
+        rating.value = ratings[tee].rating;
+        slope.value = ratings[tee].slope;
+        par.value = ratings[tee].par;
+        if (ratings[tee].color) {
+          document.getElementById("tees").value = ratings[tee].color;
         }
       } else {
         if (labels[0].style.backgroundColor.startsWith("#")) {
@@ -416,8 +429,8 @@ function setTees(event) {
       }
     }
     // Set with possible custom color
-    if (course[2][tee][1]) {
-      document.querySelector(`label[for='radio-color${course[2][tee][0] + 1}']`).style.backgroundColor = course[2][tee][4];
+    if (ratings[tee].rating) {
+      document.querySelector(`label[for='radio-color${ratings[tee].tee + 1}']`).style.backgroundColor = ratings[tee].color;
     }
   }
 
@@ -433,7 +446,7 @@ var courseHandicap = () => {
   if (rating &&
     slope &&
     par &&
-    handicap != 0 
+    handicap != 0
   ) {
     let courseHandicap = (Number(handicap) * Number(slope.value) / 113 + (Number(rating.value) - Number(par.value))).toFixed(1);
     if(courseHandicap < 0) {
@@ -567,6 +580,7 @@ function scoreData() {
 
   const options = document.querySelectorAll("#courses > option");
   for (const idx in options) {
+
     if (options[idx].value === String.fromHtmlEntities(courseObject.courseName)) {
       courseObject.course_key = Number(options[idx].getAttribute("key"));
       break;

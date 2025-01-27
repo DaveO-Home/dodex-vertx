@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class HandicapDatabaseH2 extends DbSqlite3 {
+public class HandicapDatabaseH2 extends DbH2 {
   private final static Logger logger =
       LoggerFactory.getLogger(HandicapDatabaseH2.class.getName());
   protected Disposable disposable;

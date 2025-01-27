@@ -19,19 +19,19 @@ import org.jooq.impl.UpdatableRecordImpl
 @Suppress("UNCHECKED_CAST")
 open class CourseRecord() : UpdatableRecordImpl<CourseRecord>(Course.COURSE), Record4<Int?, String?, String?, String?> {
 
-    var courseSeq: Int?
+    open var courseSeq: Int?
         set(value): Unit = set(0, value)
         get(): Int? = get(0) as Int?
 
-    var courseName: String?
+    open var courseName: String?
         set(value): Unit = set(1, value)
         get(): String? = get(1) as String?
 
-    var courseCountry: String?
+    open var courseCountry: String?
         set(value): Unit = set(2, value)
         get(): String? = get(2) as String?
 
-    var courseState: String?
+    open var courseState: String?
         set(value): Unit = set(3, value)
         get(): String? = get(3) as String?
 

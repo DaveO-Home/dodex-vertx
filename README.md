@@ -8,12 +8,12 @@
 3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.5`
 4. Node with npm javascript package manager installed.
 
-**Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web applicaion requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.
+**Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web application requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.
 
 ## New Additions(7/24)
 
 1. Added Vert.x gRPC Server, see [Grpc README](<https://github.com/DaveO-Home/dodex-vertx/blob/master/handicap/README.md>)
-2. Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ micro-service client to process __dodex-mess__ messages.
+2. Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ microservice client to process __dodex-mess__ messages.
     * see __Mqtt Broker__ section below for the broker and __dodex-akka__ [README](https://github.com/DaveO-Home/dodex-akka/blob/master/README.md) for the client
 
 
@@ -26,7 +26,7 @@
 5. You can also run `http://localhost:8087/test/bootstrap.html` for a bootstrap example.
 6. Follow instructions for dodex at <https://www.npmjs.com/package/dodex-mess> and <https://www.npmjs.com/package/dodex-input>.
 7. You can turn off colors by setting "color": to false in application-conf.json.
-8. The Cassandra database has been added via an `Akka` micro-service. See; <https://www.npmjs.com/package/dodex-akka>.
+8. The Cassandra database has been added via an `Akka` microservice. See; <https://www.npmjs.com/package/dodex-akka>.
 9. Added Cassandra database to the `React` demo allowing the `login` component to use Cassandra.
 10. See the `Firebase` section for using Google's `Firestore` backend.
 11. Added a verticle for Java21 Virtual Threads test; "localhost:8881/threads" when  "dodex.virtual.threads" is set to "true" in "application-conf.json"
@@ -39,7 +39,7 @@
 3. Execute `java -jar build/libs/dodex-vertx-3.3.0-prod.jar` to start up the production server.
 4. Execute url `http://localhost:8880/dodex` or `.../dodex/bootstrap.html` in a browser. 
    * **Note:** This is a different port and url than development. 
-   * **Note:** The default database on the backend is "h2", no further configuation is necessay. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
+   * **Note:** The default database on the backend is "h2", no further configuration is necessary. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
 5. Swapping among databases; Use environment variable `DEFAULT_DB` by setting it to either `sqlite3` ,`postgres`, `cubrid`, `mariadb`, `ibmdb2`, `cassandra`, `firebase`, `mongo` or set the default database in `database_config.json`.
 6. The environment variable `VERTXWEB_ENVIRONMENT` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.
 7. When Dodex-vertx is configured for the Cubrid database, the database must be created using UTF-8. For example `cubrid createdb dodex en_US.utf8`.
@@ -51,7 +51,7 @@
 * __Dodex-Vertx__ can be configured to use __Mqtt__ as the transport between __Vert.x__ and __Akka__. This allows the __dodex-mess__ application to send messages among __dodex__ users.
   * Execute __`export USE_MQTT=true`__, __`export DEFAULT_DB=cassandra`__ and __`execute gradlew run`__
   * For a permanent change, set __"use.mqtt": true__ in __.../src/main/resource/application-conf.json__
-  * Startup the __dodex-akka__ micro-service configured with __Mqtt__
+  * Startup the __dodex-akka__ microservice configured with __Mqtt__
 
 ## Debug
 
@@ -73,10 +73,10 @@
 
 1. Make sure the demo Java-vertx server is running in development mode.
 2. Test Dodex-mess by entering the URL `localhost:3087/test/index.html` in a browser.
-3. Ctrl+Double-Click a dial or bottom card to popup the messaging client.
+3. Ctrl+Double-Click a dial or bottom card to pop up the messaging client.
 4. To test the messaging, open up the URL in a different browser and make a connection by Ctrl+Double-Clicking the bottom card. Make sure you create a handle.
 5. Enter a message and click send to test.
-6. For dodex-input Double-Click a dial or bottom card to popup the input dialog. Allows for uploading, editing and removal of private content. Content in JSON can be defined as arrays to make HTML more readable.
+6. For dodex-input Double-Click a dial or bottom card to pop up the input dialog. Allows for uploading, editing and removal of private content. Content in JSON can be defined as arrays to make HTML more readable.
 
 ## Java Linting with PMD
 
@@ -92,7 +92,7 @@
   3. Execute `<graalvm directory>/bin/gu install native-image` to install the `native-image` program.
   4. In the dodex-vertx directory execute `gradlew installDist` and `gradlew shadowJar`.
   5. Modify the dodexvm8/vm11 or dodexvm.bat shell to the graalvm install directory.
-  6. In your dodex-vertx directory execute the dodexvm8 or dodexvm11 shell program. This should create an executable named `io.vertx.core.Launcher`.
+  6. In your dodex-vertx directory execute the dodexvm8 or dodexvm11 shell script. This should create an executable named `io.vertx.core.Launcher`.
   7. Execute the production server with `io.vertx.core.Launcher`.
 
    **Note:** dodex-vertx will not build as a stand alone, therefore, if you move the executable to different directory, you must also move the shadowJar to the same directory with structure `build\libs`.
@@ -116,8 +116,8 @@
 
 * Create an account: <https://firebase.google.com>
 * Getting started: <https://firebase.google.com/docs/admin/setup#java>
-* Make sure you create a `Service-Account-Key.json` file as instructed. Dodex-Vertx uses the environment variable option to set the service-account - `GOOGLE_APPLICATION_CREDENTIALS`. See gradle.build as one way to set it.
-* You will need to login to the `Firebase` console and create the `dodex-firebase` project. See `src/main/java/dmo/fs/router/FirebaseRouter.java` for usage of the project-id and Google Credentials. **Note:** The `Firebase` rules are not used, so they should be set to `allow read, write:  if false;` which may be the default.
+* Make sure you create a `Service-Account-Key.json` file as instructed. Dodex-Vertx uses the environment variable option to set the service-account - `GOOGLE_APPLICATION_CREDENTIALS`. See `gradle.build` as one way to set it.
+* You will need to log in to the `Firebase` console and create the `dodex-firebase` project. See `src/main/java/dmo/fs/router/FirebaseRouter.java` for usage of the project-id and Google Credentials. **Note:** The `Firebase` rules are not used, so they should be set to `allow read, write:  if false;` which may be the default.
 * You only need the `Authentication` and `Firestore` extensions.
 * If you want a different project name, change `.firebaserc`.
 
@@ -125,7 +125,7 @@
 
   * To make sure your project is created and the setup works, you should run the tests. **Note:** They are written in Typescript.
   * cd `../dodex-vertx/src/firebase` and run `npm install`
-  * execute `npm run emulators` to startup the emulators for testing.
+  * execute `npm run emulators` to start up the emulators for testing.
   * To test the model and rules after starting the emulators, in a different terminal window, run `npm test`.
 
 ### Neo4j
@@ -156,7 +156,7 @@ Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
 
 * Uses a separate OpenAPI setup, located in __"..../dmo.fs.db/mongodb"__
 * Configure in __..../src/main/resources/database_config.json__  
-* Make sure the database is setup with something like;  
+* Make sure the database is set up with something like;  
 ```
           use dodex
           db.createUser(
@@ -259,15 +259,15 @@ __Note:__ By default the entry `"dodex.groups.checkForOwner"` in __application-c
     * stop the vertx server - ctrl-c
     * build the production fat jar - execute __`./gradlew clean(optional) shadowJar`__
         * **Important** When building the **Fat** jar, set **DEFAULT_DB**=sqlite3 or postgres and **USE_HANDICAP**=true
-    * verify the jar's name - if different than `dodex-vertx-3.3.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
+    * verify the jar's name - if different from `dodex-vertx-3.3.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
 
 3. execute __`cp build/libs/dodex-vertx-3.3.0-prod.jar`__ to **kube/**
 4. execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
 5. execute __`docker create -t -p 8880:8880 -p 8070:8070 -p 9901:9901 --name dodex_vertx dufferdo2/dodex-vertx`__
 6. execute __`docker start dodex_vertx`__, make sure **envoy** is not running on the host.
-7. use browser to view - <http://localhost:8880/handicap.html> or <http://localhost:8880/dodex> or <http://localhost:8880/dodex/bootstrap.html>, if the spa-react was installed this link should work, <http://localhost:8880/dist/react-fusebox/appl/testapp.html>
+7. use browser to view - <http://localhost:8880/handicap.html>, <http://localhost:8880/dodex> or <http://localhost:8880/dodex/bootstrap.html>, if the spa-react was installed this link should work, <http://localhost:8880/dist/react-fusebox/appl/testapp.html>
 8. execute __`docker stop dodex_vertx`__
-9. to clean-up execute __`docker rm dodex_vertx`__ and __`docker rmi dodex-vertx`__. However you should keep the **dufferdo2/dodex-vertx** image if trying out **podman** or **minikube**.
+9. to clean up execute __`docker rm dodex_vertx`__ and __`docker rmi dodex-vertx`__, however you should keep the **dufferdo2/dodex-vertx** image if trying out **podman** or **minikube**.
 10. to pull and generate a local image from the docker hub, execute __`docker build -t dodex-vertx:latest -f kube/vertx/Dockerfile .`__
 11. you can also build/run dufferdo2/dodex-vertx(image) and dufferdo2/dodex_vertx(container) with; __`docker compose -f kube/docker-compose.yaml up -d`__, assumes that **envoy** is running for **dodex-vertx**
 12. Use `run` to test different databases; __`docker run --rm -p 8880:8880 -p 8070:8070 -p 9901:9901 -e DEFAULT_DB=postgres -e USE_HANDICAP=true --name dodex_vertx dufferdo2/dodex-vertx`__. To stop, run `docker container stop dodex_vertx`.
@@ -285,7 +285,7 @@ __Note:__ When running the dufferdo2/dodex-vertx image based on ./kube/Dockerfil
 ### Building a *deployment*, *service* and *persistent volume* with minikube
 * Since including the **Handicap** application(multiple exposed ports, persistent volume) to **dodex-vertx**, the **minikube** deployment must be from configuration files.
 1. execute __`minikube start`__
-2. to make sure the dufferdo2/dodex-vertx image is setup, execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
+2. to make sure the dufferdo2/dodex-vertx image is set up, execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
 3. edit kube/vertx.yml and change **env:** to desired database(DEFAULT_DB) - defaults to **sqlite3**, no database configuration necessary otherwise set **DEFAULT_DB** to **mariadb** or **postgres**
 4. execute `kubectl create -f kube/db-volume.yml`
 5. execute `kubectl create -f kube/vertx.yml`
@@ -322,7 +322,7 @@ and database_config.json(also in ../dodex-vertx/generate...resources/database(_s
 3. build the **fat** jar and **image** as described in the **Operation** and **Building an *image* and *container* with docker** sections, e.g.
     * build the production fat jar - __`./gradlew shadowJar`__
         * **Important** When building the **fat** jar, set **DEFAULT_DB**=sqlite3 or mariadb or postgres and **USE_HANDICAP**=true
-        * verify the jar's name - if different than **dodex-vertx-3.3.0-prod.jar**, change in **./kube/Dockerfile**
+        * verify the jar's name - if different from **dodex-vertx-3.3.0-prod.jar**, change in **./kube/Dockerfile**
     * copy the build/**dodex-vertx-3.3.0-prod.jar** to **./kube**
     * if the **dodex_vertx** and/or the **dufferdo2/dodex-vertx** exist, remove them `docker rm dodex_vertx` and `docker rmi dufferdo2/dodex-vertx`
     * build the image `docker build -t dufferdo2/dodex-vertx:latest -f ./kube/Dockerfile ./kube`
@@ -344,7 +344,7 @@ and database_config.json(also in ../dodex-vertx/generate...resources/database(_s
         * the naming convention is required(otherwise edit src/grpc/client/js/client.js and tweak) e.g. **coolapp** for port 30080 and **coolapp2** for port 30070
     * view <https://YOUR-UNIQUE-APP.loca.lt> or <https://YOUR-UNIQUE-APP.lt/handicap.html> in browser
 
-   __Note:__ Make sure your Ad-Blocker is turned off for the web site.
+   __Note:__ Make sure your Ad-Blocker is turned off for the website.
 
 4. The client also supports **loophole** <https://loophole.cloud/docs>. Much better bandwidth running out of Europe and is also free.
     * loophole http 30080 $(minikube service vertx-service --url | cut -d":" -f2 | cut -d"/" -f3) --hostname my-coolapp

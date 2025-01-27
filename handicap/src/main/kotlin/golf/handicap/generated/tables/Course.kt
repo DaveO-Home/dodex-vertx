@@ -8,13 +8,17 @@ import golf.handicap.generated.DefaultSchema
 import golf.handicap.generated.keys.COURSE_PKEY
 import golf.handicap.generated.tables.records.CourseRecord
 
+import java.util.function.Function
+
 import org.jooq.Field
 import org.jooq.ForeignKey
 import org.jooq.Identity
 import org.jooq.Name
 import org.jooq.Record
+import org.jooq.Records
 import org.jooq.Row4
 import org.jooq.Schema
+import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -102,6 +106,7 @@ open class Course(
     override fun getPrimaryKey(): UniqueKey<CourseRecord> = COURSE_PKEY
     override fun `as`(alias: String): Course = Course(DSL.name(alias), this)
     override fun `as`(alias: Name): Course = Course(alias, this)
+    override fun `as`(alias: Table<*>): Course = Course(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -113,8 +118,24 @@ open class Course(
      */
     override fun rename(name: Name): Course = Course(name, null)
 
+    /**
+     * Rename this table
+     */
+    override fun rename(name: Table<*>): Course = Course(name.getQualifiedName(), null)
+
     // -------------------------------------------------------------------------
     // Row4 type methods
     // -------------------------------------------------------------------------
     override fun fieldsRow(): Row4<Int?, String?, String?, String?> = super.fieldsRow() as Row4<Int?, String?, String?, String?>
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    fun <U> mapping(from: (Int?, String?, String?, String?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    fun <U> mapping(toType: Class<U>, from: (Int?, String?, String?, String?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
 }

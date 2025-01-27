@@ -8,7 +8,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
-import dmo.fs.db.cassandra.DodexDbCassandra;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,7 +17,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 
 public class DodexDatabaseFirebase extends DbFirebaseBase implements DodexFirebase {
 	private final static Logger logger =
-			LoggerFactory.getLogger(DodexDbCassandra.class.getName());
+			LoggerFactory.getLogger(DodexDatabaseFirebase.class.getName());
 	protected Disposable disposable;
 	protected Properties dbProperties;
   protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();

@@ -5,7 +5,7 @@ if [ -z $1 ]; then
   exit 1
 fi
 npx protoc -I=. ${1}.proto \
-  --js_out=import_style=commonjs:./js/handicap \
+  --js_out=import_style=commonjs,binary:./js/handicap \
   --grpc-web_out=import_style=commonjs,mode=grpcwebtext:./js/handicap
 
 #npx protoc -I=. ${1}.proto \

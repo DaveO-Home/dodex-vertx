@@ -8,6 +8,7 @@ import static org.jooq.impl.DSL.notExists;
 import static org.jooq.impl.DSL.select;
 import static org.jooq.impl.DSL.table;
 
+import java.sql.Blob;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -19,9 +20,8 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.reactivex.rxjava3.core.Single;
+import io.vertx.pgclient.impl.PgPoolImpl;
 import io.vertx.rxjava3.sqlclient.SqlConnection;
-import io.vertx.sqlclient.PrepareOptions;
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
@@ -36,11 +36,8 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
-import io.vertx.rxjava3.db2client.DB2Pool;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.mysqlclient.MySQLClient;
-import io.vertx.rxjava3.mysqlclient.MySQLPool;
-import io.vertx.rxjava3.pgclient.PgPool;
 import io.vertx.rxjava3.sqlclient.Pool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.Tuple;
@@ -87,15 +84,13 @@ public abstract class DbDefinitionBase {
 
   public static <T> void setupSql(T pool4) throws SQLException {
     // Non-Blocking Drivers
-    if (pool4 instanceof PgPool) {
-      pool = (PgPool) pool4;
+    if (((Pool)pool4).getDelegate() instanceof PgPoolImpl) {
+      pool = (Pool)pool4;
       qmark = false;
-    } else if (pool4 instanceof MySQLPool) {
-      pool = (MySQLPool) pool4;
-    } else if (pool4 instanceof DB2Pool) {
-      pool = (DB2Pool) pool4;
     } else if (pool4 instanceof JDBCPool) {
       pool = (JDBCPool) pool4;
+    } else {
+      pool = (Pool)pool4;
     }
 
     Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx4/Postgres
@@ -398,16 +393,16 @@ public abstract class DbDefinitionBase {
         if (DbConfiguration.isUsingMariadb()) {
           messageUser.setId(rows.property(MySQLClient.LAST_INSERTED_ID));
         } else if (messageUser.getId() == 0) {
-          if(DbConfiguration.isUsingSqlite3()) {
-              getSqliteLastId(conn, "users", promise, messageUser);
-              conn.close().subscribe();
+          if (DbConfiguration.isUsingSqlite3()) {
+            getSqliteLastId(conn, "users", promise, messageUser);
+            conn.close().subscribe();
           } else {
             messageUser.setId(rows.property(JDBCPool.GENERATED_KEYS).getLong(0));
           }
         }
 
         messageUser.setLastLogin(current);
-        if(!DbConfiguration.isUsingSqlite3()) {
+        if (!DbConfiguration.isUsingSqlite3()) {
           conn.close().subscribe();
           promise.tryComplete(messageUser);
         }
@@ -432,22 +427,20 @@ public abstract class DbDefinitionBase {
 
       String sql = DbConfiguration.isUsingIbmDB2()
           || DbConfiguration.isUsingSqlite3()
-//          || DbConfiguration.isUsingMariadb()
+          || DbConfiguration.isUsingMariadb()
           || DbConfiguration.isUsingH2() ? getSqliteUpdateUser() : getUpdateUser();
 
       conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {
         conn.close().subscribe();
         promise.complete(rows.rowCount());
       }).doOnError(err -> {
-        logger.error(String.format("%sError Updating user: %s%s", ColorUtilConstants.RED, err,
-            ColorUtilConstants.RESET));
+        logger.error("{}Error Updating user: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
         ws.writeTextMessage(err.toString());
         conn.close().subscribe();
       }).subscribe(rows -> {
         //
       }, err -> {
-        logger.error(String.format("%sError Updating user: %s%s", ColorUtilConstants.RED, err,
-            ColorUtilConstants.RESET));
+        logger.error("{}Error Updating user2: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
         err.printStackTrace();
       });
     }).subscribe();
@@ -524,7 +517,8 @@ public abstract class DbDefinitionBase {
                   err.printStackTrace();
                 }
               });
-        }).doOnError(Throwable::printStackTrace).subscribe(v -> {}, err -> {
+        }).doOnError(Throwable::printStackTrace).subscribe(v -> {
+        }, err -> {
           promise.tryComplete(-1L);
           conn.close().subscribe();
           String errMessage = String.format("%s%s", "Error deleting Group Members: ", err);
@@ -549,54 +543,52 @@ public abstract class DbDefinitionBase {
     Object postDate = DbConfiguration.isUsingPostgres() ? time : current;
     Tuple parameters = Tuple.of(message, messageUser.getName(), postDate);
 
-//    pool.rxGetConnection().doOnSuccess(conn -> {
-      pool.rxGetConnection().doOnSuccess(conn -> {
-        conn.rxBegin().doOnSuccess(tx -> {
-          String sql = getAddMessage();
-          if (DbConfiguration.isUsingIbmDB2()) {
-            sql = String.format("%s%s%s", "SELECT id FROM FINAL TABLE (", getAddMessage(), ")");
-          } else if (DbConfiguration.isUsingMariadb()) {
-            sql = getMariaAddMessage();
+    pool.rxGetConnection().doOnSuccess(conn -> {
+      conn.rxBegin().doOnSuccess(tx -> {
+        String sql = getAddMessage();
+        if (DbConfiguration.isUsingIbmDB2()) {
+          sql = String.format("%s%s%s", "SELECT id FROM FINAL TABLE (", getAddMessage(), ")");
+        } else if (DbConfiguration.isUsingMariadb()) {
+          sql = getMariaAddMessage();
+        }
+
+        conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {
+          Long id = 0L;
+          for (Row row : rows) {
+            id = row.getLong(0);
           }
 
-          conn.preparedQuery(sql).rxExecute(parameters).doOnSuccess(rows -> {
-            Long id = 0L;
-            for (Row row : rows) {
-              id = row.getLong(0);
+          if (DbConfiguration.isUsingMariadb()) {
+            id = rows.property(MySQLClient.LAST_INSERTED_ID);
+          } else if (id == 0) {
+            if (DbConfiguration.isUsingSqlite3()) {
+              tx.commit().doOnSubscribe(v -> {
+                getSqliteLastId(conn, "messages", promise);
+                conn.close().subscribe();
+              }).subscribe();
+            } else {
+              id = rows.property(JDBCPool.GENERATED_KEYS).getLong(0);
             }
+          }
 
-            if (DbConfiguration.isUsingMariadb()) {
-              id = rows.property(MySQLClient.LAST_INSERTED_ID);
-            } else if (id == 0) {
-              if(DbConfiguration.isUsingSqlite3()) {
-                tx.commit().doOnSubscribe(v -> {
-                  getSqliteLastId(conn, "messages", promise);
-                  conn.close().subscribe();
-                }).subscribe();
-              } else {
-                id = rows.property(JDBCPool.GENERATED_KEYS).getLong(0);
-              }
-            }
-
-            if(!DbConfiguration.isUsingSqlite3()) {
-              tx.commit().doOnComplete(() -> conn.close().subscribe()).subscribe();
-              promise.complete(id);
-            }
-          }).doOnError(err -> {
-            logger.error(String.format("%sError adding messaage: %s%s", ColorUtilConstants.RED, err,
-                ColorUtilConstants.RESET));
-            ws.writeTextMessage(err.toString());
-            conn.close().subscribe();
-          }).subscribe(rows -> {
-            //
-          }, err -> {
-            if (err != null && err.getMessage() != null) {
-              err.printStackTrace();
-            }
-          });
-        }).doOnError(err -> logger.error(String.format("%sError Adding Message: - %s%s", ColorUtilConstants.RED,
-            err.getCause().getMessage(), ColorUtilConstants.RESET))).subscribe();
-      }).subscribe();
+          if (!DbConfiguration.isUsingSqlite3()) {
+            tx.commit().doOnComplete(() -> conn.close().subscribe()).subscribe();
+            promise.complete(id);
+          }
+        }).doOnError(err -> {
+          logger.error("{}Error adding message: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
+          ws.writeTextMessage(err.toString());
+          conn.close().subscribe();
+        }).subscribe(rows -> {
+          //
+        }, err -> {
+          if (err != null && err.getMessage() != null) {
+            err.printStackTrace();
+          }
+        });
+      }).doOnError(err -> logger.error(String.format("%sError Adding Message: - %s%s", ColorUtilConstants.RED,
+          err.getCause().getMessage(), ColorUtilConstants.RESET))).subscribe();
+    }).subscribe();
     return promise.future();
   }
 
@@ -769,32 +761,37 @@ public abstract class DbDefinitionBase {
                   DateFormat formatDate = DateFormat.getDateInstance(DateFormat.DEFAULT,
                       Locale.getDefault());
 
-                  String message = row.getString(2);
+                  String message = null;
+                  Object mariadbMessage = null;
+//                  if(!DbConfiguration.isUsingMariadb() ){
+//                    message = row.getString(2);
+//                  } else {
+                    mariadbMessage = row.getValue(2);
+//                  }
                   String handle = row.getString(4);
                   messageUser.setLastLogin(row.getValue(3));
 
                   // Send messages back to client
                   ws.writeTextMessage(
-                      handle + formatDate.format(messageUser.getLastLogin()) + " " + message);
+                      handle + formatDate.format(messageUser.getLastLogin()) + " " + mariadbMessage);
                   removeUndelivered.getMessageIds().add(row.getLong(1));
                   removeMessage.getMessageIds().add(row.getLong(1));
                 }
               }).doOnError(err -> {
-                logger.info(String.format("%sRetriveing Messages Error: %s%s", ColorUtilConstants.RED,
-                    err.getMessage(), ColorUtilConstants.RESET));
+                logger.info("{}Retrieving Messages Error: {}{}", ColorUtilConstants.RED,
+                    err.getMessage(), ColorUtilConstants.RESET);
                 err.printStackTrace();
               }).flatMapCompletable(
                   res -> tx.rxCommit().doFinally(completePromise)
                       .doOnSubscribe(onSubscribe -> tx.rxCompletion()
                           .doOnError(err -> {
                             tx.rollback();
-                            logger.error(
-                                String.format("%sMessages Transaction Error: %s%s",
-                                    ColorUtilConstants.RED, err.getCause(), ColorUtilConstants.RESET));
+                            logger.error("{}Messages Transaction Error: {}{}",
+                                    ColorUtilConstants.RED, err.getCause(), ColorUtilConstants.RESET);
                           }))))
           .doOnError(err -> {
-            logger.info(String.format("%sDatabase for Messages Error: %s%s", ColorUtilConstants.RED,
-                err.getMessage(), ColorUtilConstants.RESET));
+            logger.info("{}Database for Messages Error: {}{}", ColorUtilConstants.RED,
+                err.getMessage(), ColorUtilConstants.RESET);
             err.printStackTrace();
             conn.close().subscribe();
           })).subscribe();
@@ -964,7 +961,9 @@ public abstract class DbDefinitionBase {
               || DbConfiguration.isUsingSqlite3()) {
             sql = getCustomDeleteMessages();
           } else {
-            parameters = Tuple.of(messageId);
+            if(DbConfiguration.isUsingPostgres()) {
+              parameters = Tuple.of(messageId);
+            }
             sql = getRemoveMessage();
           }
 
@@ -974,11 +973,12 @@ public abstract class DbDefinitionBase {
                 if (messageIds.size() == count) {
                   conn.close().subscribe();
                 }
-              }).doOnError(err -> logger.error(String.format("%sDeleting Message2: %s%s", ColorUtilConstants.RED, err,
-                  ColorUtilConstants.RESET))).doFinally(completePromise)
+              }).doOnError(err -> logger.error("{}Deleting Message2: {}{}", ColorUtilConstants.RED, err,
+                  ColorUtilConstants.RESET))
+              .doFinally(completePromise)
               .subscribe(rows -> {
               }, Throwable::printStackTrace);
-        });
+        }).subscribe();
       }
     }
 

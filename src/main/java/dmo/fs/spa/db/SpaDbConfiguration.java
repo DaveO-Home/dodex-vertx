@@ -7,6 +7,18 @@ import java.util.Properties;
 
 //import dmo.fs.dbh.DbHandicapConfiguration;
 import dmo.fs.db.DbConfiguration;
+import dmo.fs.spa.db.cassandra.SpaCassandra;
+import dmo.fs.spa.db.cassandra.SpaDatabaseCassandra;
+import dmo.fs.spa.db.cubrid.SpaDatabaseCubrid;
+import dmo.fs.spa.db.db2.SpaDatabaseIbmDB2;
+import dmo.fs.spa.db.firebase.SpaDatabaseFirebase;
+import dmo.fs.spa.db.firebase.SpaFirebase;
+import dmo.fs.spa.db.h2.SpaDatabaseH2;
+import dmo.fs.spa.db.mariadb.SpaDatabaseMariadb;
+import dmo.fs.spa.db.neo4j.SpaDatabaseNeo4j;
+import dmo.fs.spa.db.neo4j.SpaNeo4j;
+import dmo.fs.spa.db.postgres.SpaDatabasePostgres;
+import dmo.fs.spa.db.sqlite3.SpaDatabaseSqlite3;
 import dmo.fs.spa.utils.SpaUtil;
 
 public class SpaDbConfiguration extends DbConfiguration {

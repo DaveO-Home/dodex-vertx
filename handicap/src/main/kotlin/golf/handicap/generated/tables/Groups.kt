@@ -10,6 +10,7 @@ import golf.handicap.generated.keys.NAME_UKEY
 import golf.handicap.generated.tables.records.GroupsRecord
 
 import java.time.OffsetDateTime
+import java.util.function.Function
 
 import kotlin.collections.List
 
@@ -18,8 +19,10 @@ import org.jooq.ForeignKey
 import org.jooq.Identity
 import org.jooq.Name
 import org.jooq.Record
+import org.jooq.Records
 import org.jooq.Row5
 import org.jooq.Schema
+import org.jooq.SelectField
 import org.jooq.Table
 import org.jooq.TableField
 import org.jooq.TableOptions
@@ -113,6 +116,7 @@ open class Groups(
     override fun getUniqueKeys(): List<UniqueKey<GroupsRecord>> = listOf(NAME_UKEY)
     override fun `as`(alias: String): Groups = Groups(DSL.name(alias), this)
     override fun `as`(alias: Name): Groups = Groups(alias, this)
+    override fun `as`(alias: Table<*>): Groups = Groups(alias.getQualifiedName(), this)
 
     /**
      * Rename this table
@@ -124,8 +128,24 @@ open class Groups(
      */
     override fun rename(name: Name): Groups = Groups(name, null)
 
+    /**
+     * Rename this table
+     */
+    override fun rename(name: Table<*>): Groups = Groups(name.getQualifiedName(), null)
+
     // -------------------------------------------------------------------------
     // Row5 type methods
     // -------------------------------------------------------------------------
     override fun fieldsRow(): Row5<Int?, String?, Int?, OffsetDateTime?, OffsetDateTime?> = super.fieldsRow() as Row5<Int?, String?, Int?, OffsetDateTime?, OffsetDateTime?>
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Function)}.
+     */
+    fun <U> mapping(from: (Int?, String?, Int?, OffsetDateTime?, OffsetDateTime?) -> U): SelectField<U> = convertFrom(Records.mapping(from))
+
+    /**
+     * Convenience mapping calling {@link SelectField#convertFrom(Class,
+     * Function)}.
+     */
+    fun <U> mapping(toType: Class<U>, from: (Int?, String?, Int?, OffsetDateTime?, OffsetDateTime?) -> U): SelectField<U> = convertFrom(toType, Records.mapping(from))
 }

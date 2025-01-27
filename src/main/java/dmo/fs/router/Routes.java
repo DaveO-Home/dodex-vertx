@@ -2,7 +2,6 @@ package dmo.fs.router;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.cloud.firestore.Firestore;
-import dmo.fs.db.DbConfiguration;
 import dmo.fs.kafka.KafkaConsumerDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
@@ -87,7 +86,7 @@ public class Routes {
       }
       // this.router = router;
       routerPromise.complete(router);
-    });
+    }).onFailure(Throwable::printStackTrace);
   }
 
   public static KafkaProducer<String, Integer> getProducer() {
@@ -136,24 +135,24 @@ public class Routes {
   public void setStaticRoute(Router router) {
     Route staticRoute = router.route();
     StaticHandler staticHandler = StaticHandler.create("static");
-    staticHandler.setCachingEnabled(false);
-
-//    router.routeWithRegex("/.*\\.html|/.*\\.md|" + "/.*/templates/.*")
-//        .produces("text/plain")
-//        .produces("text/markdown")
-//        .handler(ctx -> {
-//          HttpServerResponse response = ctx.response();
-//          String acceptableContentType = ctx.getAcceptableContentType();
-//          response.putHeader("content-type", acceptableContentType);
-//          response.sendFile(ctx.normalizedPath());
-//          staticHandler.handle(ctx);
-//        });
+    if ("dev".equals(DodexUtil.getEnv())) {
+      staticHandler.setCachingEnabled(false);
+    } else {
+      staticHandler.setCachingEnabled(true);
+    }
+    router.route("/*").handler(staticHandler)
+        .produces("text/plain")
+        .produces("text/html")
+        .produces("text/markdown")
+        .produces("image/*")
+        .handler(staticHandler)
+    ;
 
     staticRoute.handler(staticHandler);
-    staticRoute.failureHandler(ctx -> {
-      logger.error(String.format("%sFAILURE in static route: %d -- %s -- %s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
-          ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET));
-      ctx.response().end(Integer.valueOf(ctx.statusCode()).toString());
+    staticRoute.failureHandler(ctx -> {;
+      logger.error("{}FAILURE in static route(likely caused by Music tab): {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET);
+//      ctx.response().end(Integer.valueOf(ctx.statusCode()).toString());
+      ctx.next();
     });
 
   }

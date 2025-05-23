@@ -1,5 +1,24 @@
 package dmo.fs.dbg;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import dmo.fs.utils.DodexUtil;
+import io.reactivex.rxjava3.core.Completable;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.disposables.Disposable;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.pgclient.PgConnectOptions;
+import io.vertx.pgclient.SslMode;
+import io.vertx.rxjava3.pgclient.PgBuilder;
+import io.vertx.rxjava3.sqlclient.Pool;
+import io.vertx.rxjava3.sqlclient.Row;
+import io.vertx.rxjava3.sqlclient.RowIterator;
+import io.vertx.rxjava3.sqlclient.RowSet;
+import io.vertx.sqlclient.PoolOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashSet;
@@ -7,27 +26,11 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.databind.JsonNode;
-import dmo.fs.utils.DodexUtil;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.vertx.core.Future;
-import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.rxjava3.core.Promise;
-import io.vertx.rxjava3.pgclient.PgPool;
-import io.vertx.rxjava3.sqlclient.Row;
-import io.vertx.rxjava3.sqlclient.RowIterator;
-import io.vertx.rxjava3.sqlclient.RowSet;
-import io.vertx.sqlclient.PoolOptions;
 
 public class HandicapDatabasePostgresG extends DbPostgres {
   private final static Logger logger =
       LoggerFactory.getLogger(HandicapDatabasePostgresG.class.getName());
   protected Disposable disposable;
-  protected PgPool pool4;
   protected Properties dbProperties = new Properties();
   protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
   protected Map<String, String> dbMap = new ConcurrentHashMap<>();
@@ -36,6 +39,7 @@ public class HandicapDatabasePostgresG extends DbPostgres {
   protected DodexUtil dodexUtil = new DodexUtil();
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
+  protected Pool client;
 
   public HandicapDatabasePostgresG(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
@@ -78,6 +82,7 @@ public class HandicapDatabasePostgresG extends DbPostgres {
   public HandicapDatabasePostgresG(Boolean isCreateTables)
       throws InterruptedException, IOException, SQLException {
     super();
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -107,8 +112,8 @@ public class HandicapDatabasePostgresG extends DbPostgres {
         .setPort(Integer.valueOf(dbMap.get("port")))
         .setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setDatabase(dbMap.get("database")).setSsl(Boolean.valueOf(dbProperties.getProperty("ssl")))
-        .setIdleTimeout(1)
+        .setDatabase(dbMap.get("database")).setSslMode(SslMode.of(dbProperties.getProperty("ssl")));
+//        .setIdleTimeout(1)
     // .setCachePreparedStatements(true)
     ;
 
@@ -117,9 +122,15 @@ public class HandicapDatabasePostgresG extends DbPostgres {
         new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
     // Create the client pool
-    pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+//    pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+    client = PgBuilder.pool()
+        .with(poolOptions)
+        .connectingTo(connectOptions)
+        .using(vertx)
+        .build();
+
+    Completable completable = client.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -287,7 +298,7 @@ public class HandicapDatabasePostgresG extends DbPostgres {
                           logger.warn("Member Table Added.");
                         }
                         tx.commit();
-                        conn.close();
+                        conn.close().subscribe();
                         if (isCreateTables) {
                           returnPromise.complete(isCreateTables.toString());
                         }
@@ -305,7 +316,7 @@ public class HandicapDatabasePostgresG extends DbPostgres {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(client);
           } catch (SQLException | IOException e) {
             e.printStackTrace();
           }
@@ -319,7 +330,7 @@ public class HandicapDatabasePostgresG extends DbPostgres {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <R> R getPool4() {
-    return (R) pool4;
+  public <R> R getClient() {
+    return (R) client;
   }
 }

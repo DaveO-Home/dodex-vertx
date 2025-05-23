@@ -10,10 +10,9 @@ import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Promise;
-import io.vertx.core.ThreadingModel;
-import io.vertx.core.Verticle;
+import golf.handicap.vertx.HandicapGrpcServer;
+import golf.handicap.vertx.MainVerticle;
+import io.vertx.core.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
@@ -21,8 +20,8 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Route;
-import io.vertx.rxjava3.core.AbstractVerticle;
 import io.vertx.rxjava3.core.Vertx;
+import io.vertx.rxjava3.core.AbstractVerticle;
 import io.vertx.rxjava3.core.file.FileSystem;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.ext.eventbus.bridge.tcp.TcpEventBusBridge;
@@ -33,8 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
-import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 
@@ -42,7 +39,7 @@ public class Server extends AbstractVerticle {
   private static final Logger logger;
   private int startupPort = 0;
   private int port = 0;
-
+  private static Vertx rxVertx;
 
   public Server() {
     Locale.setDefault(Locale.forLanguageTag("US"));
@@ -73,13 +70,17 @@ public class Server extends AbstractVerticle {
   private static String useMqtt = System.getenv("USE_MQTT");
   private static String useSsl = System.getenv("USE_SSL");
   private static HttpServer server;
-  private JsonObject config;
+  private static JsonObject config;
   private JsonObject alternateConfig;
-  private HttpServerOptions httpServerOptions;
 
   @Override
-  public void start(Promise<Void> promise) throws InterruptedException, URISyntaxException,
-      IOException, SQLException, NumberFormatException {
+  public void stop() throws Exception {
+    super.stop();
+  }
+
+  @Override
+  public void start(Promise promise) throws Exception {
+    super.start();
     if (development == null || development.isEmpty()
         || development.toLowerCase().startsWith("prod")) {
       development = "prod";
@@ -88,6 +89,9 @@ public class Server extends AbstractVerticle {
     } else if ("test".equalsIgnoreCase(development)) {
       port = startupPort == 0 ? 8089 : startupPort;
     }
+
+    rxVertx = vertx;
+    DodexUtil.setVertx(vertx);
 
     HttpServerOptions options = new HttpServerOptions();
     options.setLogActivity(true);
@@ -125,14 +129,14 @@ public class Server extends AbstractVerticle {
     vertx.deployVerticle("dmo.fs.vertx.Server", options);
   */
     if (isUnix()) {
-      server = configureLinuxOptions(vertx);
+      server = configureLinuxOptions(rxVertx);
     } else {
-      server = vertx.createHttpServer(options);
+      server = rxVertx.createHttpServer(options);
     }
 
-    Routes routes = new Routes(vertx, server, vertxVersion);
+    Routes routes = new Routes(rxVertx, server, vertxVersion);
 
-    FileSystem fs = vertx.fileSystem();
+    FileSystem fs = rxVertx.fileSystem();
 
     // Note: development = "prod" in production mode
     // Can override port at execution time with env variable "VERTX_PORT"
@@ -150,7 +154,7 @@ public class Server extends AbstractVerticle {
     }
 
     routes.getRouter().onSuccess(router -> {
-      new SpaRoutes(vertx, server, router, routes.getFirestore());
+      new SpaRoutes(rxVertx, server, router, routes.getFirestore());
 
       server.getDelegate().requestHandler(router);
 
@@ -184,7 +188,7 @@ public class Server extends AbstractVerticle {
           /*
             Handicap Verticle
            */
-          if (Boolean.TRUE.equals(golf.handicap.vertx.MainVerticle.getEnableHandicap())) {
+          if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
             boolean useGrpcServer = alternateConfig.getBoolean("grpc.server") != null ?
                 alternateConfig.getBoolean("grpc.server") : false;
 
@@ -193,25 +197,25 @@ public class Server extends AbstractVerticle {
             useGrpcServer = System.getProperty("GRPC_SERVER") != null ? "true".equals(System.getProperty("GRPC_SERVER")) : useGrpcServer;
 
             Verticle handicapVerticle;
-            if(useGrpcServer) {
-              handicapVerticle = new golf.handicap.vertx.HandicapGrpcServer();
+            if (useGrpcServer) {
+              handicapVerticle = new MainVerticle();
             } else {
-              handicapVerticle = new golf.handicap.vertx.MainVerticle();
+              handicapVerticle = new HandicapGrpcServer();
             }
-            vertx.deployVerticle(handicapVerticle).subscribe();
+            rxVertx.deployVerticle(handicapVerticle).subscribe();
           }
           /*
             Test Java 21 Virtual Threads
            */
-          if(Boolean.TRUE.equals(config.getBoolean("dodex.virtual.threads"))) {
+          if (Boolean.TRUE.equals(config.getBoolean("dodex.virtual.threads"))) {
             DeploymentOptions options2 = new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD);
             VirtualThreadServer vts = new VirtualThreadServer();
-            vertx.getDelegate().deployVerticle(vts, options2);
+            vertx.deployVerticle(vts, options2);
           }
         }).doOnError(err -> {
           logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
               ColorUtilConstants.RESET);
-//          promise.fail(err.getCause());
+          promise.fail(err.getCause());
         }).subscribe();
       } catch (Exception e) {
         logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
@@ -223,10 +227,10 @@ public class Server extends AbstractVerticle {
         " database", ColorUtilConstants.RESET);
 
     if ("cassandra".equals(defaultDb)) {
-      if("true".equals(useMqtt)) {
+      if ("true".equals(useMqtt)) {
         new DodexMqttServer();
       } else {
-        TcpEventBusBridge bridge = TcpEventBusBridge.create(vertx,
+        TcpEventBusBridge bridge = TcpEventBusBridge.create(rxVertx,
             new BridgeOptions().addInboundPermitted(new PermittedOptions().setAddress("vertx"))
                 .addOutboundPermitted(new PermittedOptions().setAddress("akka"))
                 .addInboundPermitted(new PermittedOptions().setAddress("akka"))
@@ -239,13 +243,12 @@ public class Server extends AbstractVerticle {
           logger.info(String.format("%s%s%d%s", ColorUtilConstants.GREEN_BOLD_BRIGHT,
               "TCP Event Bus Bridge Started: ", eventBridgePort, ColorUtilConstants.RESET));
           setupEventBridge();
-
         }).doOnError(err -> {
-          logger.error(String.format("%s%s%s", ColorUtilConstants.RED_BOLD_BRIGHT,
-              err.getCause().getMessage(), ColorUtilConstants.RESET));
+          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause().getMessage(), ColorUtilConstants.RESET);
         }).subscribe();
       }
     }
+//    return Future.succeededFuture();
   }
 
   private void setupEventBridge() {
@@ -260,7 +263,7 @@ public class Server extends AbstractVerticle {
 
   private HttpServer configureLinuxOptions(Vertx vertx) {
     // Available on Linux
-    httpServerOptions = new HttpServerOptions().setTcpFastOpen(true).setTcpCork(true)
+    HttpServerOptions httpServerOptions = new HttpServerOptions().setTcpFastOpen(true).setTcpCork(true)
         .setTcpQuickAck(true).setReusePort(true).setLogActivity(true);
 
     /* Self signed for testing, per;
@@ -269,49 +272,49 @@ public class Server extends AbstractVerticle {
     // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks
     // -storepass some-password -validity 360 -keysize 2048
 
-    if("true".equals(useSsl)) {
+    if ("true".equals(useSsl)) {
       Buffer selfSignedBuffer = vertx.getDelegate().fileSystem().readFileBlocking("keystore.jks");
       httpServerOptions.setSsl(true)
           .setKeyCertOptions(new JksOptions()
-          .setValue(selfSignedBuffer)
-          .setPassword("some-password"));
+              .setValue(selfSignedBuffer)
+              .setPassword("some-password"));
     }
     return vertx.createHttpServer(httpServerOptions);
   }
 
-  private void checkInstallation (FileSystem fs) {
-      if ("dev".equalsIgnoreCase(development)) {
-        String fileDir = "./src/spa-react/node_modules/";
-        if (!fs.existsBlocking(fileDir)) {
-          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
-          "To install the test spa application, execute 'npm install --legacy-peer-deps' in 'src/spa-react/'"
-          , ColorUtilConstants.RESET);
-        }
-        fileDir = "./src/main/resources/static/group/";
-        if (!fs.existsBlocking(fileDir)) {
-          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
-              "To install the dodex group addon, execute 'npm run group:prod' in 'handicap/src/grpc/client/'"
-              , ColorUtilConstants.RESET);
-        }
-        fileDir = "./src/main/resources/static/node_modules/";
-        if (!fs.existsBlocking(fileDir)) {
-          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
-              "To install dodex , execute 'npm install' in 'src/main/resources/static/'"
-              , ColorUtilConstants.RESET);
-        }
-        fileDir = "./src/firebase/node_modules/";
-        if (!fs.existsBlocking(fileDir)) {
-          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
-              "To install the firebase client , execute 'npm install' in 'src/firebase/'"
-              , ColorUtilConstants.RESET);
-        }
-        fileDir = "./handicap/src/grpc/client/node_modules/";
-        if (!fs.existsBlocking(fileDir)) {
-          logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
-              "To install the gRPC client , execute 'npm install' and 'npm run esbuild:build' in 'handicap/src/grpc/client/'"
-              , ColorUtilConstants.RESET);
-        }
+  private void checkInstallation(FileSystem fs) {
+    if ("dev".equalsIgnoreCase(development)) {
+      String fileDir = "./src/spa-react/node_modules/";
+      if (!fs.existsBlocking(fileDir)) {
+        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+            "To install the test spa application, execute 'npm install --legacy-peer-deps' in 'src/spa-react/'"
+            , ColorUtilConstants.RESET);
       }
+      fileDir = "./src/main/resources/static/group/";
+      if (!fs.existsBlocking(fileDir)) {
+        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+            "To install the dodex group addon, execute 'npm run group:prod' in 'handicap/src/grpc/client/'"
+            , ColorUtilConstants.RESET);
+      }
+      fileDir = "./src/main/resources/static/node_modules/";
+      if (!fs.existsBlocking(fileDir)) {
+        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+            "To install dodex , execute 'npm install' in 'src/main/resources/static/'"
+            , ColorUtilConstants.RESET);
+      }
+      fileDir = "./src/firebase/node_modules/";
+      if (!fs.existsBlocking(fileDir)) {
+        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+            "To install the firebase client , execute 'npm install' in 'src/firebase/'"
+            , ColorUtilConstants.RESET);
+      }
+      fileDir = "./handicap/src/grpc/client/node_modules/";
+      if (!fs.existsBlocking(fileDir)) {
+        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+            "To install the gRPC client , execute 'npm install' and 'npm run esbuild:build' in 'handicap/src/grpc/client/'"
+            , ColorUtilConstants.RESET);
+      }
+    }
   }
 
   private String parsePath(Route route) {
@@ -356,11 +359,19 @@ public class Server extends AbstractVerticle {
     return server;
   }
 
+  public static JsonObject getConfig() {
+    return config;
+  }
+
   public static Boolean getUseKafka() {
     return Boolean.parseBoolean(useKafka);
   }
 
   public static Boolean getUseMqtt() {
     return "true".equals(useMqtt);
+  }
+  
+  public static Vertx getRxVertx() {
+    return rxVertx;
   }
 }

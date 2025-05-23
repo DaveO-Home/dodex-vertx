@@ -1,15 +1,12 @@
 
 package dmo.fs.dbh;
 
-import dmo.fs.utils.DodexUtil;
+import dmo.fs.utils.DodexUtils;
 import golf.handicap.db.PopulateCourse;
 import golf.handicap.db.PopulateGolfer;
 import golf.handicap.db.PopulateGolferScores;
 import golf.handicap.db.PopulateScore;
 import io.vertx.rxjava3.core.Vertx;
-import io.vertx.rxjava3.jdbcclient.JDBCPool;
-import io.vertx.rxjava3.mysqlclient.MySQLPool;
-import io.vertx.rxjava3.pgclient.PgPool;
 import io.vertx.rxjava3.sqlclient.Pool;
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
@@ -30,25 +27,17 @@ public abstract class DbDefinitionBase {
   protected static Pool pool;
   private static boolean qmark = true;
 
-  public static <T> void setupSql(T pool4) throws IOException, SQLException {
+  public static <T> void setupSql(Pool client) throws IOException, SQLException {
     // Non-Blocking Drivers
-    if (pool4 instanceof PgPool) {
-    pool = (PgPool) pool4;
+    if (DbConfiguration.isUsingPostgres()) {
       qmark = false;
-    } else 
-    if (pool4 instanceof MySQLPool) {
-      pool = (MySQLPool) pool4;
-    } 
-    // else if (pool4 instanceof DB2Pool) {
-    // pool = (DB2Pool) pool4;
-    // } 
-    else if (pool4 instanceof JDBCPool) {
-      pool = (JDBCPool) pool4;
     }
 
-    Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx4/Postgres
+    pool = client;
 
-    create = DSL.using(DodexUtil.getSqlDialect(), settings);
+      Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx/Postgres
+      create = DSL.using(DodexUtils.getSqlDialect(), settings);
+
     // PgClient client = PgClient.pool(vertx, config);
 
     PopulateGolfer.setQMark(qmark);

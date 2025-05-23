@@ -5,10 +5,15 @@
 
 1. Using [Vertx4](<https://vertx.io/introduction-to-vertx-and-reactive/>)
 2. Java 17 or higher installed with JAVA_HOME set.
-3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.5`
+3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.14`
 4. Node with npm javascript package manager installed.
 
-**Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web application requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.
+~~**Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web application requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.~~  
+**Important Note;** The `kotlin, gRPC` application can now run **without** a proxy(Envoy). After initial configuration(javascript npm installs), the `gRPC` client now connects directly to Vert.x. Simply execute `gradlew run` and enter `localhost:8087/handicap.html` in a browser. 
+The `envoy` proxy can still be used by setting an environment variable, `GRPC_SERVER=true`.  
+
+[//]: # ()
+Also note that the `io.vertx.launcher.application.VertxApplication` is not used since in development only a maven plugin is supported for auto-reload. In addition, the replacement for `AbstractVerticle` which is `VerticalBase` is not used. Too many code changes would be required.
 
 ## New Additions(7/24)
 
@@ -36,7 +41,7 @@
 
 1. Execute `./gradlew tasks` to view all tasks.
 2. Execute `./gradlew shadowJar` to build the production fat jar.
-3. Execute `java -jar build/libs/dodex-vertx-3.3.0-prod.jar` to start up the production server.
+3. Execute `java -jar build/libs/dodex-vertx-4.0.0-prod.jar` to start up the production server.
 4. Execute url `http://localhost:8880/dodex` or `.../dodex/bootstrap.html` in a browser. 
    * **Note:** This is a different port and url than development. 
    * **Note:** The default database on the backend is "h2", no further configuration is necessary. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.

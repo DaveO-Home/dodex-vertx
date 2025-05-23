@@ -1,34 +1,22 @@
 package dmo.fs.dbh;
 
-import java.io.IOException;
-// import java.lang.reflect.InvocationTargetException;
-// import java.sql.Connection;
-// import java.sql.Driver;
-// import java.sql.DriverManager;
-import java.sql.SQLException;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
-
-import dmo.fs.utils.DodexUtil;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.Single;
+import dmo.fs.utils.DodexUtils;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.jdbcclient.JDBCConnectOptions;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
-import io.vertx.rxjava3.sqlclient.Row;
-import io.vertx.rxjava3.sqlclient.RowIterator;
-import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HandicapDatabaseSqlite3 extends DbSqlite3 {
   private final static Logger logger =
@@ -39,14 +27,24 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
   protected Map<String, String> dbMap = new ConcurrentHashMap<>();
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
-  protected DodexUtil dodexUtil = new DodexUtil();
+  protected DodexUtils dodexUtil = new DodexUtils();
   protected JDBCPool pool4;
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
+  protected Future<String> returnFuture;
+  protected Handler<Promise<String>> returnHandler = new Handler<>() {
+    @Override
+    public void handle(io.vertx.core.Promise<String> p) {
+      p.complete(p.future().result());
+    }
+  };
 
   public HandicapDatabaseSqlite3(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
     super();
+
+    returnHandler.handle(returnPromise);
+    returnFuture = Future.future(returnHandler);
 
     defaultNode = dodexUtil.getDefaultNode();
 
@@ -71,6 +69,10 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
 
   public HandicapDatabaseSqlite3() throws InterruptedException, IOException, SQLException {
     super();
+
+    returnHandler.handle(returnPromise);
+    returnFuture = Future.future(returnHandler);
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -84,6 +86,10 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
 
   public HandicapDatabaseSqlite3(Boolean isCreateTables) throws IOException {
     super();
+
+    returnHandler.handle(returnPromise);
+    returnFuture = Future.future(returnHandler);
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -96,7 +102,7 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
 
   public Future<String> checkOnTables() throws InterruptedException, SQLException {
     databaseSetup();
-    return returnPromise.future();
+    return returnFuture;
   }
 
   private void databaseSetup() {
@@ -116,7 +122,7 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
         .setIdleTimeout(1)
     // .setCachePreparedStatements(true)
     ;
-    pool4 = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    pool = JDBCPool.pool(DodexUtils.getVertx(), connectOptions, poolOptions);
 
     if (!isCreateTables) {
       try {
@@ -129,7 +135,7 @@ public class HandicapDatabaseSqlite3 extends DbSqlite3 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <T> T getPool() {
+    return (T) pool;
   }
 }

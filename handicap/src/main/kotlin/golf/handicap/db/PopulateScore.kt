@@ -4,21 +4,18 @@ import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.generated.tables.records.ScoresRecord
 import golf.handicap.generated.tables.references.SCORES
-import handicap.grpc.*
+import handicap.grpc.HandicapData
 import io.grpc.stub.StreamObserver
 import io.vertx.core.Future
-import io.vertx.rxjava3.core.Promise
+import io.vertx.core.Promise
 import io.vertx.rxjava3.sqlclient.Tuple
-import org.jooq.*
-import org.jooq.impl.*
 import org.jooq.impl.DSL.*
-import java.sql.*
-import java.util.*
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
+import java.sql.SQLException
 
 class PopulateScore : SqlConstants() {
     companion object {
-        private val LOGGER = Logger.getLogger(PopulateScore::class.java.name)
+        private val logger = LoggerFactory.getLogger(PopulateScore::class.java.name)
         private val regEx = "\\$\\d".toRegex()
 
         @Throws(SQLException::class)
@@ -117,7 +114,7 @@ class PopulateScore : SqlConstants() {
         }
     }
 
-    fun getScoreByTeetime(score: golf.handicap.Score): Future<MutableSet<golf.handicap.Score>> {
+    private fun getScoreByTeetime(score: golf.handicap.Score): Future<MutableSet<golf.handicap.Score>> {
         val promise: Promise<MutableSet<golf.handicap.Score>> = Promise.promise()
         val scores = mutableSetOf<golf.handicap.Score>()
 
@@ -134,7 +131,7 @@ class PopulateScore : SqlConstants() {
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnError { err ->
-                        LOGGER.severe(
+                        logger.error(
                             String.format("Error getting score for Tee Time: %s -- %s", err.message)
                         )
                         promise.complete(scores)
@@ -158,7 +155,7 @@ class PopulateScore : SqlConstants() {
                         }
                         score.status = rows.rowCount()
                         promise.complete(scores)
-                        conn.close()
+                        conn.close().subscribe()
                     }
                     .subscribe()
             }
@@ -215,7 +212,7 @@ class PopulateScore : SqlConstants() {
                                     .subscribe(
                                         {},
                                         { err ->
-                                            LOGGER.severe(
+                                            logger.error(
                                                 String.format(
                                                     "%sError Adding Golfer Score - %s%s %s %s %s",
                                                     ColorUtilConstants.RED,
@@ -232,7 +229,7 @@ class PopulateScore : SqlConstants() {
                             .subscribe(
                                 {},
                                 { err ->
-                                    LOGGER.severe(
+                                    logger.error(
                                         String.format(
                                             "%sError Adding Golfer Score Subscribe - %s%s %s",
                                             ColorUtilConstants.RED,
@@ -244,10 +241,12 @@ class PopulateScore : SqlConstants() {
                                 }
                             )
                     } else {
-                        conn.close()
-                        updateScore(score).onSuccess {
-                            updateGolfer(score).onSuccess {
-                                promise.complete(responseObserver) }
+                        conn.close().subscribe {
+                            updateScore(score).onSuccess {
+                                updateGolfer(score).onSuccess {
+                                    promise.complete(responseObserver)
+                                }
+                            }
                         }
                     }
                 }
@@ -278,7 +277,7 @@ class PopulateScore : SqlConstants() {
                             .rxExecute(parameters)
                             .doOnError { err ->
                                 tx.rollback()
-                                LOGGER.severe(
+                                logger.error(
                                     String.format("Error getting score for Tee Time: %s", err.message)
                                 )
                             }
@@ -288,11 +287,12 @@ class PopulateScore : SqlConstants() {
                             }
                             .subscribe(
                                 {
-                                    tx.commit()
-                                    conn.close()
+                                    tx.commit().doOnComplete {
+                                        conn.close().subscribe()
+                                    }.subscribe()
                                 },
                                 { err ->
-                                    LOGGER.severe(
+                                    logger.error(
                                         String.format(
                                             "%sError querying Course Score2 - %s%s %s",
                                             ColorUtilConstants.RED,
@@ -342,8 +342,10 @@ class PopulateScore : SqlConstants() {
                                 }
                             }
                             .doOnError { err: Throwable ->
-                                tx.rollback()
-                                LOGGER.severe(
+                                tx.rollback().subscribe {
+                                    conn.close().subscribe()
+                                }
+                                logger.error(
                                     String.format(
                                         "%sError updating golfer Score: %s%s",
                                         ColorUtilConstants.RED,
@@ -354,12 +356,11 @@ class PopulateScore : SqlConstants() {
                                 err.printStackTrace()
                                 score.status = -1
                                 score.golfer!!.message = "Golfer update failed"
-                                conn.close()
                             }
                             .subscribe(
                                 {},
                                 { err ->
-                                    LOGGER.severe(
+                                    logger.error(
                                         String.format(
                                             "%sError Updating2 Golfer - %s%s",
                                             ColorUtilConstants.RED,

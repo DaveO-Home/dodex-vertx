@@ -1,30 +1,31 @@
 package dmo.fs.spa.db.sqlite3;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import dmo.fs.spa.db.SpaDbConfiguration;
 import dmo.fs.spa.db.SqlBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.databind.JsonNode;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaLoginImpl;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.jdbcclient.JDBCConnectOptions;
-import io.vertx.rxjava3.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SpaDatabaseSqlite3 extends DbSqlite3 {
 	private final static Logger logger =
@@ -36,7 +37,6 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 	protected JsonNode defaultNode;
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
-	protected JDBCPool pool4;
 	private Vertx vertx;
 
 	public SpaDatabaseSqlite3(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
@@ -94,11 +94,11 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 				.setJdbcUrl(dbMap.get("url") + dbMap.get("filename") + "?foreign_keys=on;")
 				.setIdleTimeout(1);
 
-		vertx = DodexUtil.getVertx();
+		vertx = Server.getRxVertx();
 
-		pool4 = JDBCPool.pool(vertx, connectOptions, poolOptions);
+		pool = JDBCPool.pool(vertx, connectOptions, poolOptions);
 
-		Completable completable = pool4.rxGetConnection()
+		Completable completable = pool.rxGetConnection()
 				.flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
 						tx -> conn.query(CHECKLOGINSQL).rxExecute().doOnSuccess(rows -> {
 							if (rows.size() == 0) {
@@ -127,7 +127,7 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 		Promise<Void> setupPromise = Promise.promise();
 		completable.subscribe(() -> {
 			try {
-				SqlBuilder.setupSql(pool4);
+				SqlBuilder.setupSql(pool);
 				setupPromise.complete();
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -146,8 +146,8 @@ public class SpaDatabaseSqlite3 extends DbSqlite3 {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T getPool4() {
-		return (T) pool4;
+	public <T> T getPool() {
+		return (T) pool;
 	}
 
 	@Override

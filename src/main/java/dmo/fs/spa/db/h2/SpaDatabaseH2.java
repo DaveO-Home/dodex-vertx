@@ -5,12 +5,13 @@ import dmo.fs.spa.db.SpaDbConfiguration;
 import dmo.fs.spa.utils.SpaLogin;
 import dmo.fs.spa.utils.SpaLoginImpl;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.jdbcclient.JDBCConnectOptions;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.sqlclient.Row;
@@ -34,7 +35,6 @@ public class SpaDatabaseH2 extends DbH2 {
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
   protected DodexUtil dodexUtil = new DodexUtil();
-  protected JDBCPool pool4;
   private Vertx vertx;
 
   public SpaDatabaseH2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
@@ -92,11 +92,11 @@ public class SpaDatabaseH2 extends DbH2 {
         .setJdbcUrl(dbMap.get("url") + dbMap.get("filename") + "?foreign_keys=on;")
         .setIdleTimeout(1);
 
-    vertx = DodexUtil.getVertx();
+    vertx = Server.getRxVertx();
 
-    pool4 = JDBCPool.pool(vertx, connectOptions, poolOptions);
+    pool = JDBCPool.pool(vertx, connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection()
+    Completable completable = pool.rxGetConnection()
         .flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
             tx -> conn.query(CHECKLOGINSQL).rxExecute().doOnSuccess(rows -> {
               if (rows.size() == 0) {
@@ -122,10 +122,10 @@ public class SpaDatabaseH2 extends DbH2 {
 
             }).flatMapCompletable(res -> tx.rxCommit())));
 
-    io.vertx.rxjava3.core.Promise<Void> setupPromise = Promise.promise();
+    Promise<Void> setupPromise = Promise.promise();
     completable.subscribe(() -> {
       try {
-        setupSql(pool4);
+        setupSql(pool);
         setupPromise.complete();
       } catch (SQLException e) {
         e.printStackTrace();
@@ -144,8 +144,8 @@ public class SpaDatabaseH2 extends DbH2 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <T> T getPool() {
+    return (T) pool;
   }
 
   @Override

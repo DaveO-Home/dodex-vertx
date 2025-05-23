@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
+import dmo.fs.vertx.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -117,7 +118,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
     // .setCachePreparedStatements(true)
     ;
 
-    pool4 = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    pool = JDBCPool.pool(Server.getRxVertx(), connectOptions, poolOptions);
 
     Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
@@ -240,7 +241,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
                         logger.warn("Member Table Added.");
                       }
                       tx.commit();
-                      conn.close();
+                      conn.close().subscribe();
                       if (isCreateTables) {
                         returnPromise.complete(isCreateTables.toString());
                       }
@@ -276,7 +277,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <T> T getPool() {
+    return (T) pool;
   }
 }

@@ -1,18 +1,11 @@
 package dmo.fs.db.cubrid;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import com.fasterxml.jackson.databind.JsonNode;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -22,6 +15,14 @@ import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
 import io.vertx.rxjava3.sqlclient.RowSet;
 import io.vertx.sqlclient.PoolOptions;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class DodexDatabaseCubrid extends DbCubrid {
   private final static Logger logger = LoggerFactory.getLogger(DodexDatabaseCubrid.class.getName());
@@ -32,7 +33,6 @@ public class DodexDatabaseCubrid extends DbCubrid {
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
   protected DodexUtil dodexUtil = new DodexUtil();
-  protected JDBCPool pool4;
 
   public DodexDatabaseCubrid(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
@@ -99,9 +99,9 @@ public class DodexDatabaseCubrid extends DbCubrid {
     // .setCachePreparedStatements(true)
     ;
 
-    pool4 = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    pool = JDBCPool.pool(Server.getRxVertx(), connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+    Completable completable = pool.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -168,7 +168,7 @@ public class DodexDatabaseCubrid extends DbCubrid {
             }).doOnSuccess(row2 -> {
               logger.info("Undelivered Table Added.");
               tx.commit();
-              conn.close();
+              conn.close().subscribe();
             });
 
             crow.subscribe(result2 -> {
@@ -178,7 +178,7 @@ public class DodexDatabaseCubrid extends DbCubrid {
             });
           } else {
             tx.commit();
-            conn.close();
+            conn.close().subscribe();
           }
         }).doOnError(err -> {
           logger.info(String.format("Messages Table Error: %s", err.getMessage()));
@@ -186,7 +186,7 @@ public class DodexDatabaseCubrid extends DbCubrid {
 
     completable.subscribe(() -> {
       try {
-        setupSql(pool4);
+        setupSql(pool);
       } catch (SQLException e) {
         e.printStackTrace();
       }
@@ -202,7 +202,7 @@ public class DodexDatabaseCubrid extends DbCubrid {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <T> T getPool() {
+    return (T) pool;
   }
 }

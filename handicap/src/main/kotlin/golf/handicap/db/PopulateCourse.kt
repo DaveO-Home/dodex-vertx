@@ -5,23 +5,22 @@ import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.Course
 import golf.handicap.generated.tables.references.COURSE
 import golf.handicap.generated.tables.references.RATINGS
-import handicap.grpc.*
+import handicap.grpc.HandicapData
+import handicap.grpc.ListCoursesResponse
+import handicap.grpc.Rating
 import io.grpc.stub.StreamObserver
 import io.vertx.core.Future
+import io.vertx.core.Promise
 import io.vertx.core.json.JsonObject
-import io.vertx.rxjava3.core.Promise
 import io.vertx.rxjava3.mysqlclient.MySQLClient
 import io.vertx.rxjava3.sqlclient.Tuple
-import org.jooq.*
-import org.jooq.impl.*
 import org.jooq.impl.DSL.*
-import java.sql.*
-import java.util.*
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
+import java.sql.SQLException
 
 class PopulateCourse : SqlConstants() {
     companion object {
-        private val LOGGER = Logger.getLogger(PopulateCourse::class.java.name)
+        private val logger = LoggerFactory.getLogger(PopulateCourse::class.java.name)
         private val regEx = "\\$\\d".toRegex()
 
         @Throws(SQLException::class)
@@ -193,7 +192,7 @@ class PopulateCourse : SqlConstants() {
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnError { err ->
-                        LOGGER.severe(String.format("Error getting course: %s", err.message))
+                        logger.error(String.format("Error getting course: %s", err.message))
                     }
                     .doOnSuccess { rows ->
                         for (row in rows) {
@@ -207,7 +206,7 @@ class PopulateCourse : SqlConstants() {
                     .subscribe(
                         { conn.close().subscribe() },
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError querying Course - %s%s %s\n%s",
                                     ColorUtilConstants.RED,
@@ -247,7 +246,7 @@ class PopulateCourse : SqlConstants() {
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnError { err ->
-                        LOGGER.warning(String.format("Error getting course: %s", err.message))
+                        logger.warn(String.format("Error getting course: %s", err.message))
                     }
                     .doOnSuccess { rows ->
                         for (row in rows) {
@@ -276,12 +275,14 @@ class PopulateCourse : SqlConstants() {
                             updateTees = false
                             courseMap["status"] = 2
                             setCourse(courseMap, responseObserver).onSuccess {
-                                setRating(courseMap, responseObserver).onSuccess { course.resetIterator() }
+                                setRating(courseMap, responseObserver).onSuccess {
+                                    course.resetIterator()
+                                }
                             }
                         } else {
                             if (updateTees) {
                                 updateTee(courseMap, responseObserver).onFailure { err ->
-                                    LOGGER.severe(
+                                    logger.error(
                                         String.format(
                                             "%sError updating tees - %s%s %s",
                                             ColorUtilConstants.RED,
@@ -296,7 +297,7 @@ class PopulateCourse : SqlConstants() {
                     }
                     .subscribe(
                         {
-                            conn.close()
+                            conn.close().subscribe()
                             val jsonString: String = JsonObject(courseMap).toString()
                             responseObserver.onNext(
                                 HandicapData.newBuilder()
@@ -308,7 +309,7 @@ class PopulateCourse : SqlConstants() {
                             promise.complete(responseObserver)
                         },
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError querying Courses Tees - %s%s %s",
                                     ColorUtilConstants.RED,
@@ -345,7 +346,7 @@ class PopulateCourse : SqlConstants() {
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnError { err ->
-                        LOGGER.severe(String.format("Error getting courses: %s", err.message))
+                        logger.error(String.format("Error getting courses: %s", err.message))
                     }
                     .doOnSuccess { rows ->
                         val ratingTees: Array<Int> = arrayOf(-1, -1, -1, -1, -1)
@@ -382,7 +383,7 @@ class PopulateCourse : SqlConstants() {
                     .subscribe(
                         { conn.close().subscribe() },
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError querying Courses - %s%s\n%s",
                                     ColorUtilConstants.RED,
@@ -453,7 +454,7 @@ class PopulateCourse : SqlConstants() {
                                 .subscribe(
                                     {},
                                     { err ->
-                                        LOGGER.severe(
+                                        logger.error(
                                             String.format(
                                                 "%sError Inserting Course - %s%s %s",
                                                 ColorUtilConstants.RED,
@@ -467,7 +468,7 @@ class PopulateCourse : SqlConstants() {
                         }
                     }
                     .doOnError { err ->
-                        LOGGER.severe(
+                        logger.error(
                             String.format(
                                 "%sError Inserting Course - %s%s -- %s",
                                 ColorUtilConstants.RED,
@@ -526,7 +527,7 @@ class PopulateCourse : SqlConstants() {
                                 .subscribe(
                                     { conn.close().subscribe() },
                                     { err ->
-                                        LOGGER.severe(
+                                        logger.error(
                                             String.format(
                                                 "%sError Inserting Rating - %s%s %s",
                                                 ColorUtilConstants.RED,
@@ -535,13 +536,13 @@ class PopulateCourse : SqlConstants() {
                                                 err.stackTraceToString()
                                             )
                                         )
-                                        conn.close()
+                                        conn.close().subscribe()
                                     }
                                 )
                         }
                     }
                     .doOnError { err ->
-                        LOGGER.severe(
+                        logger.error(
                             String.format(
                                 "%sError Inserting Rating - %s%s -- %s",
                                 ColorUtilConstants.RED,
@@ -599,7 +600,7 @@ class PopulateCourse : SqlConstants() {
                         .subscribe(
                             {},
                             { err ->
-                                LOGGER.severe(
+                                logger.error(
                                     String.format(
                                         "%sError Update Tee Rating - %s%s %s",
                                         ColorUtilConstants.RED,
@@ -613,7 +614,7 @@ class PopulateCourse : SqlConstants() {
                 }
             }
             .doOnError { err ->
-                LOGGER.severe(
+                logger.error(
                     String.format(
                         "%sError Update Rating - %s%s -- %s",
                         ColorUtilConstants.RED,

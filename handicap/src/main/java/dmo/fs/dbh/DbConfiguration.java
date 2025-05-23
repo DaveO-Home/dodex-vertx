@@ -7,7 +7,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import dmo.fs.utils.DodexUtil;
+import dmo.fs.utils.DodexUtils;
 
 public abstract class DbConfiguration {
     static Logger logger = LoggerFactory.getLogger(DbConfiguration.class.getName());
@@ -23,7 +23,7 @@ public abstract class DbConfiguration {
     private static Boolean isUsingFirebase = false;
     private static Boolean isUsingH2 = false;
     private static String defaultDb = "h2";
-    private static final DodexUtil dodexUtil = new DodexUtil();
+    private static final DodexUtils dodexUtil = new DodexUtils();
     private static HandicapDatabase handicapDatabase;
 
     private enum DbTypes {
@@ -77,6 +77,7 @@ public abstract class DbConfiguration {
     @SuppressWarnings("unchecked")
     public static <T> T getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
+
         try {
             if(defaultDb.equals(DbTypes.POSTGRES.db) && handicapDatabase == null) {
                 handicapDatabase = new HandicapDatabasePostgres();
@@ -95,9 +96,11 @@ public abstract class DbConfiguration {
                 handicapDatabase = new HandicapDatabaseMariadb();
                 isUsingMariadb = true;
             } 
-        } catch (Exception exception) { 
+        } catch (Exception exception) {
+            exception.printStackTrace();
             throw exception;
         }
+
         return (T) handicapDatabase;
     }
 

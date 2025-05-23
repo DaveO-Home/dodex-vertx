@@ -9,20 +9,21 @@ import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.db.PopulateGolferScores
 import io.reactivex.rxjava3.observables.GroupedObservable
 import io.vertx.core.Future
+import io.vertx.core.Promise
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import io.vertx.rxjava3.core.Promise
+import io.vertx.rxjava3.sqlclient.Pool
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import java.util.*
-import java.util.logging.Logger
 
 class Handicap {
     companion object;
 
-    private val LOGGER = Logger.getLogger(Handicap::class.java.name)
+    private val logger = LoggerFactory.getLogger(Handicap::class.java.name)
     var dateTime: Date? = null
     private var diffkeys = Array(20) { " " }
     var index = intArrayOf(0, 0, 0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 8, 9, 10)
@@ -37,6 +38,9 @@ class Handicap {
 
     fun getHandicap(golfer: Golfer): Future<MutableMap<String, Any>> {
         val handicapPromise = Promise.promise<MutableMap<String, Any>>()
+        val returnFuture: Future<MutableMap<String, Any>>?
+        var client: Pool?
+
         val averageSlope = 113
         val golferScores = PopulateGolferScores()
 
@@ -116,9 +120,9 @@ class Handicap {
                     var rowsUpdated = 0
                     usedClass = used[diffkeys[19]]
 
-                    val pool = golferScores.getSqlPool()
+                    client = golferScores.getSqlPool()
 
-                    pool!!.rxGetConnection().subscribe { connection ->
+                    client!!.rxGetConnection().subscribe { connection ->
                         run {
                             connection.rxBegin().subscribe()
 
@@ -140,7 +144,7 @@ class Handicap {
                                                     rowsUpdated += usedCount
                                                 }
                                                 .onFailure { err ->
-                                                    LOGGER.severe(
+                                                    logger.error(
                                                         String.format(
                                                             "%sError Setting Used - %s%s",
                                                             ColorUtilConstants.RED,
@@ -159,7 +163,7 @@ class Handicap {
                                 }.subscribe()
                             }
                                 .onFailure { err ->
-                                    LOGGER.severe(
+                                    logger.error(
                                         String.format(
                                             "%sError Clearing Used - %s%s",
                                             ColorUtilConstants.RED,
@@ -173,11 +177,11 @@ class Handicap {
                                         handicapPromise.complete(latestTee)
                                     }.subscribe()
                                 }
-                        }.onFailure { err -> LOGGER.severe("Error on Clear/Set Used: $err") }
+                        }.onFailure { err -> logger.error("Error on Clear/Set Used: $err") }
                     }
-                }.onFailure { err -> LOGGER.severe("Error on setting golfer handicap: $err") }
+                }.onFailure { err -> logger.error("Error on setting golfer handicap: $err") }
             }
-        }.onFailure { err -> LOGGER.severe("Error on getting HandicapData: $err") }
+        }.onFailure { err -> logger.error("Error on getting HandicapData: $err") }
         return handicapPromise.future()
     }
 

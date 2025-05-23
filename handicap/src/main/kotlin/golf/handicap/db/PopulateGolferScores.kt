@@ -8,15 +8,17 @@ import golf.handicap.generated.tables.references.GOLFER
 import golf.handicap.generated.tables.references.RATINGS
 import golf.handicap.generated.tables.references.SCORES
 import io.vertx.core.Future
+import io.vertx.core.Handler
+import io.vertx.core.Promise
 import io.vertx.core.json.JsonArray
 import io.vertx.core.json.JsonObject
-import io.vertx.rxjava3.core.Promise
 import io.vertx.rxjava3.sqlclient.Pool
 import io.vertx.rxjava3.sqlclient.SqlConnection
 import io.vertx.rxjava3.sqlclient.Tuple
 import org.jooq.*
 import org.jooq.impl.*
 import org.jooq.impl.DSL.*
+import org.slf4j.LoggerFactory
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.sql.*
@@ -24,7 +26,6 @@ import java.text.ParsePosition
 import java.text.SimpleDateFormat
 import java.time.Year
 import java.util.*
-import java.util.logging.Logger
 
 class PopulateGolferScores : SqlConstants() {
     private val teeDate = SimpleDateFormat("yyyy-MM-dd")
@@ -39,7 +40,7 @@ class PopulateGolferScores : SqlConstants() {
     private var overlapYears = false
 
     companion object {
-        private val LOGGER = Logger.getLogger(PopulateGolferScores::class.java.name)
+        private val logger = LoggerFactory.getLogger(PopulateGolferScores::class.java.name)
         private val regEx = "\\$\\d".toRegex()
 
         @Throws(SQLException::class)
@@ -308,6 +309,7 @@ class PopulateGolferScores : SqlConstants() {
     @Throws(SQLException::class, InterruptedException::class)
     fun setGolferHandicap(golfer: Golfer): Future<Int> {
         val handicapPromise: Promise<Int> = Promise.promise()
+
         var rowsUpdated = 0
         var sql: String?
 
@@ -333,7 +335,7 @@ class PopulateGolferScores : SqlConstants() {
                         }
                         .doOnError { err ->
                             tx.rollback().subscribe()
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError Updating Handicap - %s%s",
                                     ColorUtilConstants.RED,
@@ -373,7 +375,7 @@ class PopulateGolferScores : SqlConstants() {
                                         }
                                     }
                                     .doOnError { err ->
-                                        LOGGER.severe(
+                                        logger.error(
                                             String.format(
                                                 "%sError Updating Scores - %s%s",
                                                 ColorUtilConstants.RED,
@@ -387,7 +389,7 @@ class PopulateGolferScores : SqlConstants() {
                             }
                         }
                         .doOnError { err ->
-                            LOGGER.warning(
+                            logger.warn(
                                 String.format(
                                     "%sError Updating Scores - %s%s",
                                     ColorUtilConstants.RED,
@@ -485,7 +487,7 @@ class PopulateGolferScores : SqlConstants() {
                     .doOnError { _ ->
                     }
                     .subscribe({}, { err ->
-                        LOGGER.severe(
+                        logger.error(
                             String.format(
                                 "%sError Getting Score(s) Data - %s%s \n%s",
                                 ColorUtilConstants.RED,
@@ -527,7 +529,7 @@ class PopulateGolferScores : SqlConstants() {
             }
             .doOnError { _ ->
                 usedPromise.complete(count)
-                LOGGER.warning(
+                logger.warn(
                     String.format(
                         "Used Parameters/Sql: %s %s",
                         parameters.deepToString(),
@@ -538,7 +540,7 @@ class PopulateGolferScores : SqlConstants() {
             .subscribe(
                 {},
                 { err ->
-                    LOGGER.severe(
+                    logger.warn(
                         String.format(
                             "%sError Updating Used - %s%s %s",
                             ColorUtilConstants.RED,
@@ -582,7 +584,7 @@ class PopulateGolferScores : SqlConstants() {
             }.subscribe(
                 {},
                 { err ->
-                    LOGGER.severe(
+                    logger.error(
                         String.format(
                             "%sError Cleaning Used - %s%s",
                             ColorUtilConstants.RED,
@@ -626,18 +628,20 @@ class PopulateGolferScores : SqlConstants() {
                                     .rxExecute(parameters)
                                     .doOnSuccess { rows ->
                                         count += rows.rowCount()
-                                        tx.commit()
-                                        conn.close()
-                                        usedPromise.complete(used)
+                                        tx.commit().subscribe() {
+                                            conn.close().subscribe() {
+                                                usedPromise.complete(used)
+                                            }
+                                        }
                                     }
                                     .doOnError { _ ->
                                         usedPromise.complete(used)
-                                        conn.close()
+                                        conn.close().subscribe()
                                     }
                                     .subscribe(
                                         {},
                                         { err ->
-                                            LOGGER.severe(
+                                            logger.error(
                                                 String.format(
                                                     "%sError removing last - %s%s",
                                                     ColorUtilConstants.RED,
@@ -650,13 +654,13 @@ class PopulateGolferScores : SqlConstants() {
                             }
                             .doOnError { _ ->
                                 usedPromise.complete(used)
-                                conn.close()
+                                conn.close().subscribe()
                             }
                     }
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError getting Used - %s%s",
                                     ColorUtilConstants.RED,

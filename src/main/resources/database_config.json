@@ -209,7 +209,7 @@
         "dev": { 
             "credentials": {
                 "user": "neo4j",
-		        "password": "secret",
+		        "password": "Neo4jSecret",
                 "ssl": "false"
             },
             "config": {
@@ -222,7 +222,7 @@
         "prod": { 
             "credentials": {
                 "user": "neo4j",
-		        "password": "secret",
+		        "password": "Neo4jSecret",
                 "ssl": "false"
             },
             "config": {

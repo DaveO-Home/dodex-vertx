@@ -17,7 +17,7 @@ public interface SpaDatabase {
 
 	Future<Void> databaseSetup() throws InterruptedException, SQLException;
 
-	<T> T getPool4();
+	<T> T getPool();
 
 	void setVertx(Vertx vertx);
 

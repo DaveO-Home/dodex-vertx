@@ -30,7 +30,7 @@ import dmo.fs.utils.DodexUtil;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 
 public class SpaDatabaseNeo4j extends DbNeo4j {
 	private final static Logger logger = LoggerFactory.getLogger(SpaDatabaseNeo4j.class.getName());

@@ -130,11 +130,13 @@
     let init = 0;
 
     function fetchData() {
-      fetch("http://" + server + "/events/list/" + init, {
-        method: 'get'
+      let url = "http://" + server + "/events/list/" + init
+
+      fetch(url, {
+        method: 'get',
       })
         .catch(err => {
-          console.log(err);
+          console.log("Fetch Error: ", err);
         })
         .then(response => response.json())
         .then(jsonData => dodexStats(jsonData));

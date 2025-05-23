@@ -3,7 +3,7 @@ package golf.handicap.vertx
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import dmo.fs.utils.ColorUtilConstants
-import dmo.fs.utils.DodexUtil
+import dmo.fs.utils.DodexUtils
 import golf.handicap.routes.GrpcRoutes
 import golf.handicap.routes.HandicapRoutes
 import io.vertx.core.Promise
@@ -12,25 +12,21 @@ import io.vertx.core.json.JsonObject
 import io.vertx.rxjava3.core.AbstractVerticle
 import io.vertx.rxjava3.core.Vertx
 import io.vertx.rxjava3.ext.web.Router
-import java.io.IOException
-import java.util.logging.LogManager
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
+import java.io.BufferedReader
+import java.io.File
+import java.nio.file.Paths
 
 class MainVerticle : AbstractVerticle() {
     companion object {
-        private val LOGGER = Logger.getLogger(MainVerticle::class.java.name)
+        private val logger = LoggerFactory.getLogger(MainVerticle::class.java.name)
         var port = 8888
-        private var enableHandicap: Boolean?
-        var enableHandicapAdmin: Boolean?
-        var enableHandicapPin: String?
+        var enableHandicap: Boolean = false
+        var enableHandicapAdmin: Boolean? = false
+        var enableHandicapPin: String? = ""
 
-        @Throws(IOException::class)
-        private fun setupLogging() {
-            MainVerticle::class.java.getResourceAsStream("/vertx-default-jul-logging.properties").use { f
-                ->
-                LogManager.getLogManager().readConfiguration(f)
-            }
-        }
+        @JvmStatic
+        lateinit var rxVertx: Vertx
 
         val development: String = System.getenv("VERTXWEB_ENVIRONMENT") ?: "prod"
         private val useHandicap = "true" == System.getenv("USE_HANDICAP")
@@ -41,28 +37,33 @@ class MainVerticle : AbstractVerticle() {
         fun getEnableHandicap(): Boolean? {
             return this.enableHandicap
         }
+
         @JvmStatic
         fun setRoutes(routes: Router) {
             this.routes = routes
         }
 
         init {
-
-            config = Vertx.currentContext().config()
+            if(Vertx.currentContext() != null &&
+                Vertx.currentContext().config().getBoolean("handicap.enableHandicap") != null) {
+                config = Vertx.currentContext().config()
+            }
             val appConfig = getAlternateConfig()
 
-            enableHandicap = config!!.getBoolean("handicap.enableHandicap")
-            enableHandicapAdmin = config!!.getBoolean("handicap.enableAdmin")
-            enableHandicapPin = config!!.getString("handicap.adminPin")
+            if(config != null && config!!.getBoolean("handicap.enableHandicap") != null) {
+                enableHandicap = config!!.getBoolean("handicap.enableHandicap")
+                enableHandicapAdmin = config!!.getBoolean("handicap.enableAdmin")
+                enableHandicapPin = config!!.getString("handicap.adminPin")
+            }
             var configPort = appConfig.getInteger("handicap.port")
             port = configPort ?: port
-            if ("dev" != development) {
+            if ("dev" != development && "test" != development) {
                 configPort = appConfig.getInteger("prod.handicap.port")
                 port = configPort ?: port
             }
 
             enableHandicap =
-                if (enableHandicap == null) appConfig.getBoolean("handicap.enableHandicap")
+                if (config == null) appConfig.getBoolean("handicap.enableHandicap")
                 else enableHandicap
             enableHandicapAdmin =
                 if (enableHandicapAdmin == null) appConfig.getBoolean("handicap.enableAdmin")
@@ -71,66 +72,79 @@ class MainVerticle : AbstractVerticle() {
                 if (enableHandicapPin == null) appConfig.getString("handicap.adminPin")
                 else enableHandicapPin
             enableHandicap =
-                if(System.getProperty("USE_HANDICAP") != null) "true" == System.getProperty("USE_HANDICAP")
+                if (System.getProperty("USE_HANDICAP") != null) "true" == System.getProperty("USE_HANDICAP")
                 else enableHandicap
 
             if (useHandicap || "false" == System.getenv("USE_HANDICAP")) {
                 enableHandicap = useHandicap
             }
-            if(true != appConfig.getBoolean("grpc.server")) {
+
+            if (true != appConfig.getBoolean("grpc.server")) {
                 var useGrpcServer =
                     if (System.getenv("GRPC_SERVER") != null) "true" == System.getProperty("GRPC_SERVER")
                     else false
                 useGrpcServer =
                     if (System.getenv("GRPC_SERVER") != null) "true" == System.getenv("GRPC_SERVER")
                     else useGrpcServer
-                if (enableHandicap!! && !useGrpcServer) {
-                    LOGGER.warning("Initializing Handicap Verticle")
+                if (enableHandicap && useGrpcServer) {
+                    logger.warn("Initializing Handicap Verticle")
                 }
             }
         }
 
         fun getAlternateConfig(): JsonObject {
             val jsonMapper = ObjectMapper()
-            var node: JsonNode?
-
-            MainVerticle::class.java.getResourceAsStream("/application-conf.json").use { inputStream ->
-                node = jsonMapper.readTree(inputStream)
+            var node: JsonNode? = null
+            if("true" == System.getProperty("kotlinTest")) {
+                val path = Paths.get("src", "test",  "kotlin", "resources").toFile().absolutePath;
+                val bufferedReader: BufferedReader = File("$path/application-conf.json").bufferedReader()
+                bufferedReader.use { node = jsonMapper.readTree(it) }
             }
-
+            else {
+                HandicapGrpcServer::class.java.getResourceAsStream("/application-conf.json").use {
+                    node = jsonMapper.readTree(it)
+                }
+            }
             return JsonObject(node.toString())
         }
     }
 
     override fun start(startPromise: Promise<Void>) {
-        val development = System.getenv("VERTXWEB_ENVIRONMENT")
+        var development = System.getenv("VERTXWEB_ENVIRONMENT")
         System.setProperty("org.jooq.no-logo", "true")
         System.setProperty("org.jooq.no-tips", "true")
-        DodexUtil.setVertx(vertx)
-        DodexUtil.setEnv(development)
 
-    LOGGER.warning(
-        String.format("Disable File Caching: %s", System.getProperty("vertx.disableFileCaching"))
-    )
+        rxVertx = vertx
+        DodexUtils.setVertx(vertx)
+        DodexUtils.setEnv(development)
+        logger.warn(
+            String.format("Disable File Caching: %s", System.getProperty("vertx.disableFileCaching"))
+        )
 
-    val routes: HandicapRoutes = GrpcRoutes(vertx)
-    val router: Router = routes.getVertxRouter()
-    // if using gRPC
-    val grpcPromise: Promise<Void> = Promise.promise()
-    routes.setRoutePromise(grpcPromise)
+        val routes: HandicapRoutes = GrpcRoutes(vertx)
+        val router: Router = routes.getVertxRouter()
+        // if using gRPC
+        val grpcPromise: Promise<Void> = Promise.promise()
+        routes.setRoutePromise(grpcPromise)
 
-    vertx
-        .createHttpServer(HttpServerOptions().setLogActivity(true))
-        .requestHandler(router)
-        .rxListen(port)
-        .doOnSuccess {
-          startPromise.complete()
-          if (enableHandicap!!) {
-            grpcPromise.complete()
-            LOGGER.warning(String.format("%sHandicap Started on port: %s%s",
-                ColorUtilConstants.YELLOW, port, ColorUtilConstants.RESET))
-          }
-        }
-        .subscribe({}, { err -> LOGGER.severe(err.message) })
-  }
+        vertx
+            .createHttpServer(HttpServerOptions().setLogActivity(true))
+            .requestHandler(router)
+            .rxListen(port)
+            .doOnSuccess {
+                startPromise.complete()
+                if (enableHandicap) {
+                    grpcPromise.complete()
+                    logger.warn(
+                        String.format(
+                            "%sHandicap Started on port: %s%s",
+                            ColorUtilConstants.YELLOW, port, ColorUtilConstants.RESET
+                        )
+                    )
+                }
+            }.doOnError { err -> {
+                err.printStackTrace()
+            }}
+            .subscribe({}, { err -> logger.error(err.message) })
+    }
 }

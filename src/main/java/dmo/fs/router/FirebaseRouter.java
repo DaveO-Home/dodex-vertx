@@ -31,9 +31,9 @@ import dmo.fs.utils.ParseQueryUtilHelper;
 import dmo.fs.vertx.Server;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
-import io.vertx.rxjava3.core.buffer.Buffer;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
 import io.vertx.rxjava3.core.shareddata.LocalMap;
@@ -82,7 +82,7 @@ public class FirebaseRouter {
      */
     public void setWebSocket(final HttpServer server) throws InterruptedException, IOException, SQLException {
         dodexFirebase = DbConfiguration.getDefaultDb();
-        dodexFirebase.setVertx(vertx);
+        dodexFirebase.setVertx(DodexUtil.getVertx().getDelegate());
         dodexFirebase.setFirestore(dbf);
 
         final SharedData sd = vertx.sharedData();

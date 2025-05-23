@@ -5,8 +5,7 @@ import java.sql.SQLException;
 import java.util.Map;
 
 import dmo.fs.dbg.HandicapDatabaseG;
-import io.vertx.core.impl.logging.Logger;
-import io.vertx.core.impl.logging.LoggerFactory;
+
 import org.jooq.codegen.GenerationTool;
 import org.jooq.meta.jaxb.*;
 
@@ -14,6 +13,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 
 import dmo.fs.dbg.DbConfiguration;
 import org.jooq.meta.jaxb.Generator;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class JooqGenerate {
   public static void main(String[] args) throws IOException {
@@ -48,7 +49,7 @@ public class JooqGenerate {
           jooqMetaName = "org.jooq.meta.h2.H2Database";
           dbUrl = dbMap.get("url") + dbMap.get("filename") + ";DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE";
         }
-        logger.info("Generate: " + dbUrl + " -- " + jooqMetaName + " -- " + databaseDbname);
+        logger.info("Generate: {} -- {} -- {}", dbUrl, jooqMetaName, databaseDbname);
         generateJooqObjects(dbUrl, jooqMetaName, databaseDbname);
         System.exit(0);
       });

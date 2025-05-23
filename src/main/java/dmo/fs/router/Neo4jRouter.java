@@ -35,7 +35,7 @@ import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.mutiny.core.Promise;
 import io.vertx.rxjava3.core.Context;
 import io.vertx.rxjava3.core.Vertx;
-import io.vertx.rxjava3.core.buffer.Buffer;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
 import io.vertx.rxjava3.core.shareddata.LocalMap;
 import io.vertx.rxjava3.core.shareddata.SharedData;

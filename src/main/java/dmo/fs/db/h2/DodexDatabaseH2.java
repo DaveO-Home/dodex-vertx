@@ -5,12 +5,14 @@ import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.jdbcclient.JDBCConnectOptions;
+import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
@@ -36,7 +38,6 @@ public class DodexDatabaseH2 extends DbH2 {
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
   protected DodexUtil dodexUtil = new DodexUtil();
-  protected JDBCPool pool4;
   protected Boolean isCreateTables = false;
   protected io.vertx.core.Promise<String> returnPromise = io.vertx.core.Promise.promise();
 
@@ -117,9 +118,9 @@ public class DodexDatabaseH2 extends DbH2 {
     // .setCachePreparedStatements(true)
     ;
 
-    pool4 = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    pool = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+    Completable completable = pool.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -240,7 +241,7 @@ public class DodexDatabaseH2 extends DbH2 {
                         logger.warn("Member Table Added.");
                       }
                       tx.commit();
-                      conn.close();
+                      conn.close().subscribe();
                       if (isCreateTables) {
                         returnPromise.complete(isCreateTables.toString());
                       }
@@ -257,7 +258,7 @@ public class DodexDatabaseH2 extends DbH2 {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(pool);
           } catch (SQLException e) {
             e.printStackTrace();
           }
@@ -276,7 +277,7 @@ public class DodexDatabaseH2 extends DbH2 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <T> T getPool() {
+    return (T) pool;
   }
 }

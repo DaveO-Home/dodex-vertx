@@ -7,6 +7,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dmo.fs.spa.db.SpaDbConfiguration;
+import dmo.fs.vertx.Server;
 import io.vertx.rxjava3.mysqlclient.MySQLBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,7 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowSet;
@@ -35,7 +36,6 @@ public class SpaDatabaseMariadb extends DbMariadb {
     protected JsonNode defaultNode;
     protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
     protected DodexUtil dodexUtil = new DodexUtil();
-//    protected MySQLPool pool4;
     private Vertx vertx;
 
     public SpaDatabaseMariadb(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
@@ -90,10 +90,10 @@ public class SpaDatabaseMariadb extends DbMariadb {
                 .setHost(dbMap.get("host2")).setDatabase(dbMap.get("database"))
                 .setUser(dbProperties.getProperty("user").toString())
                 .setPassword(dbProperties.getProperty("password").toString())
-                .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
+//                .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
                 .setCharset("utf8mb4");
 
-        vertx = DodexUtil.getVertx();
+        vertx = Server.getRxVertx();
         pool = MySQLBuilder
             .pool()
             .with(poolOptions)
@@ -149,7 +149,7 @@ public class SpaDatabaseMariadb extends DbMariadb {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getPool4() {
+    public <T> T getPool() {
         return (T) pool;
     }
 

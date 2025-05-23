@@ -44,7 +44,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         // messageUser.setId(rows.property(JDBCPool.GENERATED_KEYS).getLong(0));
         messageUser.setLastLogin(current);
 
-        conn.close();
+        conn.close().subscribe();
         promise.tryComplete(messageUser);
       }).doOnError(err -> {
         logger.error(String.format("%sError adding user: %s%s", ColorUtilConstants.RED, err,
@@ -79,13 +79,13 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         }
         Long count = Long.valueOf(Integer.toString(rows.rowCount()));
         messageUser.setId(id > 0L ? id : count);
-        conn.close();
+        conn.close().subscribe();
         promise.complete(count);
       }).doOnError(err -> {
         logger.error(String.format("%sError deleting user: %s%s", ColorUtilConstants.RED,
             err, ColorUtilConstants.RESET));
         ws.writeTextMessage(err.toString());
-        conn.close();
+        conn.close().subscribe();
       }).subscribe(rows -> {
         //
       }, Throwable::printStackTrace);
@@ -107,7 +107,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         for (Row row : rows) {
           id = row.getLong(0);
         }
-        conn.close();
+        conn.close().subscribe();
         promise.complete(id);
         // } else {
 
@@ -116,7 +116,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         logger.error(String.format("%sError finding user by name: %s - %s%s",
             ColorUtilConstants.RED, name, err.getCause().getMessage(),
             ColorUtilConstants.RESET));
-        conn.close();
+        conn.close().subscribe();
       }).subscribe();
     }).subscribe();
     return promise.future();
@@ -168,7 +168,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
 
         if (rows.size() > 0) {
           try {
-            conn.close();
+            conn.close().subscribe();
             future1 = updateUser(ws, resultUser);
             promise.complete(resultUser);
           } catch (Exception e) {
@@ -185,7 +185,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         logger.error(String.format("%sError selecting user: %s%s",
             ColorUtilConstants.RED, err.getCause().getMessage(),
             ColorUtilConstants.RESET));
-        conn.close();
+        conn.close().subscribe();
       }).subscribe();
     }).subscribe();
     return promise.future();
@@ -204,13 +204,13 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
             for (Row row : rows) {
               ja.add(new JsonObject().put("name", row.getString(1)));
             }
-            conn.close();
+            conn.close().subscribe();
             promise.complete(new StringBuilder(ja.toString()));
           }).doOnError(err -> {
             logger.error(String.format("%sError build user json: %s%s",
                 ColorUtilConstants.RED, err.getCause().getMessage(),
                 ColorUtilConstants.RESET));
-            conn.close();
+            conn.close().subscribe();
           }).subscribe();
     }).subscribe();
     return promise.future();
@@ -269,7 +269,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                           ColorUtilConstants.RED, err.getCause(),
                           ColorUtilConstants.RESET));
                       // }
-                      conn.close();
+                      conn.close().subscribe();
                     }).subscribe();
                   })))
           .doOnError(err -> {
@@ -277,7 +277,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                 ColorUtilConstants.RED, err.getMessage(),
                 ColorUtilConstants.RESET));
             err.printStackTrace();
-            conn.close();
+            conn.close().subscribe();
           })).subscribe();
     });
 
@@ -323,7 +323,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
 
             if (messageIds.size() == count) {
               try {
-                conn.close();
+                conn.close().subscribe();
                 completePromise.run();
               } catch (Exception e) {
                 e.printStackTrace();
@@ -334,7 +334,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
           }).doOnError(err -> {
             logger.error(String.format("Deleting Undelivered: %s",
                 err.getCause().getMessage()));
-            conn.close();
+            conn.close().subscribe();
           }).subscribe();
         }).subscribe();
       }
@@ -356,7 +356,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
             count += rows.rowCount() == 0 ? 1 : rows.rowCount();
             if (messageIds.size() == count) {
               try {
-                conn.close();
+                conn.close().subscribe();
                 completePromise.run();
               } catch (Exception e) {
                 e.printStackTrace();
@@ -393,7 +393,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
           for (Row row : msg) {
             id = row.getLong(0);
           }
-          conn.close();
+          conn.close().subscribe();
           promise.complete(id);
         }).subscribe();
       }).doOnError(err -> {

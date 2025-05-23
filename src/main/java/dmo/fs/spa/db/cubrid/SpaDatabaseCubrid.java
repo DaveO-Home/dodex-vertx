@@ -7,6 +7,9 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dmo.fs.spa.db.SpaDbConfiguration;
+import dmo.fs.vertx.Server;
+import io.vertx.core.Handler;
+import io.vertx.rxjava3.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,7 +21,7 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.jdbcclient.JDBCConnectOptions;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.sqlclient.Row;
@@ -34,7 +37,7 @@ public class SpaDatabaseCubrid extends DbCubrid {
 	protected JsonNode defaultNode;
 	protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
 	protected DodexUtil dodexUtil = new DodexUtil();
-	protected JDBCPool pool4;
+	protected Pool pool;
 	private Vertx vertx;
 
 	public SpaDatabaseCubrid(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
@@ -95,11 +98,11 @@ public class SpaDatabaseCubrid extends DbCubrid {
 		;
 
 
-		vertx = DodexUtil.getVertx();
+		vertx = Server.getRxVertx();
 
-		pool4 = JDBCPool.pool(vertx, connectOptions, poolOptions);
+		pool = JDBCPool.pool(vertx, connectOptions, poolOptions);
 
-		Completable completable = pool4.rxGetConnection()
+		Completable completable = pool.rxGetConnection()
 				.flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
 						tx -> conn.query(CHECKLOGINSQL).rxExecute().doOnSuccess(rows -> {
 							if (rows.size() == 0) {
@@ -126,9 +129,19 @@ public class SpaDatabaseCubrid extends DbCubrid {
 						}).flatMapCompletable(res -> tx.rxCommit())));
 
 		Promise<Void> setupPromise = Promise.promise();
+		Future<Void> returnFuture;
+		Handler<Promise<Void>> returnHandler = new Handler<>() {
+			@Override
+			public void handle(Promise<Void> p) {
+				p.complete(p.future().result());
+			}
+		};
+		returnHandler.handle(setupPromise);
+		returnFuture = Future.future(returnHandler);
+
 		completable.subscribe(() -> {
 			try {
-				setupSql(pool4);
+				setupSql(pool);
 				setupPromise.complete();
 			} catch (SQLException e) {
 				e.printStackTrace();
@@ -137,7 +150,7 @@ public class SpaDatabaseCubrid extends DbCubrid {
 			logger.info(String.format("Tables Create Error: %s", err.getMessage()));
 		});
 
-		return setupPromise.future();
+		return returnFuture;
 	}
 
 	@Override
@@ -147,8 +160,8 @@ public class SpaDatabaseCubrid extends DbCubrid {
 
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T getPool4() {
-		return (T) pool4;
+	public <T> T getPool() {
+		return (T) pool;
 	}
 
 	@Override

@@ -8,6 +8,8 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import io.vertx.core.Handler;
+import io.vertx.rxjava3.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -35,7 +37,7 @@ public class HandicapDatabaseSqlite3G extends DbSqlite3 {
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
   protected DodexUtil dodexUtil = new DodexUtil();
-  protected JDBCPool pool4;
+  protected Pool client;
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
 
@@ -66,6 +68,7 @@ public class HandicapDatabaseSqlite3G extends DbSqlite3 {
 
   public HandicapDatabaseSqlite3G() throws InterruptedException, IOException, SQLException {
     super();
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -80,6 +83,7 @@ public class HandicapDatabaseSqlite3G extends DbSqlite3 {
   public HandicapDatabaseSqlite3G(Boolean isCreateTables)
       throws InterruptedException, IOException, SQLException {
     super();
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -116,9 +120,9 @@ public class HandicapDatabaseSqlite3G extends DbSqlite3 {
     // .setCachePreparedStatements(true)
     ;
 
-    pool4 = JDBCPool.pool(Vertx.vertx(), connectOptions, poolOptions);
+    pool = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+    Completable completable = pool.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -244,7 +248,7 @@ public class HandicapDatabaseSqlite3G extends DbSqlite3 {
                           logger.warn("Member Table Added.");
                         }
                         tx.commit();
-                        conn.close();
+                        conn.close().subscribe();
                         finalPromise.complete(isCreateTables.toString());
                         if (isCreateTables) {
                           returnPromise.complete(isCreateTables.toString());
@@ -264,7 +268,7 @@ public class HandicapDatabaseSqlite3G extends DbSqlite3 {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(client);
           } catch (SQLException | IOException e) {
             e.printStackTrace();
           }
@@ -278,7 +282,7 @@ public class HandicapDatabaseSqlite3G extends DbSqlite3 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <R> R getClient() {
+    return (R) client;
   }
 }

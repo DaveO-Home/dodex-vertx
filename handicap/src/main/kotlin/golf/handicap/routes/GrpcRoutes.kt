@@ -2,9 +2,8 @@ package golf.handicap.routes
 
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
-import dmo.fs.dbh.HandicapDatabase
 import dmo.fs.dbh.DbConfiguration
-import dmo.fs.utils.DodexUtil
+import dmo.fs.dbh.HandicapDatabase
 import golf.handicap.Golfer
 import golf.handicap.Handicap
 import golf.handicap.db.PopulateCourse
@@ -27,20 +26,21 @@ import io.vertx.rxjava3.ext.web.handler.CorsHandler
 import io.vertx.rxjava3.ext.web.handler.FaviconHandler
 import io.vertx.rxjava3.ext.web.handler.StaticHandler
 import io.vertx.rxjava3.ext.web.handler.TimeoutHandler
-import java.util.logging.Logger
+import org.slf4j.LoggerFactory
+
 
 class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
   val router: Router = Router.router(vertx)
   private val faviconHandler: FaviconHandler = FaviconHandler.create(vertx)
-  private val grpcVertx = DodexUtil.getVertx().delegate
+  private val grpcVertx = vertx.delegate
   var promise: Promise<Void> = Promise.promise()
 
 
   companion object {
-    private val LOGGER = Logger.getLogger(GrpcRoutes::class.java.name)
+    private val logger = LoggerFactory.getLogger(GrpcRoutes::class.java.name)
     private var dodexDatabase: HandicapDatabase? = null
     private val config = MainVerticle.getAlternateConfig()
-    private val grpcPort = config.getInteger("grpc:port")
+    private val grpcPort = config.getInteger("grpc4:port")
 
     init {
       dodexDatabase = DbConfiguration.getDefaultDb()
@@ -55,21 +55,15 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
     val staticRoute: Route = router.route("/handicap/*").handler(TimeoutHandler.create(2000))
     staticRoute.handler(staticHandler)
     staticRoute.failureHandler { err ->
-        LOGGER.severe(String.format("FAILURE in static route: %s", err.statusCode()))
+        logger.error(String.format("FAILURE in static route: %s", err.statusCode()))
     }
 
     router.route().handler(staticHandler)
     router.route().handler(faviconHandler)
 
-    val methods = setOf(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.OPTIONS, HttpMethod.HEAD)
-    val corsHandler = CorsHandler.create()
-        .allowCredentials(false)
-        .allowedMethods(methods)
-        .addOrigin("https://coolapp2.loca.lt")
-        .allowedHeader("https://coolapp2.loca.lt")
-//        .addOrigin("https://<your tunnel url>2.loca.lt")
-//        .allowedHeader("https://<your tunnel url>2.loca.lt")
-    router.route().handler(corsHandler)
+
+
+    router.route().handler(getCorsHandler())
     return router
 }
 
@@ -92,7 +86,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                     .build()
 
             rpcServer.start()
-            LOGGER.warning("gRpc server started on port $grpcPort")
+            logger.warn("gRpc server started on port $grpcPort")
         }
     }
 
@@ -102,6 +96,37 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
         }
 
         return router
+    }
+
+    public fun getCorsHandler(): CorsHandler {
+        val methods = setOf(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.OPTIONS, HttpMethod.HEAD)
+        return CorsHandler.create()
+            .allowCredentials(false)
+            .allowedMethods(methods)
+//        .addOrigin("https://coolapp2.loca.lt")
+//        .allowedHeader("https://coolapp2.loca.lt")
+//        .addOrigin("https://<your tunnel url>2.loca.lt")
+//        .allowedHeader("https://<your tunnel url>2.loca.lt")
+            .addOrigins(mutableListOf<String?>(
+                "http://localhost:8070",
+                "http://localhost:8087",
+                "http://localhost:8880",
+                "http://localhost:8085"))
+            .allowedHeaders(
+                mutableSetOf<String?>(
+                    "keep-alive",
+                    "user-agent",
+                    "cache-control",
+                    "content-type",
+                    "content-transfer-encoding",
+                    "x-custom-key",
+                    "x-user-agent",
+                    "x-grpc-web",
+                    "grpc-timeout",
+                    "Access-Control-Allow-Origin"
+                )
+            )
+            .exposedHeaders(mutableSetOf<String?>("x-custom-key", "grpc-status", "grpc-message"))
     }
 
     class HandicapIndexService : HandicapIndexGrpc.HandicapIndexImplBase() {
@@ -142,7 +167,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                 .getCourseWithTee(ratingMap, responseObserver)
                 .onSuccess { responseObserve -> responseObserve.onCompleted() }
                 .onFailure{ err ->
-                    LOGGER.severe("Error Adding Rating: " + err.message)
+                    logger.error("Error Adding Rating: " + err.message)
                     responseObserver.onCompleted()
                 }
         }
@@ -167,6 +192,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                             val courseHandicap: Float = newHandicap * slope / 113 + (rating - par)
                             score.netScore = score.grossScore.toFloat() - courseHandicap
                             score.golfer!!.handicap = newHandicap
+
                             populateScore
                                 .setScore(score, responseObserver)
                                 .onSuccess { responseObserve ->
@@ -177,6 +203,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                                             .setJson(ObjectMapper().writeValueAsString(score))
                                             .build()
                                     )
+
                                     responseObserve.onCompleted()
                                 }
                                 .onFailure { err ->
@@ -200,7 +227,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             responseObserver: StreamObserver<HandicapData?>
         ) {
             if ("Test" == request.message) {
-                LOGGER.warning("Got json from Client: " + request.getJson())
+                logger.warn("Got json from Client: " + request.getJson())
             }
 
             var requestJson = JsonObject(request.json)
@@ -230,7 +257,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                             .build()
                     )
                     if ("Test" == request.message) {
-                        LOGGER.warning("Handicap Data Sent: " + request.json)
+                        logger.warn("Handicap Data Sent: " + request.json)
                     }
                     responseObserver.onCompleted()
                 }

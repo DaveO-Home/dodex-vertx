@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+#$HOME/installs/pmd-bin-6.24.0/bin/run.sh pmd -cache /tmp/pmd-cache  -d ./src/main/java -R rulesets/java/quickstart.xml,dodexrules.xml -f text -r lint-report.txt 
+#$HOME/installs/pmd-bin-6.36.0/bin/run.sh pmd -cache /tmp/pmd-cache  -d ./src/main/java -R dodexstart.xml -f text -r lint-report.txt 
+
+$HOME/installs/pmd-bin-7.12.0/bin/pmd check -d $(pwd)/src/main/java -R dodexstart.xml -f text -r lint-report.txt 
+

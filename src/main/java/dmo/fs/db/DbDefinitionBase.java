@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import io.vertx.pgclient.impl.PgPoolImpl;
+//import io.vertx.pgclient.impl.PgPoolImpl;
 import io.vertx.rxjava3.sqlclient.SqlConnection;
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
@@ -43,6 +43,7 @@ import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.Tuple;
 import golf.handicap.db.*;
 import golf.handicap.vertx.*;
+import golf.handicap.vertx.MainVerticle;
 
 public abstract class DbDefinitionBase {
   private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
@@ -82,16 +83,17 @@ public abstract class DbDefinitionBase {
   protected static Pool pool;
   private static boolean qmark = true;
 
-  public static <T> void setupSql(T pool4) throws SQLException {
+  public static <T> void setupSql(Pool pool) throws SQLException {
     // Non-Blocking Drivers
-    if (((Pool)pool4).getDelegate() instanceof PgPoolImpl) {
-      pool = (Pool)pool4;
+    if (DbConfiguration.isUsingPostgres()) {
       qmark = false;
-    } else if (pool4 instanceof JDBCPool) {
-      pool = (JDBCPool) pool4;
-    } else {
-      pool = (Pool)pool4;
     }
+    DbDefinitionBase.pool = pool;
+//    else if (pool4 instanceof JDBCPool) {
+//      pool = (JDBCPool) pool4;
+//    } else {
+//      pool = (Pool)pool4;
+//    }
 
     Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx4/Postgres
 

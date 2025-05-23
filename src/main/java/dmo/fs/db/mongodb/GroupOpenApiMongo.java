@@ -5,6 +5,7 @@ import dmo.fs.db.GroupOpenApi;
 import dmo.fs.db.MessageUser;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.smallrye.mutiny.Multi;
@@ -30,7 +31,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
 
   @Override
   public Future<JsonObject> addGroupAndMembers(JsonObject addGroupJson) throws InterruptedException, SQLException, IOException {
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
 
     Promise<JsonObject> promise = Promise.promise();
     DodexMongo dodexDatabase = DbConfiguration.getDefaultDb();
@@ -81,7 +82,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
   @Override
   public Future<JsonObject> deleteGroupOrMembers(JsonObject deleteGroupJson)
       throws InterruptedException, SQLException, IOException {
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
     Promise<JsonObject> promise = Promise.promise();
     DodexUtil dodexUtil = new DodexUtil();
     Map<String, String> selected = dodexUtil.commandMessage(deleteGroupJson.getString("groupMessage"));
@@ -194,7 +195,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
 
   @Override
   public Future<JsonObject> getMembersList(JsonObject getGroupJson) throws InterruptedException, SQLException, IOException {
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
     Promise<JsonObject> promise = Promise.promise();
     DodexMongo dodexMongo = DbConfiguration.getDefaultDb();
     MessageUser messageUser = dodexMongo.createMessageUser();
@@ -388,7 +389,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
               })
               .doOnError(err -> errData(err, waitFor, groupJson))
               .doFinally(() -> {
-                JsonObject config = Vertx.currentContext().config();
+                JsonObject config = Server.getConfig();
 
                 boolean isCheckForOwner =
                     config.getBoolean("dodex.groups.checkForOwner") != null &&

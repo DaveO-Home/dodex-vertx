@@ -22,7 +22,7 @@ import java.util.List;
 public class DodexMqttServer {
   private static final Logger logger = LoggerFactory.getLogger(DodexMqttServer.class.getName());
   private MqttEndpoint mqttEndpoint;
-  private String subscribtionTopic;
+  private String subscriptionTopic;
   private Boolean firstTime = true;
   public DodexMqttServer() {
     Vertx vertx = DodexUtil.getVertx().getDelegate();
@@ -65,7 +65,7 @@ public class DodexMqttServer {
             for (MqttTopicSubscription s : subscribe.topicSubscriptions()) {
               logger.debug("Subscription for {} with QoS {}", s.topicName(), s.qualityOfService());
               reasonCodes.add(MqttSubAckReasonCode.qosGranted(s.qualityOfService()));
-              subscribtionTopic = s.topicName();
+              subscriptionTopic = s.topicName();
             }
 
             endpoint.subscribeAcknowledge(subscribe.messageId(), reasonCodes, MqttProperties.NO_PROPERTIES);
@@ -121,7 +121,7 @@ public class DodexMqttServer {
 
   public void publish(MqttEndpoint endpoint, String topic, Object message) {
     try {
-      endpoint.publish(subscribtionTopic,
+      endpoint.publish(subscriptionTopic,
           Buffer.buffer(message.toString().getBytes(StandardCharsets.UTF_8)),
           MqttQoS.EXACTLY_ONCE,
           false,

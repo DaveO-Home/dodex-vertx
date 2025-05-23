@@ -4,24 +4,26 @@ package golf.handicap.db
 
 import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
-import golf.handicap.*
 import golf.handicap.Golfer
 import golf.handicap.generated.tables.references.GOLFER
 import handicap.grpc.*
 import io.grpc.stub.StreamObserver
+import io.reactivex.rxjava3.core.Single
 import io.vertx.core.Future
 import io.vertx.core.Promise
+import io.vertx.rxjava3.sqlclient.RowSet
 import io.vertx.rxjava3.sqlclient.Tuple
 import org.jooq.impl.DSL.*
+import org.slf4j.LoggerFactory
 import java.sql.SQLException
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.util.logging.Logger
+
 
 class PopulateGolfer : SqlConstants() {
     companion object {
-        private val LOGGER = Logger.getLogger(PopulateGolfer::class.java.name)
+        private val logger = LoggerFactory.getLogger(PopulateGolfer::class.java.name)
 
         //        private val logger = KotlinLogging.logger {}
         @Throws(SQLException::class)
@@ -221,7 +223,7 @@ class PopulateGolfer : SqlConstants() {
                             }
                             golfer.message = "Golfer not found"
                         }
-                        conn.close()
+                        conn.close().subscribe()
 
                         if (rows.size() == 0) {
                             if (golfer.firstName!!.length < 3 || golfer.lastName!!.length < 5) {
@@ -256,12 +258,12 @@ class PopulateGolfer : SqlConstants() {
                     .doOnError { _ ->
                         golfer.status = -1
                         golfer.message = "Golfer query failed"
-                        conn.close()
+                        conn.close().subscribe()
                     }
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError querying Golfer - %s%s %s",
                                     ColorUtilConstants.RED,
@@ -306,19 +308,19 @@ class PopulateGolfer : SqlConstants() {
                             golferBuilder.name = concatName
                             golfersBuilder.addGolfer(golferBuilder)
                         }
-                        conn.close()
+                        conn.close().subscribe()
                         responseObserver.onNext(golfersBuilder.build())
 
                         promise.complete(responseObserver)
                     }
                     .doOnError { _ ->
-                        conn.close()
+                        conn.close().subscribe()
                         promise.complete(responseObserver)
                     }
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError2 Querying Golfer - %s%s %s",
                                     ColorUtilConstants.RED,
@@ -375,19 +377,19 @@ class PopulateGolfer : SqlConstants() {
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnSuccess { _ ->
-                        conn.close()
+                        conn.close().subscribe()
                         golfer.message = "Golfer added"
                         promise.tryComplete(golfer)
                     }
                     .doOnError { _ ->
                         golfer.status = -1
                         golfer.message = "Golfer add failed"
-                        conn.close()
+                        conn.close().subscribe()
                     }
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError Adding Golfer - %s%s %s",
                                     ColorUtilConstants.RED,
@@ -436,7 +438,7 @@ class PopulateGolfer : SqlConstants() {
                 conn.preparedQuery(sql)
                     .rxExecute(parameters)
                     .doOnSuccess { _ ->
-                        conn.close()
+                        conn.close().subscribe()
                         if (!isLogin) {
                             golfer.message = "Golfer updated"
                             golfer.country = golferClone?.country
@@ -450,12 +452,12 @@ class PopulateGolfer : SqlConstants() {
                     .doOnError { _ ->
                         golfer.status = -1
                         golfer.message = "Golfer update failed"
-                        conn.close()
+                        conn.close().subscribe()
                     }
                     .subscribe(
                         {},
                         { err ->
-                            LOGGER.severe(
+                            logger.error(
                                 String.format(
                                     "%sError Updating Golfer - %s%s %s",
                                     ColorUtilConstants.RED,

@@ -8,7 +8,7 @@ import java.sql.SQLException;
 public interface HandicapDatabaseG {
 	Future<String> checkOnTables() throws InterruptedException, SQLException;
 
-	<T> T getPool4();
+	<T> T getClient();
 
 	void setVertx(Vertx vertx);
 

@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
+import dmo.fs.vertx.Server;
 import io.vertx.rxjava3.db2client.DB2Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,7 +93,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
         .pool()
         .with(poolOptions)
         .connectingTo(connectOptions)
-        .using(DodexUtil.getVertx())
+        .using(Server.getRxVertx())
         .build();
 
     Completable completable = pool.rxGetConnection()
@@ -158,8 +159,8 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
                         }, err -> {
                           logger.info("Table create Error: {}", err.getMessage());
                         });
-                        tx.commit();
-                        conn.close();
+                      tx.commit();
+                        conn.close().subscribe();
                       }
                     }).doOnError(err -> {
                       logger.info("Table create Error2: {}", err.getMessage());
@@ -179,7 +180,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
+  public <T> T getPool() {
     return (T) pool;
   }
 

@@ -7,6 +7,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+
+import io.vertx.core.Handler;
+import io.vertx.mysqlclient.SslMode;
+import io.vertx.rxjava3.sqlclient.Pool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,8 +20,8 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.mysqlclient.MySQLConnectOptions;
-import io.vertx.rxjava3.core.Promise;
-import io.vertx.rxjava3.mysqlclient.MySQLPool;
+import io.vertx.core.Promise;
+import io.vertx.rxjava3.mysqlclient.MySQLBuilder;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
 import io.vertx.rxjava3.sqlclient.RowSet;
@@ -27,7 +31,7 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
   private final static Logger logger =
       LoggerFactory.getLogger(HandicapDatabaseMariadbG.class.getName());
   protected Disposable disposable;
-  protected MySQLPool pool4;
+  protected Pool client;
   protected Properties dbProperties = new Properties();
   protected Map<String, String> dbOverrideMap = new ConcurrentHashMap<>();
   protected Map<String, String> dbMap = new ConcurrentHashMap<>();
@@ -78,6 +82,7 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
   public HandicapDatabaseMariadbG(Boolean isCreateTables)
       throws InterruptedException, IOException, SQLException {
     super();
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -105,7 +110,8 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
         .setPort(Integer.valueOf(dbMap.get("port"))).setHost(dbMap.get("host2"))
         .setDatabase(dbMap.get("database")).setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
+        .setSslMode(SslMode.of(dbProperties.getProperty("ssl")))
+//        .setIdleTimeout(1)
         .setCharset("utf8mb4");
 
     // Pool options
@@ -113,10 +119,16 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
         new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
     // Create the client pool
-    pool4 = MySQLPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+//    pool4 = MySQLPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+
+    client = MySQLBuilder.pool()
+        .with(poolOptions)
+        .connectingTo(connectOptions)
+        .using(vertx)
+        .build();
 
     Completable completable =
-        pool4.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
+        client.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
             .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(rows -> {
               RowIterator<Row> ri = rows.iterator();
               Long val = null;
@@ -236,12 +248,12 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
                             logger.warn("Member Table Added.");
                           }
                           tx.commit();
-                          conn.close();
+                          conn.close().subscribe();
                           if (isCreateTables) {
                             returnPromise.complete(isCreateTables.toString());
                           }
                           finalPromise.complete(isCreateTables.toString());
-                        }).subscribe(res -> conn.close());
+                        }).subscribe(res -> conn.close().subscribe());
                       }).subscribe();
                     }).subscribe();
                   }).subscribe();
@@ -255,7 +267,7 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(client);
           } catch (SQLException | IOException e) {
             e.printStackTrace();
           }
@@ -269,7 +281,7 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <R> R getPool4() {
-    return (R) pool4;
+  public <R> R getClient() {
+    return (R) client;
   }
 }

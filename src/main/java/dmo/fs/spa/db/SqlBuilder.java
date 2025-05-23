@@ -14,7 +14,7 @@ import java.time.OffsetDateTime;
 import java.util.Date;
 
 import dmo.fs.db.DbConfiguration;
-import io.vertx.pgclient.impl.PgPoolImpl;
+//import io.vertx.pgclient.impl.PgPoolImpl;
 import org.jooq.DSLContext;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
@@ -47,16 +47,13 @@ public abstract class SqlBuilder {
     protected static Pool pool;
     private static Boolean qmark = true;
 
-    public static <T> void setupSql(T pool4) throws SQLException {
+    public static <T> void setupSql(Pool pool) throws SQLException {
         // Non-Blocking Drivers
-        if (((Pool)pool4).getDelegate() instanceof PgPoolImpl) {
-            pool = (Pool)pool4;
+        if (DbConfiguration.isUsingPostgres()) {
             qmark = false;
-        } else if (pool4 instanceof JDBCPool) {
-            pool = (JDBCPool) pool4;
-        } else {
-            pool = (Pool)pool4;
         }
+
+        SqlBuilder.pool = pool;
 
         Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible
                                                                             // with Vertx4/Postgres

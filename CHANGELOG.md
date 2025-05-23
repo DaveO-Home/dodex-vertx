@@ -1,5 +1,16 @@
 # Changelog
 
+# [v4.0.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.1) (2025-05-20)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.3.1..v4.0.0)
+
+* Upgraded to vertx 5.0.0
+* `grpc-web` now works out of the box without a proxy(envoy), see `handicap/src/main/kotlin/golf/handicap/vertx/HandicapGrpcServer.kt`
+* The Envoy proxy can still be used by setting the environment variable `GRPC_SERVER=true`
+* Dodex-Vertx does not use the new Vert.x 5.0.0 Launcher and VerticleBase Class
+  * The new Launcher for development uses a maven plugin for reload. Not useful when using Gradle
+  * The VerticalBase required more code changes. Anything related to Vert.x classes and rxjava3, e.g. io.vertx.rxjava3.core.Vertx needs to change to io.vertx.core.Vertx.
+
 ## [v3.3.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.1) (2025-01-27)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.3.0..v3.3.1)

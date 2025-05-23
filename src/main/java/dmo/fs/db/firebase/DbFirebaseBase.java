@@ -30,7 +30,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.rxjava3.core.Vertx;
+import io.vertx.core.Vertx;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
 
 public abstract class DbFirebaseBase {

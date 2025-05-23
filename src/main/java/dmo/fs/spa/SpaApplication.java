@@ -24,7 +24,7 @@ import dmo.fs.spa.utils.SpaLoginImpl;
 import io.vertx.core.Future;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 
 public class SpaApplication {
@@ -33,7 +33,7 @@ public class SpaApplication {
     private SpaCassandra spaCassandra;
     private SpaFirebase spaFirebase;
     private SpaNeo4j spaNeo4j;;
-    private SpaLogin spaLogin;
+    private final SpaLogin spaLogin;
     private static EventBus eb;
     private Boolean isCassandra = false;
     private Boolean isFirebase = false;
@@ -42,7 +42,7 @@ public class SpaApplication {
 
     public SpaApplication() throws InterruptedException, IOException, SQLException {
         Object spaDb = SpaDbConfiguration.getSpaDb();
-        
+
         if (spaDb instanceof SpaDatabase) {
             spaDatabase = SpaDbConfiguration.getSpaDb();
         } else if (spaDb instanceof SpaCassandra) {
@@ -123,7 +123,7 @@ public class SpaApplication {
 
         spaLogin.setName(userName);
         spaLogin.setPassword(password);
-        spaLogin.setId(0l);
+        spaLogin.setId(0L);
         spaLogin.setLastLogin(new Date());
         spaLogin.setStatus("0");
 

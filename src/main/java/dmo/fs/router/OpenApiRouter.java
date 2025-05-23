@@ -17,7 +17,7 @@ import io.vertx.openapi.contract.OpenAPIContract;
 import io.vertx.openapi.validation.ResponseValidator;
 import io.vertx.openapi.validation.ValidatableResponse;
 import io.vertx.openapi.validation.ValidatedRequest;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.ext.web.handler.*;
 import io.vertx.rxjava3.ext.web.sstore.SessionStore;
@@ -45,6 +45,7 @@ public class OpenApiRouter {
       for (OpenAPIRoute openApiRoute : routesList) {
         if ("groupById".equals(openApiRoute.getOperation().getOperationId())) {
           openApiRoute.addHandler(routingContext -> {
+
             ValidatedRequest validatedRequest =
                 routingContext.get(RouterBuilder.KEY_META_DATA_VALIDATED_REQUEST);
             JsonObject getGroupJson = validatedRequest.getBody().getJsonObject();
@@ -54,7 +55,6 @@ public class OpenApiRouter {
 
             try {
               groupOpenApi.getMembersList(getGroupJson).onSuccess(getGroupObject -> {
-
                 HttpServerResponse response = routingContext.response();
 
                 ResponseValidator validator = ResponseValidator.create(vertx.getDelegate(), openApiContract);
@@ -139,19 +139,27 @@ public class OpenApiRouter {
           .rootHandler(TimeoutHandler.create(2000).getDelegate());
       routerBuilder
           .rootHandler(SessionHandler.create(SessionStore.create(vertx)).getDelegate());
+
       if ("dev".equals(DodexUtil.getEnv())) {
         routerBuilder.rootHandler(CorsHandler.create().allowedMethod(HttpMethod.GET)
-            .getDelegate()); /* Need ports 8087 & 9876 */
+            .getDelegate()); /* Need ports 8087 & 9876 for spa testing */
       }
 
       routerBuilder.rootHandler(BodyHandler.create().setBodyLimit(10000000)
           .setDeleteUploadedFilesOnEnd(true).setHandleFileUploads(true).getDelegate());
+
+      String errorMessage = "Routing Context Error: ";
       routerBuilder.rootHandler(RoutingContext::next);
+      routerBuilder.getRoute("getAll").addHandler(RoutingContext::next).addFailureHandler(err -> {
+        logger.error("{}{} -- {}", errorMessage, err.currentRoute().getName(), err.currentRoute().getPath());
+      });
+      routerBuilder.getRoute("getNextAll").addHandler(RoutingContext::next).addFailureHandler(err -> {
+        logger.error("{}{} -- {}", errorMessage, err.currentRoute().getName(), err.currentRoute().getPath());
+      });
+      ;
 
-       openApiPromise.complete(routerBuilder.createRouter());
-
+      openApiPromise.complete(routerBuilder.createRouter());
     }).onFailure(Throwable::printStackTrace);
-
 
     return openApiPromise.future();
   }
@@ -163,7 +171,7 @@ public class OpenApiRouter {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
-    switch(defaultDb) {
+    switch (defaultDb) {
       case "mongo":
         return new GroupOpenApiMongo();
       default:

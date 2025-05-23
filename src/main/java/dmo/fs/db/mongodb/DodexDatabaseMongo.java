@@ -7,6 +7,7 @@ import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.CreateCollectionOptions;
 import io.vertx.ext.mongo.IndexOptions;
@@ -104,7 +105,7 @@ public class DodexDatabaseMongo extends DbMongo {
       DodexUtil.getVertx().getOrCreateContext().exceptionHandler(Throwable::printStackTrace);
     }
 
-    mongoClient = MongoClient.createShared(DodexUtil.getVertx(), config);
+    mongoClient = MongoClient.createShared(Server.getRxVertx(), config);
 
     mongoClient.getCollections().doOnSuccess(collections -> {
       if (!collections.contains("user_message")) {

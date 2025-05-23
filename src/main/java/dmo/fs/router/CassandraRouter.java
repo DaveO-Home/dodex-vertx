@@ -35,7 +35,7 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Context;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
@@ -82,7 +82,7 @@ public class CassandraRouter {
          */
         final Optional<Context> context = Optional.ofNullable(Vertx.currentContext());
         if (context.isPresent()) {
-            final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
+            final Optional<JsonObject> jsonObject = Optional.ofNullable(Server.getConfig());
             try { 
                 JsonObject config = jsonObject.orElseGet(JsonObject::new);
                 final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
@@ -111,9 +111,9 @@ public class CassandraRouter {
           final DodexUtil dodexUtil = new DodexUtil();
 
           if (!"/dodex".equals(ws.path())) {
-            server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
+            return;
           } else {
-            server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
+//            server.webSocketHandshakeHandler(ServerWebSocketHandshake::accept);
             final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
             final MessageUser messageUser = dodexCassandra.createMessageUser();
 
@@ -255,7 +255,6 @@ public class CassandraRouter {
             String handle2;
             String id;
             Map<String, String> query = null;
-
             query = ParseQueryUtilHelper.getQueryMap(wsChatSessions.get(ws.remoteAddress().toString()));
 
             handle2 = query.get("handle");

@@ -6,11 +6,11 @@ import dmo.fs.db.DodexDatabase;
 import dmo.fs.dbh.HandicapDatabase;
 
 public abstract class DbMariadb extends DbDefinitionBase implements DodexDatabase, HandicapDatabase {
-	protected final static String CHECKLOGINSQL = "select 1 from information_schema.tables where table_name='login';";
-	public final static String CHECKUSERSQL = "select 1 from information_schema.tables where table_name='users';";
-	protected final static String CHECKMESSAGESSQL = "select 1 from information_schema.tables where table_name='messages';";
-	protected final static String CHECKUNDELIVEREDSQL = "select 1 from information_schema.tables where table_name='undelivered';";
-	protected final static String CHECKHANDICAPSQL = "SELECT table_name FROM information_schema.tables WHERE table_name in ('golfer', 'course', 'scores', 'ratings', 'groups', 'member')";
+	protected final static String CHECKLOGINSQL = "select 1 from information_schema.tables where table_name='login' and table_schema = '$db_name';";
+	public final static String CHECKUSERSQL = "select 1 from information_schema.tables where table_name='users' and table_schema = '$db_name';";
+	protected final static String CHECKMESSAGESSQL = "select 1 from information_schema.tables where table_name='messages' and table_schema = '$db_name';";
+	protected final static String CHECKUNDELIVEREDSQL = "select 1 from information_schema.tables where table_name='undelivered' and table_schema = '$db_name';";
+	protected final static String CHECKHANDICAPSQL = "SELECT table_name FROM information_schema.tables WHERE table_name in ('golfer', 'course', 'scores', 'ratings', 'groups', 'member') and table_schema = '$db_name'";
 
 	private enum CreateTable {
 		CREATEUSERS(

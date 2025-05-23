@@ -24,12 +24,12 @@ import org.jooq.SQLDialect;
 
 import io.vertx.rxjava3.core.Vertx;
 
-public class DodexUtil {
-    private static final Logger logger = LoggerFactory.getLogger(DodexUtil.class.getName());
+public class DodexUtils {
+    private static final Logger logger = LoggerFactory.getLogger(DodexUtils.class.getName());
     private static final String REMOVEUSER = ";removeuser";
     private static final String USERS = ";users";
     private static String env = "dev";
-    private static io.vertx.rxjava3.core.Vertx vertx;
+    private static Vertx vertx;
 
     String defaultDb = "h2";
 
@@ -201,7 +201,7 @@ public class DodexUtil {
     }
 
     public static SQLDialect getSqlDialect() {
-        DodexUtil dodexUtil = new DodexUtil();
+        DodexUtils dodexUtil = new DodexUtils();
         String database = null;
         try {
             database = dodexUtil.getDefaultDb();
@@ -218,15 +218,12 @@ public class DodexUtil {
         return SQLDialect.DEFAULT;
     }
 
-    public static io.vertx.rxjava3.core.Vertx getVertx() {
-        if(vertx == null) {
-            vertx = Vertx.vertx();
-        }
+    public static Vertx getVertx() {
         return vertx;
     }
 
-    public static void setVertx(io.vertx.rxjava3.core.Vertx vertx) {
-        DodexUtil.vertx = vertx;
+    public static void setVertx(Vertx rxVertx) {
+        vertx = rxVertx;
     }
 
     public static boolean isNull(Object obj) {

@@ -5,11 +5,7 @@
  * For more details take a look at the Java Quickstart chapter in the Gradle
  * User Manual available at https://docs.gradle.org/current/userguide/building_java_projects.html
  */
- buildscript {
-   dependencies {
-     classpath "com.google.protobuf:protobuf-gradle-plugin:0.9.4"
-   }
- }
+
 plugins {
     // Apply the java plugin to add support for Java
     id "java"
@@ -22,6 +18,8 @@ plugins {
     id "nu.studer.jooq" version "8.0"
 
     id 'pmd'
+
+    id 'maven-publish'
 }
 
 repositories {
@@ -40,7 +38,8 @@ repositories {
     }
 }
 
-version = "3.3.1"
+group = 'dmo.fs'
+version = "4.0.0"
 
 java {
     sourceCompatibility = JavaVersion.VERSION_21
@@ -48,11 +47,10 @@ java {
 }
 println("Java Version: " + JavaVersion.current())
 ext {
-    vertxVersion = "4.5.12"
+    vertxVersion = "5.0.0"
     junitJupiterEngineVersion = "5.10.2"
     jooqVersion = "3.19.3"
-    protoVersion = "3.23.3"
-    grpcVersion = "1.61.0"
+    protoVersion = "3.25.5"
 }
 
 java {
@@ -77,6 +75,9 @@ sourceSets {
 
 dependencies {
     implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
+//    implementation "io.vertx:vertx-launcher-application:$vertxVersion"
+    implementation "io.vertx:vertx-launcher-legacy-cli:$vertxVersion"
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
     implementation group:"io.vertx", name:"vertx-core", version:"$vertxVersion"
     implementation "io.vertx:vertx-web:$vertxVersion"
     implementation group: "io.agroal", name: "agroal-pool", version: "2.5"
@@ -105,7 +106,8 @@ dependencies {
     implementation "dmo.fs.utils:generate"
 
     implementation "io.vertx:vertx-web-openapi-router:$vertxVersion"
-    implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
+//    compile 'io.vertx:vertx-web-openapi-router:4.5.14'
+//    implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
 
     implementation "io.vertx:vertx-mqtt:$vertxVersion"
 
@@ -118,18 +120,20 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
 }
 
-application {
-    getMainClass().set("io.vertx.core.Launcher")
-}
 
 def mainVerticleName = "dmo.fs.vertx.Server"
-def mainClassName = "io.vertx.core.Launcher"
+//def mainClassName = "io.vertx.launcher.application.VertxApplication"
+ def mainClassName = "io.vertx.core.Launcher"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = "src/main/java/**/*.java, handicap/src/main/**/*"
 def debug = ""
 def cache = "--java-opts=-Dvertx.disableFileCaching=true"
 def OS = System.getProperty("os.name").toLowerCase()
 def usr = System.getProperty("user.home")
+
+application {
+    getMainClass().set(mainClassName)
+}
 
 apply plugin: "nu.studer.jooq"
 
@@ -152,15 +156,25 @@ startShadowScripts {
     dependsOn jar
 }
 
+ext {
+//    javaMainClass = "io.vertx.launcher.application.VertxApplication"
+    javaMainClass = "io.vertx.core.Launcher"
+}
+
+application {
+    mainClassName = javaMainClass
+}
+
 run {
-     if (System.getProperty("DEBUG", "false") == "true") {
+
+    if (System.getProperty("DEBUG", "false") == "true") {
         debug = "--java-opts=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dvertx.disableFileCaching=true"
         cache = ""
-     }
+    }
 
     environment "VERTXWEB_ENVIRONMENT", "dev"
     if (System.getenv("GOOGLE_APPLICATION_CREDENTIALS") == null) {
-      environment "GOOGLE_APPLICATION_CREDENTIALS", "$usr/auth/service-account-key.json"
+        environment "GOOGLE_APPLICATION_CREDENTIALS", "$usr/auth/service-account-key.json"
     }
     if(System.getProperty("GRPC_SERVER") == "true") {
         environment "GRPC_SERVER", "true"
@@ -168,8 +182,8 @@ run {
         environment "GRPC_SERVER", "false"
     }
     args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName",
-    "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json",
-     cache]
+            "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json",
+            cache]
 }
 
 /*
@@ -228,9 +242,25 @@ shadowJar {
   }
 }
 
+publishing {
+    publications {
+        customLibrary(MavenPublication) {
+            from components.java
+        }
+    }
+
+    repositories {
+        maven {
+            name = 'dodex-vertx'
+            url = layout.buildDirectory.dir("repo")
+        }
+    }
+}
+
 test {
     // Use junit platform for unit tests
     environment "VERTXWEB_ENVIRONMENT", "test"
+    environment "GRPC_SERVER", "false"
     useJUnitPlatform()
     testLogging {
         events "PASSED", "FAILED", "SKIPPED"

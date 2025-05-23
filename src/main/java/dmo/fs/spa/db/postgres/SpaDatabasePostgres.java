@@ -7,6 +7,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dmo.fs.spa.db.SpaDbConfiguration;
+import dmo.fs.vertx.Server;
 import io.vertx.rxjava3.pgclient.PgBuilder;
 import io.vertx.rxjava3.sqlclient.Pool;
 import org.slf4j.Logger;
@@ -20,7 +21,7 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.pgclient.PgConnectOptions;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowSet;
@@ -93,11 +94,11 @@ public class SpaDatabasePostgres extends DbPostgres {
                 .setUser(dbProperties.getProperty("user"))
                 .setPassword(dbProperties.getProperty("password"))
                 .setDatabase(dbMap.get("database"))
-                .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
+//                .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
         // .setCachePreparedStatements(true)
         ;
 
-        vertx = DodexUtil.getVertx();
+        vertx = Server.getRxVertx();
 
         Pool pool = PgBuilder
             .pool()
@@ -157,7 +158,7 @@ public class SpaDatabasePostgres extends DbPostgres {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getPool4() {
+    public <T> T getPool() {
         return (T) pool;
     }
 

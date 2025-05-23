@@ -7,6 +7,7 @@ import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import dmo.fs.spa.db.SpaDbConfiguration;
+import dmo.fs.vertx.Server;
 import io.vertx.rxjava3.db2client.DB2Builder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +20,7 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.db2client.DB2ConnectOptions;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowSet;
@@ -99,7 +100,7 @@ public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
         // .setCachePreparedStatements(true)
         ;
 
-        vertx = DodexUtil.getVertx();
+        vertx = Server.getRxVertx();
 
         pool = DB2Builder
             .pool()
@@ -156,7 +157,7 @@ public class SpaDatabaseIbmDB2 extends DbIbmDB2 {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T getPool4() {
+    public <T> T getPool() {
         return (T) pool;
     }
 

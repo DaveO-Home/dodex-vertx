@@ -34,7 +34,7 @@ public interface DodexDatabase {
 	Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws, MessageUser messageUser)
 			throws Exception;
 
-	<T> T getPool4();
+	<T> T getPool();
 
 	MessageUser createMessageUser();
 

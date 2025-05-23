@@ -2,6 +2,7 @@ package dmo.fs.db;
 
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Single;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -271,7 +272,7 @@ public class GroupOpenApiSql implements GroupOpenApi {
 
                 addGroupJson.put("created", openApiDate);
                 addGroupJson.put("status", 0);
-                conn.close();
+                conn.close().subscribe();
                 promise.complete(addGroupJson);
               }).subscribe(rows -> {
               }, err -> {
@@ -279,7 +280,7 @@ public class GroupOpenApiSql implements GroupOpenApi {
                     err, ColorUtilConstants.RESET));
                 errData(err, promise, addGroupJson);
                 if (err != null && err.getMessage() != null) {
-                  conn.close();
+                  conn.close().subscribe();
                 }
                 if (addGroupJson.getInteger("id") == null) {
                   addGroupJson.put("id", -1);
@@ -379,7 +380,7 @@ public class GroupOpenApiSql implements GroupOpenApi {
                 }, err -> {
                   errData(err, promise, addGroupJson);
                   if (err != null && err.getMessage() != null) {
-                    connection.close();
+                    connection.close().subscribe();
                   }
                 });
               }).subscribe(result -> {
@@ -393,7 +394,7 @@ public class GroupOpenApiSql implements GroupOpenApi {
               }, err -> {
                 errData(err, promise, addGroupJson);
                 if (err != null && err.getMessage() != null) {
-                  connection.close();
+                  connection.close().subscribe();
                 }
               });
             }).subscribe(v -> {
@@ -504,7 +505,7 @@ public class GroupOpenApiSql implements GroupOpenApi {
                             }, err -> {
                               errData(err, promise, deleteGroupJson);
                               if (err != null && err.getMessage() != null) {
-                                connection.close();
+                                connection.close().subscribe();
                               }
                             });
                       }).doOnError(err -> {
@@ -514,7 +515,7 @@ public class GroupOpenApiSql implements GroupOpenApi {
                   }, err -> {
                     errData(err, promise, deleteGroupJson);
                     if (err != null && err.getMessage() != null) {
-                      connection.close();
+                      connection.close().subscribe();
                     }
                   });
             }).subscribe(v -> {
@@ -662,10 +663,12 @@ public class GroupOpenApiSql implements GroupOpenApi {
                     .put("status", 0)
                     .put("members", members.encode());
                 promise.complete(getGroupJson);
+                conn.close().subscribe();
               } else {
                 getGroupJson.put("errorMessage", "Group not found: " + getGroupJson.getString("groupName"));
                 getGroupJson.put("id", 0);
                 promise.complete(getGroupJson);
+                conn.close().subscribe();
               }
             }).subscribe()).subscribe();
       });
@@ -699,14 +702,15 @@ public class GroupOpenApiSql implements GroupOpenApi {
                       groupJson.put("checkGroupOwnerId", row.getInteger(0));
                       groupJson.put("checkGroupOwner", row.getString(1));
                     }
-                    conn.close();
+                    conn.close().subscribe();
                   })
                   .doOnError(err -> {
                     errData(err, waitFor, groupJson);
                     conn.close();
                   })
                   .doFinally(() -> {
-                    JsonObject config = Vertx.currentContext().config();
+//                    JsonObject config = Vertx.currentContext().config();
+                    JsonObject config = Server.getConfig();
                     boolean isCheckForOwner =
                         config.getBoolean("dodex.groups.checkForOwner") != null &&
                             config.getBoolean("dodex.groups.checkForOwner");
@@ -747,7 +751,7 @@ public class GroupOpenApiSql implements GroupOpenApi {
                     }
                     if (userName.result().equals(selectedList.get(selectedList.size() - 1))) {
                       waitFor.complete(newSelected);
-                      conn.close();
+                      conn.close().subscribe();
                     }
                   }).doOnError(Throwable::printStackTrace)
                   .subscribe();

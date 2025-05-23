@@ -9,7 +9,7 @@ import dmo.fs.db.MessageUser;
 import dmo.fs.utils.FirebaseMessage;
 import dmo.fs.utils.FirebaseUser;
 import io.vertx.core.Future;
-import io.vertx.rxjava3.core.Vertx;
+import io.vertx.core.Vertx;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
 
 public interface DodexFirebase {

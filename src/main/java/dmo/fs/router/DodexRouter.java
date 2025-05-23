@@ -30,9 +30,9 @@ import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.json.JsonObject;
 import io.vertx.rxjava3.core.Context;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
-import io.vertx.rxjava3.core.buffer.Buffer;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.core.http.ServerWebSocket;
 import io.vertx.rxjava3.core.shareddata.LocalMap;
@@ -60,7 +60,7 @@ public class DodexRouter {
          * new Properties(); set override or additional values... dodexDatabase =
          * DbConfiguration.getDefaultDb(overrideMap, overrideProperties);
          */
-        
+
         dodexDatabase = DbConfiguration.getDefaultDb();
         if (dodexDatabase != null) {
             dodexDatabase.setVertx(vertx);
@@ -75,7 +75,7 @@ public class DodexRouter {
          */
         final Optional<Context> context = Optional.ofNullable(Vertx.currentContext());
         if (context.isPresent()) {
-            final Optional<JsonObject> jsonObject = Optional.ofNullable(Vertx.currentContext().config());
+            final Optional<JsonObject> jsonObject = Optional.ofNullable(Server.getConfig());
             try {
                 final JsonObject config = jsonObject.orElseGet(JsonObject::new);
                 final Optional<Boolean> runClean = Optional.ofNullable(config.getBoolean("clean.run"));
@@ -103,9 +103,10 @@ public class DodexRouter {
           final DodexUtil dodexUtil = new DodexUtil();
 
             if (!("/dodex").equals(ws.path())) {
-              server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
+//              server.webSocketHandshakeHandler(ServerWebSocketHandshake::reject);
+                return;
             } else {
-                server.webSocketHandshakeHandler(ServerWebSocketHandshake::accept);
+//                server.webSocketHandshakeHandler(ServerWebSocketHandshake::accept);
                 final LocalMap<String, String> wsChatSessions = sd.getLocalMap("ws.dodex.sessions");
                 final MessageUser messageUser = dodexDatabase.createMessageUser();
                 // final PgPool pgPool = dodexDatabase.getPool4();

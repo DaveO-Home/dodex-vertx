@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
+import dmo.fs.vertx.Server;
 import io.vertx.rxjava3.mysqlclient.MySQLBuilder;
 
 import org.slf4j.Logger;
@@ -111,7 +112,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
         .setPort(Integer.valueOf(dbMap.get("port"))).setHost(dbMap.get("host2"))
         .setDatabase(dbMap.get("database")).setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
+//        .setSsl(Boolean.valueOf(dbProperties.getProperty("ssl"))).setIdleTimeout(1)
         .setCharset("utf8mb4");
 
     // Pool options
@@ -122,12 +123,12 @@ public class DodexDatabaseMariadb extends DbMariadb {
         .pool()
         .with(poolOptions)
         .connectingTo(connectOptions)
-        .using(DodexUtil.getVertx())
+        .using(Server.getRxVertx())
         .build();
 
     Completable completable =
         pool.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
-            .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(rows -> {
+            .flatMapCompletable(tx -> conn.query(CHECKUSERSQL.replace("$db_name", dbMap.get("database"))).rxExecute().doOnSuccess(rows -> {
               RowIterator<Row> ri = rows.iterator();
               Long val = null;
               while (ri.hasNext()) {
@@ -152,7 +153,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
             }).doOnError(err -> {
               logger.info(String.format("Users Table Error: %s", err.getMessage()));
 
-            }).flatMap(result -> conn.query(CHECKMESSAGESSQL).rxExecute().doOnSuccess(rows -> {
+            }).flatMap(result -> conn.query(CHECKMESSAGESSQL.replace("$db_name", dbMap.get("database"))).rxExecute().doOnSuccess(rows -> {
               RowIterator<Row> ri = rows.iterator();
               Long val = null;
               while (ri.hasNext()) {
@@ -177,7 +178,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
             }).doOnError(err -> {
               logger.info(String.format("Messages Table Error: %s", err.getMessage()));
 
-            })).flatMap(result -> conn.query(CHECKUNDELIVEREDSQL).rxExecute().doOnSuccess(rows -> {
+            })).flatMap(result -> conn.query(CHECKUNDELIVEREDSQL.replace("$db_name", dbMap.get("database"))).rxExecute().doOnSuccess(rows -> {
               RowIterator<Row> ri = rows.iterator();
               Long val = null;
               while (ri.hasNext()) {
@@ -200,7 +201,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
               }
             }).doOnError(err -> {
               logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
-            })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
+            })).flatMap(result -> conn.query(CHECKHANDICAPSQL.replace("$db_name", dbMap.get("database"))).rxExecute().doOnError(err -> {
               logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
             }).doOnSuccess(rows -> {
               if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
@@ -248,12 +249,12 @@ public class DodexDatabaseMariadb extends DbMariadb {
                               logger.warn("Member Table Added.");
                             }
                             tx.commit();
-                            conn.close();
+//                            conn.close().subscribe();
                             if (isCreateTables) {
                               returnPromise.complete(isCreateTables.toString());
                             }
                             finalPromise.complete(isCreateTables.toString());
-                          }).subscribe(res -> conn.close());
+                          }).subscribe(res -> conn.close().subscribe());
                         }).subscribe();
                       }).subscribe();
                     }).subscribe();
@@ -261,7 +262,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
                 }).subscribe();
               } else {
                 tx.commit();
-                conn.close();
+                conn.close().subscribe();
                 finalPromise.complete("");
               }
             })).flatMapCompletable(res -> Completable.complete())));
@@ -290,7 +291,7 @@ public class DodexDatabaseMariadb extends DbMariadb {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <R> R getPool4() {
+  public <R> R getPool() {
     return (R) pool;
   }
 }

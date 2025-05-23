@@ -13,7 +13,7 @@ import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.Session;
 import io.vertx.ext.web.handler.StaticHandler;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.ext.web.handler.SessionHandler;
@@ -26,7 +26,9 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class Routes {
@@ -54,8 +56,7 @@ public class Routes {
     } else {
       DodexUtil.setEnv("prod");
     }
-    DodexUtil.setVertx(vertx);
-
+//    DodexUtil.setVertx(vertx);
     OpenApiRouter.setOpenApiRouter(vertx).onSuccess(router -> {
       if (Server.getUseKafka()) {
         setMonitorRoute(router);
@@ -136,7 +137,7 @@ public class Routes {
     Route staticRoute = router.route();
     StaticHandler staticHandler = StaticHandler.create("static");
     if ("dev".equals(DodexUtil.getEnv())) {
-      staticHandler.setCachingEnabled(false);
+      staticHandler.setCachingEnabled(true);
     } else {
       staticHandler.setCachingEnabled(true);
     }
@@ -161,7 +162,7 @@ public class Routes {
     Route route = router.route(HttpMethod.GET, "/events/:command/:init")
         .produces("application/json");
 
-    route.handler(SessionHandler.create(SessionStore.create(vertx)).getDelegate());
+    route.handler(SessionHandler.create(SessionStore.create(Server.getRxVertx())).getDelegate());
     route.handler(routingContext -> {
       routingContext.put("name", "monitor");
       HttpServerResponse response = routingContext.response();
@@ -169,16 +170,15 @@ public class Routes {
       response.putHeader("content-type", acceptableContentType);
       Session session = routingContext.session();
 
-      if (session.isEmpty()) {
-        session.put("monitor", new KafkaConsumerDodex());
-      }
-
-      KafkaConsumerDodex kafkaConsumerDodex = session.get("monitor");
-
       try {
+        if (session.isEmpty()) {
+          session.put("monitor", new KafkaConsumerDodex());
+        }
+        KafkaConsumerDodex kafkaConsumerDodex = session.get("monitor");
+
         response.send(kafkaConsumerDodex.list(
             routingContext.pathParam("command"), routingContext.pathParam("init")));
-      } catch (JsonProcessingException e) {
+      } catch (Exception e) {
         e.printStackTrace();
       }
       if ("-1".equals(routingContext.pathParam("init"))) {
@@ -186,8 +186,9 @@ public class Routes {
       }
     });
     route.failureHandler(ctx ->
-        logger.error(String.format("%sFAILURE in /monitor/ route: %d%s",
-            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+        logger.error("{}FAILURE in /monitor/ route: {} -- {} -- {} -- {} --{}{}",
+            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.request().method(), ctx.mountPoint(),
+            ctx.normalizedPath(), ctx.response().headers().entries().get(0).getKey(), ColorUtilConstants.RESET)
     );
   }
 
@@ -208,13 +209,8 @@ public class Routes {
       }
       case "cassandra" -> {
         try {
-          if("true".equals(Server.getUseMqtt())) {
-            CassandraRouter cassandraRouter = new CassandraRouter(vertx);
-            cassandraRouter.setWebSocket(server);
-          } else {
-            CassandraRouter cassandraRouter = new CassandraRouter(vertx);
-            cassandraRouter.setWebSocket(server);
-          }
+          CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+          cassandraRouter.setWebSocket(server);
         } catch (Exception ex) {
           ex.printStackTrace();
           throw ex;

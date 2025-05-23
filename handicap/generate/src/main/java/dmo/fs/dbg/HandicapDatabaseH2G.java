@@ -6,9 +6,12 @@ import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.jdbcclient.JDBCConnectOptions;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
+
+import io.vertx.rxjava3.sqlclient.Pool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
 import io.vertx.rxjava3.sqlclient.RowSet;
@@ -33,9 +36,9 @@ public class HandicapDatabaseH2G extends DbH2 {
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
   protected DodexUtil dodexUtil = new DodexUtil();
-  protected JDBCPool pool4;
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
+  protected Pool client;
 
   public HandicapDatabaseH2G(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
@@ -78,6 +81,7 @@ public class HandicapDatabaseH2G extends DbH2 {
   public HandicapDatabaseH2G(Boolean isCreateTables)
       throws IOException {
     super();
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -112,9 +116,9 @@ public class HandicapDatabaseH2G extends DbH2 {
     // .setCachePreparedStatements(true)
     ;
 
-    pool4 = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
+    client = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+    Completable completable = client.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -241,7 +245,7 @@ public class HandicapDatabaseH2G extends DbH2 {
                           logger.warn("Member Table Added.");
                         }
                         tx.commit();
-                        conn.close();
+                        conn.close().subscribe();
                         if (isCreateTables) {
                           returnPromise.complete(isCreateTables.toString());
                         }
@@ -259,7 +263,7 @@ public class HandicapDatabaseH2G extends DbH2 {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(client);
           } catch (SQLException | IOException e) {
             e.printStackTrace();
           }
@@ -273,7 +277,7 @@ public class HandicapDatabaseH2G extends DbH2 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <R> R getClient() {
+    return (R) client;
   }
 }

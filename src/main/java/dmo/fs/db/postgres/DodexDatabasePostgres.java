@@ -11,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
+import dmo.fs.vertx.Server;
 import io.vertx.rxjava3.pgclient.PgBuilder;
 import io.vertx.rxjava3.sqlclient.Pool;
 import org.slf4j.Logger;
@@ -117,15 +118,16 @@ public class DodexDatabasePostgres extends DbPostgres {
         .setPort(Integer.parseInt(dbMap.get("port")))
         .setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setDatabase(dbMap.get("database")).setSsl(Boolean.parseBoolean(dbProperties.getProperty("ssl")))
-        .setIdleTimeout(1)
+        .setDatabase(dbMap.get("database"))
+//        .setSsl(Boolean.parseBoolean(dbProperties.getProperty("ssl")))
+//        .setIdleTimeout(1)
     // .setCachePreparedStatements(true)
     ;
     Pool pool = PgBuilder
         .pool()
         .with(poolOptions)
         .connectingTo(connectOptions)
-        .using(DodexUtil.getVertx())
+        .using(Server.getRxVertx())
         .build();
 
     Completable completable = pool.rxGetConnection().cache().flatMapCompletable(conn -> conn.rxBegin()
@@ -209,8 +211,8 @@ public class DodexDatabasePostgres extends DbPostgres {
           logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
         })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
           logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+          conn.close().subscribe();
         }).doOnSuccess(rows -> {
-          conn.close();
           if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
             Set<String> names = new HashSet<>();
 
@@ -224,7 +226,7 @@ public class DodexDatabasePostgres extends DbPostgres {
             }
             conn.query(sql).rxExecute().doOnError(err -> {
               logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
-              conn.close();
+              conn.close().subscribe();
               throw new SQLException(err.getMessage());
             }).doOnSuccess(row1 -> {
               if (!names.contains("golfer")) {
@@ -237,7 +239,7 @@ public class DodexDatabasePostgres extends DbPostgres {
               }
               conn.query(sql2).rxExecute().doOnError(err -> {
                 logger.warn(String.format("Course Table Error: %s", err.getMessage()));
-                conn.close();
+                conn.close().subscribe();
                 throw new SQLException(err.getMessage());
               }).doOnSuccess(row2 -> {
                 if (!names.contains("course")) {
@@ -250,7 +252,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                 }
                 conn.query(sql3).rxExecute().doOnError(err -> {
                   logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
-                  conn.close();
+                  conn.close().subscribe();
                   throw new SQLException(err.getMessage());
                 }).doOnSuccess(row3 -> {
                   if (!names.contains("ratings")) {
@@ -263,7 +265,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                   }
                   conn.query(sql4).rxExecute().doOnError(err -> {
                     logger.error(String.format("Scores Table Error: %s", err.getMessage()));
-                    conn.close();
+                    conn.close().subscribe();
                     throw new SQLException(err.getMessage());
                   }).doOnSuccess(row4 -> {
                     if (!names.contains("scores")) {
@@ -276,7 +278,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                     }
                     conn.query(sql5).rxExecute().doOnError(err -> {
                       logger.error(String.format("Groups Table Error: %s", err.getMessage()));
-                      conn.close();
+                      conn.close().subscribe();
                       throw new SQLException(err.getMessage());
                     }).doOnSuccess(row5 -> {
                       if (!names.contains("groups")) {
@@ -289,14 +291,14 @@ public class DodexDatabasePostgres extends DbPostgres {
                       }
                       conn.query(sql6).rxExecute().doOnError(err -> {
                         logger.error(String.format("Member Table Error: %s", err.getMessage()));
-                        conn.close();
+                        conn.close().subscribe();
                         throw new SQLException(err.getMessage());
                       }).doOnSuccess(row6 -> {
                         if (!names.contains("member")) {
                           logger.warn("Member Table Added.");
                         }
                         tx.commit();
-                        conn.close();
+                        conn.close().subscribe();
                         if (isCreateTables) {
                           returnPromise.complete(isCreateTables.toString());
                         }
@@ -309,16 +311,16 @@ public class DodexDatabasePostgres extends DbPostgres {
             }).subscribe();
           } else {
             tx.commit();
-            conn.close();
+            conn.close().subscribe();
             finalPromise.complete("");
           }
         })).flatMapCompletable(res -> Completable.complete())));
 
-    completable.toCompletionStage(pool).whenComplete((pool4, err) -> {
+    completable.toCompletionStage(pool).whenComplete((pool5, err) -> {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(pool5);
           } catch (SQLException e) {
             e.printStackTrace();
           }
@@ -332,7 +334,7 @@ public class DodexDatabasePostgres extends DbPostgres {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
+  public <T> T getPool() {
     return (T) pool;
   }
 

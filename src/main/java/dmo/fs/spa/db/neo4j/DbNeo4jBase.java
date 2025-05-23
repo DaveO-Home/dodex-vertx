@@ -16,7 +16,7 @@ import dmo.fs.spa.utils.SpaLogin;
 import io.smallrye.mutiny.Multi;
 import io.smallrye.mutiny.Uni;
 import io.vertx.core.Future;
-import io.vertx.rxjava3.core.Promise;
+import io.vertx.core.Promise;
 
 public abstract class DbNeo4jBase {
     private static final Logger logger = LoggerFactory.getLogger(DbNeo4jBase.class.getName());

@@ -21,6 +21,10 @@
   "handicap.enableHandicap": true,
   "handicap.enableAdmin": true,
   "handicap.adminPin": "handiadm",
+  "grpc.server": false,
   "handicap.port": 8888,
-  "prod.handicap.port": 8890
+  "prod.handicap.port": 8890,
+  "grpc:port": 15003,
+  "prod:grpc:port": 15003,
+  "envoy:port": 8070
 }

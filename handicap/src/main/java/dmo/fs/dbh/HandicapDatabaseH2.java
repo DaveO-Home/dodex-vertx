@@ -1,11 +1,13 @@
 package dmo.fs.dbh;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import dmo.fs.utils.DodexUtil;
+import dmo.fs.utils.DodexUtils;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.jdbcclient.JDBCConnectOptions;
+import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.sqlclient.PoolOptions;
 import org.slf4j.Logger;
@@ -26,14 +28,24 @@ public class HandicapDatabaseH2 extends DbH2 {
   protected Map<String, String> dbMap = new ConcurrentHashMap<>();
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
-  protected DodexUtil dodexUtil = new DodexUtil();
+  protected DodexUtils dodexUtil = new DodexUtils();
   protected JDBCPool pool4;
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
+  protected Future<String> returnFuture;
+  protected Handler<Promise<String>> returnHandler = new Handler<>() {
+    @Override
+    public void handle(io.vertx.core.Promise<String> p) {
+      p.complete(p.future().result());
+    }
+  };
 
   public HandicapDatabaseH2(Map<String, String> dbOverrideMap, Properties dbOverrideProps)
       throws InterruptedException, IOException, SQLException {
     super();
+
+    returnHandler.handle(returnPromise);
+    returnFuture = Future.future(returnHandler);
 
     defaultNode = dodexUtil.getDefaultNode();
 
@@ -58,6 +70,10 @@ public class HandicapDatabaseH2 extends DbH2 {
 
   public HandicapDatabaseH2() throws InterruptedException, IOException, SQLException {
     super();
+
+    returnHandler.handle(returnPromise);
+    returnFuture = Future.future(returnHandler);
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -69,6 +85,10 @@ public class HandicapDatabaseH2 extends DbH2 {
 
   public HandicapDatabaseH2(Boolean isCreateTables) throws IOException {
     super();
+
+    returnHandler.handle(returnPromise);
+    returnFuture = Future.future(returnHandler);
+
     defaultNode = dodexUtil.getDefaultNode();
     webEnv = webEnv == null || "prod".equals(webEnv) ? "prod" : "dev";
 
@@ -81,7 +101,7 @@ public class HandicapDatabaseH2 extends DbH2 {
 
   public Future<String> checkOnTables() throws InterruptedException, SQLException {
     databaseSetup();
-    return returnPromise.future();
+    return returnFuture;
   }
 
   private void databaseSetup() {
@@ -103,11 +123,14 @@ public class HandicapDatabaseH2 extends DbH2 {
         .setIdleTimeout(1)
     // .setCachePreparedStatements(true)
     ;
-    pool4 = JDBCPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
-
+    Vertx vertx = DodexUtils.getVertx();
+    if(vertx == null) { // for testing
+      vertx = Vertx.vertx();
+    }
+    pool = JDBCPool.pool(vertx, connectOptions, poolOptions);
     if (!isCreateTables) {
       try {
-        setupSql(pool4);
+        setupSql(pool);
       } catch (SQLException | IOException e) {
         e.printStackTrace();
       }
@@ -116,7 +139,7 @@ public class HandicapDatabaseH2 extends DbH2 {
 
   @Override
   @SuppressWarnings("unchecked")
-  public <T> T getPool4() {
-    return (T) pool4;
+  public <T> T getPool() {
+    return (T) pool;
   }
 }

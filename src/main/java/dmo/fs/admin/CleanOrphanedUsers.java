@@ -52,8 +52,8 @@ public class CleanOrphanedUsers extends DbDefinitionBase {
         long period = 0;
         dodexDatabase = DbConfiguration.getDefaultDb();
 
-        pool = dodexDatabase.getPool4();
-        setupSql(dodexDatabase.getPool4());
+        pool = dodexDatabase.getPool();
+        setupSql(dodexDatabase.getPool());
         create = DbDefinitionBase.getCreate();
 
         delay = config.getLong("clean.delay");

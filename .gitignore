@@ -43,3 +43,4 @@ cp*.sh
 scripts/*.java
 handicap/src/main/resources/static/json
 handicap/src/main/resources/static/assets
+dodex-vertx

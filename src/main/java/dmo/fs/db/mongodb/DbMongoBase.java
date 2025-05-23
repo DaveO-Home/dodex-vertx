@@ -3,6 +3,7 @@ package dmo.fs.db.mongodb;
 
 import dmo.fs.db.MessageUser;
 import dmo.fs.utils.DodexUtil;
+import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.smallrye.mutiny.Uni;
@@ -70,7 +71,7 @@ public abstract class DbMongoBase {
 
   public Promise<Map<String, Integer>> processUserMessages(ServerWebSocket ws, MessageUser messageUser)
       throws Exception {
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
     Promise<Map<String, Integer>> promise = Promise.promise();
     Map<String, Integer> counts = new ConcurrentHashMap<>();
     JsonObject query = new JsonObject();
@@ -107,7 +108,7 @@ public abstract class DbMongoBase {
 
   public Promise<MessageUser> deleteUser(MessageUser messageUser)
       throws InterruptedException, ExecutionException {
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
     Promise<MessageUser> promise = Promise.promise();
 
     mongoClient.removeDocument("user_message", uniqueQuery(messageUser)).doOnSuccess(result -> {
@@ -120,7 +121,7 @@ public abstract class DbMongoBase {
 
   public Promise<MessageUser> addMessage(MessageUser messageUser, String message,
          List<String> undelivered) throws InterruptedException, ExecutionException {
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
     String mongoDate = getMongoDate();
     Promise<MessageUser> messagesPromise = Promise.promise();
     Promise<List<BulkOperation>> finishedPromise = Promise.promise();
@@ -160,7 +161,7 @@ public abstract class DbMongoBase {
   public Promise<MessageUser> selectUser(MessageUser messageUser)
       throws InterruptedException, SQLException, ExecutionException {
     Promise<MessageUser> promise = Promise.promise();
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
 
     JsonObject query = uniqueQuery(messageUser);
 
@@ -182,7 +183,7 @@ public abstract class DbMongoBase {
 
   public Promise<StringBuilder> buildUsersJson(MessageUser messageUser)
       throws InterruptedException {
-    MongoClient mongoClient = MongoClient.createShared(DodexUtil.getVertx(), new JsonObject());
+    MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
     Promise<StringBuilder> promise = Promise.promise();
     JsonArray ja = new JsonArray();
     JsonObject getOthers = new JsonObject();

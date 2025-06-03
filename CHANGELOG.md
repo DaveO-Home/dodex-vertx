@@ -1,5 +1,16 @@
 # Changelog
 
+# [v4.0.2](https://github.com/DaveO-Home/dodex-vertx/tree/v4.0.0) (2025-06-03)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.0.0..v4.0.2)
+
+* Fixed `vertx` null pointer exception for databases
+* Upgraded Javascript dependencies
+* Changed Dockerfile to default to Vert.x 5, no `Envoy`
+* Added Dockerfile_Envoy to run `Envoy`
+* Changed README.md for building docker/podman/minikube applications
+* See `./kube/dev_minikube.txt` cheat sheet for building docker/minikube vert.x application exposed to the internet using `loophole` tunnelling software.
+
 # [v4.0.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.1) (2025-05-20)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.3.1..v4.0.0)

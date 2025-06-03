@@ -9,6 +9,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.vertx.core.Handler;
+import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.pgclient.PgBuilder;
 import io.vertx.rxjava3.sqlclient.Pool;
 import org.slf4j.Logger;

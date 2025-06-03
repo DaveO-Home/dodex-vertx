@@ -37,7 +37,7 @@
     "mini-create-react-context": "^0.4.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.0",
+    "react-router-dom": "^6.30.1",
     "redux": "^4.2.1",
     "tablesorter": "^2.32.0"
   },
@@ -50,7 +50,7 @@
     "eslint-plugin-react": "^7.37.5",
     "fancy-log": "^2.0.0",
     "fuse-box": "^4.0.0",
-    "gulp": "^5.0.0",
+    "gulp": "^5.0.1",
     "gulp-csslint": "^1.0.1",
     "gulp-eslint": "^6.0.0",
     "http": "0.0.1-security",

@@ -1,19 +1,18 @@
 package dmo.fs.router;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.cloud.firestore.Firestore;
 import dmo.fs.kafka.KafkaConsumerDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.vertx.Server;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Route;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.Session;
 import io.vertx.ext.web.handler.StaticHandler;
-import io.vertx.core.Promise;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.ext.web.handler.SessionHandler;
@@ -26,9 +25,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class Routes {
@@ -44,6 +41,7 @@ public class Routes {
   public Routes(Router router) {
     this.router = router;
   }
+
   public Routes(Vertx vertx, HttpServer server, Integer vertxVersion)
       throws InterruptedException, IOException, SQLException {
     this.vertx = vertx;
@@ -115,7 +113,7 @@ public class Routes {
   }
 
   public void setProdRoute(Router router) {
-    Route route = router.routeWithRegex(HttpMethod.GET, "/dodex[/]?|/dodex/.*\\.html");
+    Route route = router.routeWithRegex(HttpMethod.GET, "/ddex[/]?|/dodex/.*\\.html");
     route.handler(routingContext -> {
       routingContext.put("name", "prod");
       HttpServerResponse response = routingContext.response();
@@ -150,7 +148,8 @@ public class Routes {
     ;
 
     staticRoute.handler(staticHandler);
-    staticRoute.failureHandler(ctx -> {;
+    staticRoute.failureHandler(ctx -> {
+      ;
       logger.error("{}FAILURE in static route(likely caused by Music tab): {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET);
 //      ctx.response().end(Integer.valueOf(ctx.statusCode()).toString());
       ctx.next();

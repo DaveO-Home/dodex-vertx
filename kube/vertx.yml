@@ -33,7 +33,7 @@ spec:
           imagePullPolicy: Never #IfNotPresent
           env:
             - name: DEFAULT_DB
-              value: "h2"  # h2 or sqlite3, postgres or mariadb
+              value: "mariadb"  # h2 or sqlite3, postgres or mariadb
             - name: USE_HANDICAP
               value: "true"
             - name: storage__root_directory

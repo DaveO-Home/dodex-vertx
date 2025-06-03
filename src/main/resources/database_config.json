@@ -127,8 +127,8 @@
                 "host": "//192.168.49.1:3306",
                 "host2": "192.168.49.1",
                 "url": "jdbc:mariadb:",
-                "dbname": "/test",
-                "database": "test",
+                "dbname": "/dodex",
+                "database": "dodex",
                 "port": "3306"
             }
         }

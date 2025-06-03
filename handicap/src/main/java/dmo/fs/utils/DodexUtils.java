@@ -1,6 +1,15 @@
 
 package dmo.fs.utils;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.vertx.rxjava3.core.Vertx;
+import org.jooq.SQLDialect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.swing.text.html.HTMLDocument;
+import javax.swing.text.html.HTMLEditorKit;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringReader;
@@ -11,19 +20,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-import javax.swing.text.html.HTMLDocument;
-import javax.swing.text.html.HTMLEditorKit;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import org.jooq.SQLDialect;
-
-import io.vertx.rxjava3.core.Vertx;
-
 public class DodexUtils {
     private static final Logger logger = LoggerFactory.getLogger(DodexUtils.class.getName());
     private static final String REMOVEUSER = ";removeuser";
@@ -32,16 +28,6 @@ public class DodexUtils {
     private static Vertx vertx;
 
     String defaultDb = "h2";
-
-    // public void await(Disposable disposable) {
-    // while (!disposable.isDisposed()) {
-    // try {
-    // Thread.sleep(100);
-    // } catch (InterruptedException e) {
-    // logger.error(String.join("", "Await: ", e.getMessage()));
-    // }
-    // }
-    // }
 
     public Map<String, String> commandMessage(String clientData) {
         Map<String, String> returnObject = new ConcurrentHashMap<>();

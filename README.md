@@ -256,6 +256,7 @@ __Note:__ By default the entry `"dodex.groups.checkForOwner"` in __application-c
 ### Building an *image* and *container* with docker
 1. cd to the **dodex-vertx** install directory
 2. make sure **dodex** and the **handicap** node_modules and application are installed
+3. If using __Envoy__ and `./kube/Dockerfile_Envoy`, add `-p 9901` when creating an image or container.   
 
     * in `src/main/resources/static` execute __`npm install`__
     * in `handicap/src/grpc/client` execute __`npm install`__ and __`npm run webpack:prod`__ or __`npm run esbuild:prod`__
@@ -263,24 +264,23 @@ __Note:__ By default the entry `"dodex.groups.checkForOwner"` in __application-c
     * optionally install the __spa_react__ application and in **src/spa-react/devl** execute __`npx gulp prod`__ or __`npx gulp prd`__(does not need dodex-vertx started)
     * stop the vertx server - ctrl-c
     * build the production fat jar - execute __`./gradlew clean(optional) shadowJar`__
-        * **Important** When building the **Fat** jar, set **DEFAULT_DB**=sqlite3 or postgres and **USE_HANDICAP**=true
-    * verify the jar's name - if different from `dodex-vertx-3.3.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
+    * verify the jar's name - if different from `dodex-vertx-4.0.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
 
-3. execute __`cp build/libs/dodex-vertx-3.3.0-prod.jar`__ to **kube/**
-4. execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
-5. execute __`docker create -t -p 8880:8880 -p 8070:8070 -p 9901:9901 --name dodex_vertx dufferdo2/dodex-vertx`__
-6. execute __`docker start dodex_vertx`__, make sure **envoy** is not running on the host.
-7. use browser to view - <http://localhost:8880/handicap.html>, <http://localhost:8880/dodex> or <http://localhost:8880/dodex/bootstrap.html>, if the spa-react was installed this link should work, <http://localhost:8880/dist/react-fusebox/appl/testapp.html>
-8. execute __`docker stop dodex_vertx`__
-9. to clean up execute __`docker rm dodex_vertx`__ and __`docker rmi dodex-vertx`__, however you should keep the **dufferdo2/dodex-vertx** image if trying out **podman** or **minikube**.
-10. to pull and generate a local image from the docker hub, execute __`docker build -t dodex-vertx:latest -f kube/vertx/Dockerfile .`__
-11. you can also build/run dufferdo2/dodex-vertx(image) and dufferdo2/dodex_vertx(container) with; __`docker compose -f kube/docker-compose.yaml up -d`__, assumes that **envoy** is running for **dodex-vertx**
-12. Use `run` to test different databases; __`docker run --rm -p 8880:8880 -p 8070:8070 -p 9901:9901 -e DEFAULT_DB=postgres -e USE_HANDICAP=true --name dodex_vertx dufferdo2/dodex-vertx`__. To stop, run `docker container stop dodex_vertx`.
+4. execute __`cp build/libs/dodex-vertx-4.0.0-prod.jar`__ to **kube/**
+5. execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
+6. execute __`docker create -t -p 8880:8880 -p 8070:8070 --name dodex_vertx dufferdo2/dodex-vertx`__ 
+7. execute __`docker start dodex_vertx`__, make sure **envoy** is not running on the host.
+8. use browser to view - <http://localhost:8880/handicap.html>, <http://localhost:8880/dodex> or <http://localhost:8880/dodex/bootstrap.html>, if the spa-react was installed this link should work, <http://localhost:8880/dist/react-fusebox/appl/testapp.html>
+9. execute __`docker stop dodex_vertx`__
+10. to clean up execute __`docker rm dodex_vertx`__ and __`docker rmi dodex-vertx`__, however you should keep the **dufferdo2/dodex-vertx** image if trying out **podman** or **minikube**.
+11. to pull and generate a local image from the docker hub, execute __`docker build -t dodex-vertx:latest -f kube/vertx/Dockerfile .`__
+12. you can also build/run dufferdo2/dodex-vertx(image) and dufferdo2/dodex_vertx(container) with; __`docker compose -f kube/docker-compose.yaml up -d`__, assumes that **envoy** is running for **dodex-vertx**
+13. Use `run` to test different databases; __`docker run --rm -p 8880:8880 -p 8070:8070 -e DEFAULT_DB=postgres -e USE_HANDICAP=true --name dodex_vertx dufferdo2/dodex-vertx`__. To stop, run `docker container stop dodex_vertx`.
 
-__Note:__ When running the dufferdo2/dodex-vertx image based on ./kube/Dockerfile, there is no need to have **envoy** running on the host machine. Envoy is included in the image.
+__Note:__ When running the dufferdo2/dodex-vertx image based on ./kube/Dockerfile_Envoy, there is no need to have **envoy** running on the host machine. Envoy is included in the image.
 
 ### Building an *image* and *container* with podman
-1. generate an empty pod execute __`podman pod create -n vertx-pod -p 0.0.0.0:8880:8880 -p 0.0.0.0:8070:8070 -p 9901:9901`__
+1. generate an empty pod execute __`podman pod create -n vertx-pod -p 0.0.0.0:8880:8880 -p 0.0.0.0:8070:8070`__
 2. generate a container execute __`podman create -t --pod vertx-pod --name vertx_server dufferdo2/dodex-vertx:latest`__.
 3. start the container execute __`podman start vertx_server`__
 4. view in browser
@@ -291,7 +291,7 @@ __Note:__ When running the dufferdo2/dodex-vertx image based on ./kube/Dockerfil
 * Since including the **Handicap** application(multiple exposed ports, persistent volume) to **dodex-vertx**, the **minikube** deployment must be from configuration files.
 1. execute __`minikube start`__
 2. to make sure the dufferdo2/dodex-vertx image is set up, execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
-3. edit kube/vertx.yml and change **env:** to desired database(DEFAULT_DB) - defaults to **sqlite3**, no database configuration necessary otherwise set **DEFAULT_DB** to **mariadb** or **postgres**
+3. edit kube/vertx.yml and change **env:** to desired database(DEFAULT_DB) - defaults to **h2**, no database configuration necessary otherwise set **DEFAULT_DB** to **mariadb** or **postgres**
 4. execute `kubectl create -f kube/db-volume.yml`
 5. execute `kubectl create -f kube/vertx.yml`
 6. execute `minikube service vertx-service` to start **dodex-vertx** in the default browser - add **--url** to get just the URL
@@ -326,9 +326,9 @@ and database_config.json(also in ../dodex-vertx/generate...resources/database(_s
 2. execute `gradlew clean`(optional)
 3. build the **fat** jar and **image** as described in the **Operation** and **Building an *image* and *container* with docker** sections, e.g.
     * build the production fat jar - __`./gradlew shadowJar`__
-        * **Important** When building the **fat** jar, set **DEFAULT_DB**=sqlite3 or mariadb or postgres and **USE_HANDICAP**=true
-        * verify the jar's name - if different from **dodex-vertx-3.3.0-prod.jar**, change in **./kube/Dockerfile**
-    * copy the build/**dodex-vertx-3.3.0-prod.jar** to **./kube**
+        * **Optional** When building the **fat** jar, set **DEFAULT_DB**=h2 or mariadb or postgres and **USE_HANDICAP**=true
+        * verify the jar's name - if different from **dodex-vertx-4.0.0-prod.jar**, change in **./kube/Dockerfile**
+    * copy the build/**dodex-vertx-4.0.0-prod.jar** to **./kube**
     * if the **dodex_vertx** and/or the **dufferdo2/dodex-vertx** exist, remove them `docker rm dodex_vertx` and `docker rmi dufferdo2/dodex-vertx`
     * build the image `docker build -t dufferdo2/dodex-vertx:latest -f ./kube/Dockerfile ./kube`
 4. execute `./deleteapp`

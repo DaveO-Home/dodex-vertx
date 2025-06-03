@@ -101,7 +101,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
     public fun getCorsHandler(): CorsHandler {
         val methods = setOf(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.OPTIONS, HttpMethod.HEAD)
         return CorsHandler.create()
-            .allowCredentials(false)
+//            .allowCredentials(false)
             .allowedMethods(methods)
 //        .addOrigin("https://coolapp2.loca.lt")
 //        .allowedHeader("https://coolapp2.loca.lt")
@@ -111,7 +111,11 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
                 "http://localhost:8070",
                 "http://localhost:8087",
                 "http://localhost:8880",
-                "http://localhost:8085"))
+                "http://localhost:8085",
+                "http://192.168.49.2:30080",   // IP generated from "minikube service vertx-service"
+                "http://192.168.42.2:30070"
+            ))
+            .addOriginWithRegex("^https:\\/\\/\\w+handicap\\d?\\.loophole\\.site$")
             .allowedHeaders(
                 mutableSetOf<String?>(
                     "keep-alive",

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import dmo.fs.utils.ColorUtilConstants
 import dmo.fs.utils.DodexUtil
+import dmo.fs.utils.DodexUtils
 import golf.handicap.routes.GrpcRoutes
 import golf.handicap.routes.HandicapRoutes
 import io.vertx.core.Handler
@@ -106,10 +107,13 @@ class HandicapGrpcServer : AbstractVerticle() {
     }
 
     override fun start(startPromise: Promise<Void>) {
+        DodexUtils.setVertx(vertx)
+
         val development = System.getenv("VERTXWEB_ENVIRONMENT")
         System.setProperty("org.jooq.no-logo", "true")
         System.setProperty("org.jooq.no-tips", "true")
-        DodexUtil.setVertx(vertx)
+
+        DodexUtils.setEnv(development)
         DodexUtil.setEnv(development)
 
         logger.warn(

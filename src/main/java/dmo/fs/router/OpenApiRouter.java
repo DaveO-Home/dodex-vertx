@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Set;
 
 public class OpenApiRouter {
   private static final Logger logger = LoggerFactory.getLogger(OpenApiRouter.class.getName());
@@ -141,6 +142,7 @@ public class OpenApiRouter {
           .rootHandler(SessionHandler.create(SessionStore.create(vertx)).getDelegate());
 
       if ("dev".equals(DodexUtil.getEnv())) {
+        Set<HttpMethod> methods = Set.of(HttpMethod.GET, HttpMethod.POST, HttpMethod.PUT, HttpMethod.OPTIONS, HttpMethod.HEAD);
         routerBuilder.rootHandler(CorsHandler.create().allowedMethod(HttpMethod.GET)
             .getDelegate()); /* Need ports 8087 & 9876 for spa testing */
       }
@@ -156,7 +158,6 @@ public class OpenApiRouter {
       routerBuilder.getRoute("getNextAll").addHandler(RoutingContext::next).addFailureHandler(err -> {
         logger.error("{}{} -- {}", errorMessage, err.currentRoute().getName(), err.currentRoute().getPath());
       });
-      ;
 
       openApiPromise.complete(routerBuilder.createRouter());
     }).onFailure(Throwable::printStackTrace);

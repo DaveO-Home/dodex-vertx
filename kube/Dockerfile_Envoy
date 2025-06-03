@@ -1,3 +1,5 @@
+
+FROM envoyproxy/envoy:v1.23-latest AS builder
 FROM debian:buster-slim
 ARG version=21.0.2.13-1
 
@@ -24,19 +26,32 @@ RUN set -eux \
         curl gnupg software-properties-common \
     && apt-get update
 
-ENV LANG=C.UTF-8
+# RUN apt install debian-keyring debian-archive-keyring apt-transport-https curl lsb-release -y \
+#         && curl -sL 'https://deb.dl.getenvoy.io/public/gpg.8115BA8E629CC074.key' | \
+#         gpg --dearmor -o /usr/share/keyrings/getenvoy-keyring.gpg \
+#         && echo a077cb587a1b622e03aa4bf2f3689de14658a9497a9af2c427bba5f4cc3c4723 /usr/share/keyrings/getenvoy-keyring.gpg | sha256sum --check \
+#         && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/getenvoy-keyring.gpg] https://deb.dl.getenvoy.io/public/deb/debian $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/getenvoy.list \
+#         && apt update && apt install getenvoy-envoy -y
+
+ENV LANG C.UTF-8
 ENV JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
 
+COPY --from=builder /usr/local/bin/envoy /usr/bin/
+
 USER root
+
+COPY envoy.yaml /etc/envoy/envoy.yaml
+RUN chmod go+r /etc/envoy/envoy.yaml
 
 RUN adduser dodex
 
 EXPOSE 8880
 EXPOSE 8070
+EXPOSE 9901
 
 COPY run_dodex.sh /usr/bin
 RUN chmod o+x /usr/bin/run_dodex.sh
-RUN mkdir /data && chown dodex /data && cd /data && mkdir db && chown dodex db
+RUN mkdir /envoy && mkdir /data && chown dodex /data && cd /data && mkdir db && chown dodex db
 
 USER dodex:dodex
 
@@ -49,11 +64,12 @@ COPY dodex-vertx-4.0.0-prod.jar /home/dodex/vertx/dodex-vertx-4.0.0-prod.jar
 WORKDIR /home/dodex/vertx
 
 # make vertx http run on this address
-ENV DOCKER_HOST=0.0.0.0
+ENV DOCKER_HOST 0.0.0.0
 # Can change to either "h2" or "sqlite3", "postgres", "mariadb" override in docker create/run
 ENV DEFAULT_DB=h2
 ENV USE_HANDICAP=true
+ENV GRPC_SERVER=true
 
 USER dodex
 
-CMD ["/usr/lib/jvm/java-21-amazon-corretto/bin/java", "-jar", "/home/dodex/vertx/dodex-vertx-4.0.0-prod.jar"]
+CMD cat /usr/bin/run_dodex.sh | bash

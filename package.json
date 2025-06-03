@@ -1,6 +1,6 @@
 {
   "name": "dodex-vertx",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "A java asynchronous server for Dodex and Dodex-mess",
   "main": "index.js",
   "scripts": {

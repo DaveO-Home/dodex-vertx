@@ -1,4 +1,5 @@
 # Ignore Gradle project-specific cache directory
+logs
 src/main/resources/META-INF/resources/dist
 csize
 *.jar
@@ -44,3 +45,4 @@ scripts/*.java
 handicap/src/main/resources/static/json
 handicap/src/main/resources/static/assets
 dodex-vertx
+src/firebase/tests/tsconfig.tsbuildinfo

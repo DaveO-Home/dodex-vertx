@@ -28,7 +28,7 @@ public interface DodexDatabase {
 	Future<Long> addMessage(ServerWebSocket ws, MessageUser messageUser, String message)
 			throws SQLException, InterruptedException;
 
-	Future<Void> addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId)
+	void addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId)
 			throws SQLException;
 
 	Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws, MessageUser messageUser)

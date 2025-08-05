@@ -116,7 +116,7 @@ public abstract class DbMariadb extends DbDefinitionBase implements DodexDatabas
 						"CONSTRAINT U_fk_MEMBER_USER FOREIGN KEY (USER_ID) REFERENCES users (ID) ON DELETE NO ACTION ON UPDATE NO ACTION)"
 		);
 
-        String sql;
+        final String sql;
 
         CreateTable(String sql) {
             this.sql = sql;

@@ -5,14 +5,12 @@ import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
 import dmo.fs.db.MessageUserImpl;
 import dmo.fs.utils.DodexUtil;
-import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.jdbcclient.JDBCConnectOptions;
-import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.RowIterator;
@@ -52,7 +50,7 @@ public class DodexDatabaseH2 extends DbH2 {
     dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
     dbProperties = dodexUtil.mapToProperties(dbMap);
 
-    if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
+    if (dbOverrideProps != null && !dbOverrideProps.isEmpty()) {
       this.dbProperties = dbOverrideProps;
     }
     if (dbOverrideMap != null) {
@@ -132,7 +130,7 @@ public class DodexDatabaseH2 extends DbH2 {
             final String usersSql = getCreateTable("USERS");
 
             Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute().doOnError(err -> {
-              logger.error(String.format("Users Table Error: %s", err.getCause().getMessage()));
+              logger.error("Users Table Error: {}", err.getCause().getMessage());
             }).doOnSuccess(result -> {
               logger.warn("Users Table Added.");
             });
@@ -140,11 +138,11 @@ public class DodexDatabaseH2 extends DbH2 {
             crow.subscribe(result -> {
               //
             }, err -> {
-              logger.warn(String.format("Users Table Error: %s", err.getMessage()));
+              logger.warn("Users Table Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.warn(String.format("Users Table Error: %s", err.getMessage()));
+          logger.warn("Users Table Create Error: {}", err.getMessage());
 
         }).flatMap(result -> conn.query(CHECKMESSAGESSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
@@ -157,7 +155,7 @@ public class DodexDatabaseH2 extends DbH2 {
             final String sql = getCreateTable("MESSAGES");
 
             Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
-              logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.error("Messages Table Error: {}", err.getMessage());
             }).doOnSuccess(row2 -> {
               logger.warn("Messages Table Added.");
             });
@@ -165,11 +163,11 @@ public class DodexDatabaseH2 extends DbH2 {
             crow.subscribe(res -> {
               //
             }, err -> {
-              logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.error("Messages Table Create Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+          logger.error("Messages Query Error: {}", err.getMessage());
 
         })).flatMap(result -> conn.query(CHECKUNDELIVEREDSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
@@ -182,7 +180,7 @@ public class DodexDatabaseH2 extends DbH2 {
             final String sql = getCreateTable("UNDELIVERED");
 
             Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
-              logger.error(String.format("Undelivered Table Error: %s", err.getMessage()));
+              logger.error("Undelivered Table Error: {}", err.getMessage());
             }).doOnSuccess(row2 -> {
               logger.warn("Undelivered Table Added.");
             });
@@ -196,7 +194,7 @@ public class DodexDatabaseH2 extends DbH2 {
         }).doOnError(err -> {
           logger.error(String.format("Messages Table Error: %s", err.getMessage()));
         })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
-          logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+          logger.error("Golfer Table Error: {}", err.getMessage());
         }).doOnSuccess(rows -> {
           Set<String> names = new HashSet<>();
 
@@ -204,7 +202,7 @@ public class DodexDatabaseH2 extends DbH2 {
             names.add(row.getString(0));
           }
           conn.query(getCreateTable("GOLFER")).rxExecute().doOnError(err -> {
-            logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+            logger.error("Golfer Query Error: {}", err.getMessage());
           }).doOnSuccess(row1 -> {
             if (!names.contains("golfer")) {
               logger.warn("Golfer Table Added.");
@@ -217,25 +215,25 @@ public class DodexDatabaseH2 extends DbH2 {
                 logger.warn("Course Table Added.");
               }
               conn.query(getCreateTable("RATINGS")).rxExecute().doOnError(err -> {
-                logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
+                logger.warn("Ratings Table Error: {}", err.getMessage());
               }).doOnSuccess(row3 -> {
                 if (!names.contains("ratings")) {
                   logger.warn("Ratings Table Added.");
                 }
                 conn.query(getCreateTable("SCORES")).rxExecute().doOnError(err -> {
-                  logger.error(String.format("Scores Table Error: %s", err.getMessage()));
+                  logger.error("Scores Table Error: {}", err.getMessage());
                 }).doOnSuccess(row4 -> {
                   if (!names.contains("scores")) {
                     logger.warn("Scores Table Added.");
                   }
                   conn.query(getCreateTable("GROUPS")).rxExecute().doOnError(err -> {
-                    logger.error(String.format("Scores Table Error: %s", err.getMessage()));
+                    logger.error("Group Table Error: {}", err.getMessage());
                   }).doOnSuccess(row5 -> {
                     if (!names.contains("groups")) {
                       logger.warn("Groups Table Added.");
                     }
                     conn.query(getCreateTable("MEMBER")).rxExecute().doOnError(err -> {
-                      logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                      logger.error("Member Table Error: {}", err.getMessage());
                     }).doOnSuccess(row6 -> {
                       if (!names.contains("member")) {
                         logger.warn("Member Table Added.");
@@ -260,13 +258,13 @@ public class DodexDatabaseH2 extends DbH2 {
           try {
             setupSql(pool);
           } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
           }
         }
       });
     }, err -> {
       logger.info(String.format("Tables Create Error: %s", err.getMessage()));
-      err.printStackTrace();
+      throw new RuntimeException(err);
     });
   }
 

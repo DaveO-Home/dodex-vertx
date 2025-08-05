@@ -68,7 +68,7 @@ public abstract class DbSqlite3 extends DbDefinitionBase implements DodexDatabas
 	    		"CONSTRAINT member_group_id_foreign FOREIGN KEY (group_id)" + 
 				"REFERENCES GROUPS (id))");
 		  
-		String sql;
+		final String sql;
 
 		CreateTable(String sql) {
 			this.sql = sql;

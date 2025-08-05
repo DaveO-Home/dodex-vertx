@@ -42,7 +42,7 @@ public abstract class DbIbmDB2 extends DbDefinitionBase implements DodexDatabase
 				"REFERENCES MESSAGES (ID) ON DELETE RESTRICT)"
 				);
 
-        String sql;
+        final String sql;
 
         CreateTable(String sql) {
             this.sql = sql;

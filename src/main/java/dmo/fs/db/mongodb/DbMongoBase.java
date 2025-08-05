@@ -2,7 +2,6 @@
 package dmo.fs.db.mongodb;
 
 import dmo.fs.db.MessageUser;
-import dmo.fs.utils.DodexUtil;
 import dmo.fs.vertx.Server;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
@@ -31,10 +30,10 @@ public abstract class DbMongoBase {
 
   public abstract MessageUser createMessageUser();
 
-  private final static DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+  private final static DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 
   private Uni<MessageUser> addUser(MessageUser messageUser, MongoClient mongoClient) {
-    String mongoDate = getMongoDate();
+    JsonObject mongoDate = getMongoDate();
     Promise<MessageUser> addUserPromise = Promise.promise();
     messageUser.setLastLogin(new Timestamp(System.currentTimeMillis()));
 
@@ -54,7 +53,7 @@ public abstract class DbMongoBase {
   }
 
   private MessageUser updateUser(MessageUser messageUser, MongoClient mongoClient) {
-    String mongoDate = getMongoDate();
+    JsonObject mongoDate = getMongoDate();
     messageUser.setLastLogin(new Timestamp(System.currentTimeMillis()));
 
     JsonObject queryUser = uniqueQuery(messageUser);
@@ -77,6 +76,7 @@ public abstract class DbMongoBase {
     JsonObject query = new JsonObject();
     JsonObject fields =  new JsonObject().put("from_handle", 1).put("message", 1).put("post_date", 1);
     FindOptions findOptions = new FindOptions().setFields(fields);
+
     query.put("user_id", new JsonObject().put("$eq", messageUser.get_id()));
     messageUser.setLastLogin(new Timestamp(System.currentTimeMillis()));
     counts.put("messages", 0);
@@ -84,10 +84,8 @@ public abstract class DbMongoBase {
     mongoClient.findWithOptions("message_user", query, findOptions).doOnSuccess(data -> {
       for(JsonObject message : data) {
         String fromHandle = message.getString("from_handle");
-        String messagePostdate = message.getString("post_date");
-        if(!messagePostdate.endsWith("Z")) {
-          messagePostdate = messagePostdate.concat("Z");
-        }
+        String messagePostdate = new JsonObject(message.getString("post_date")).getString("$date");
+
         ZonedDateTime postDate = ZonedDateTime.parse(messagePostdate);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MM/dd-HH:mm:ss");
         ws.writeTextMessage(fromHandle + postDate.format(formatter) + " " + message.getString("message"));
@@ -122,7 +120,7 @@ public abstract class DbMongoBase {
   public Promise<MessageUser> addMessage(MessageUser messageUser, String message,
          List<String> undelivered) throws InterruptedException, ExecutionException {
     MongoClient mongoClient = MongoClient.createShared(Server.getRxVertx(), new JsonObject());
-    String mongoDate = getMongoDate();
+    JsonObject mongoDate = getMongoDate();
     Promise<MessageUser> messagesPromise = Promise.promise();
     Promise<List<BulkOperation>> finishedPromise = Promise.promise();
     List<BulkOperation> bulkList = new ArrayList<>();
@@ -197,8 +195,10 @@ public abstract class DbMongoBase {
         ja.add(new JsonObject().put("name", jo.getString("name")));
       }
     }).doFinally(() -> {
-      promise.complete(new StringBuilder(ja.toString()));
-      mongoClient.close().subscribe();
+
+      mongoClient.close().doOnComplete(() -> {
+        promise.complete(new StringBuilder(ja.toString()));
+      }).subscribe();
     }).doOnError(Throwable::printStackTrace).subscribe();
 
     return promise;
@@ -211,7 +211,10 @@ public abstract class DbMongoBase {
             .put("password", new JsonObject().put("$eq", messageUser.getPassword()))));
   }
 
-  public static String getMongoDate() {
-    return formatter.format(LocalDateTime.now());
+  public static JsonObject getMongoDate() {
+    String currentDate = formatter.format(LocalDateTime.now());
+    currentDate = currentDate/*.substring(0, currentDate.length() - 6)*/.concat("Z");
+
+    return new JsonObject().put("$date", currentDate);
   }
 }

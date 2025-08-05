@@ -10,8 +10,6 @@ import dmo.fs.db.mariadb.DbMariadb;
 import dmo.fs.db.postgres.DbPostgres;
 import dmo.fs.db.sqlite3.DbSqlite3;
 import dmo.fs.utils.DodexUtil;
-import golf.handicap.vertx.HandicapGrpcServer;
-import golf.handicap.vertx.MainVerticle;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.vertx.core.Future;

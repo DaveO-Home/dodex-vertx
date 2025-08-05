@@ -4,23 +4,27 @@
 ## Install Assumptions
 
 1. Using [Vertx5](<https://vertx.io/introduction-to-vertx-and-reactive/>)
-2. Java 17 or higher installed with JAVA_HOME set.
+2. Java 21 or higher installed with JAVA_HOME set.
 3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.14`
 4. Node with npm javascript package manager installed.
 
-~~**Important Note:** The **`./gradlew run`** is much more complex out of the box. The `kotlin, gRPC` web application requires a `gradle` composite build configuration. See the `Kotlin, gRPC Web Application` section below.~~  
 **Important Note;** The `kotlin, gRPC` application can now run **without** a proxy(Envoy). After initial configuration(javascript npm installs), the `gRPC` client now connects directly to Vert.x. Simply execute `gradlew run` and enter `localhost:8087/handicap.html` in a browser. 
 The `envoy` proxy can still be used by setting an environment variable, `GRPC_SERVER=true`.  
 
 [//]: # ()
-Also note that the `io.vertx.launcher.application.VertxApplication` is not used since in development only a maven plugin is supported for auto-reload. In addition, the replacement for `AbstractVerticle` which is `VerticalBase` is not used. Too many code changes would be required.
+Also note that the `io.vertx.launcher.application.VertxApplication` is not used since in development only a maven plugin is supported for auto-reload. In addition, the replacement for `AbstractVerticle` which is `VerticleBase` is not used. Too many code changes would be required.
 
-## New Additions(7/24)
+## New Additions(7/2024)
 
 1. Added Vert.x gRPC Server, see [Grpc README](<https://github.com/DaveO-Home/dodex-vertx/blob/master/handicap/README.md>)
 2. Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ microservice client to process __dodex-mess__ messages.
     * see __Mqtt Broker__ section below for the broker and __dodex-akka__ [README](https://github.com/DaveO-Home/dodex-akka/blob/master/README.md) for the client
 
+## New Additions(7/2025)
+
+1. Added Hibernate 7, configuration in `dmo/fs/hib/emf/DodexEntityManager.java`.
+2. Support both __`Dodex`__ and __`Handicap`__ applications with backend databases `oracle` and `mssql` using `hibernate`.  
+    __Note:__ Blocking `hibernate` with `virtual_threads` is used.
 
 ## Getting Started
 
@@ -44,8 +48,8 @@ Also note that the `io.vertx.launcher.application.VertxApplication` is not used 
 3. Execute `java -jar build/libs/dodex-vertx-4.0.0-prod.jar` to start up the production server.
 4. Execute url `http://localhost:8880/dodex` or `.../dodex/bootstrap.html` in a browser. 
    * **Note:** This is a different port and url than development. 
-   * **Note:** The default database on the backend is "h2", no further configuration is necessary. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
-5. Swapping among databases; Use environment variable `DEFAULT_DB` by setting it to either `sqlite3` ,`postgres`, `cubrid`, `mariadb`, `ibmdb2`, `cassandra`, `firebase`, `mongo` or set the default database in `database_config.json`.
+   * **Note:** The default database on the backend is "h2", no further configuration is necessary. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase/Oracle/MSsql implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
+5. Swapping among databases; Use environment variable `DEFAULT_DB` by setting it to either `h2`, `sqlite3` ,`postgres`, `cubrid`, `mariadb`, `ibmdb2`, `cassandra`, `firebase`, `neo4j`, `mongo`, `oracle`, `mssql` or set the default database in `database_config.json`.
 6. The environment variable `VERTXWEB_ENVIRONMENT` can be used to determine the database mode. It can be set to either ``prod`` or unset for production and ``dev`` for the development database as defined in ``database_config.json``.
 7. When Dodex-vertx is configured for the Cubrid database, the database must be created using UTF-8. For example `cubrid createdb dodex en_US.utf8`.
 8. Version 1.3.0 adds an auto user clean up process. See `application-conf.json` for configuration. It is turned off by default. Users and messages may be orphaned when clients change a handle when the server is offline.
@@ -124,7 +128,8 @@ Also note that the `io.vertx.launcher.application.VertxApplication` is not used 
 * Make sure you create a `Service-Account-Key.json` file as instructed. Dodex-Vertx uses the environment variable option to set the service-account - `GOOGLE_APPLICATION_CREDENTIALS`. See `gradle.build` as one way to set it.
 * You will need to log in to the `Firebase` console and create the `dodex-firebase` project. See `src/main/java/dmo/fs/router/FirebaseRouter.java` for usage of the project-id and Google Credentials. **Note:** The `Firebase` rules are not used, so they should be set to `allow read, write:  if false;` which may be the default.
 * You only need the `Authentication` and `Firestore` extensions.
-* If you want a different project name, change `.firebaserc`.
+* If you want a different project name, change `.firebaserc`.  
+    **Note;** To use `firebase` uncomment `implementation "com.google.cloud:google-cloud-firestore-admin:3.31.8"` in build.gradle otherwise make sure it is commented.
 
   #### Testing
 
@@ -136,6 +141,7 @@ Also note that the `io.vertx.launcher.application.VertxApplication` is not used 
 ### Neo4j
 
 * See <https://neo4j.com/docs/operations-manual/current/> for usage.
+* Execute `docker pull neo4j:4.4.44-community`
 * To use a container with `apoc` you can try: **Note:** this has `--privileged` set.
     ```
     docker run \
@@ -149,16 +155,17 @@ Also note that the `io.vertx.launcher.application.VertxApplication` is not used 
     -e NEO4J_apoc_import_file_use**neo4j**config=true \
     -e NEO4JLABS_PLUGINS=\[\"apoc\"\] \
     -e NEO4J_dbms_security_procedures_unrestricted=apoc.\\\* \
-    neo4j:4.3
+    neo4j:4.4.44-community
     ```
 To restart and stop: `docker start neo4j-apoc` and `docker stop neo4j-apoc`
 
-The Neo4j was tested with the `apoc` install, however the database should work without it.
+Neo4j was tested with the `apoc` install, however the database should work without it.
 
 Simply execute `export DEFAULT_DB=neo4j` to use, after database setup.
 
 ### Mongodb
 
+* Developed with MongoDB version: 8.0.11
 * Uses a separate OpenAPI setup, located in __"..../dmo.fs.db/mongodb"__
 * Configure in __..../src/main/resources/database_config.json__  
 * Make sure the database is set up with something like;  

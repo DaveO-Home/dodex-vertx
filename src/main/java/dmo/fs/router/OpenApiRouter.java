@@ -2,7 +2,6 @@ package dmo.fs.router;
 
 import dmo.fs.db.GroupOpenApi;
 import dmo.fs.db.GroupOpenApiSql;
-import dmo.fs.db.mongodb.GroupOpenApiMongo;
 import dmo.fs.utils.DodexUtil;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpMethod;
@@ -52,7 +51,7 @@ public class OpenApiRouter {
             JsonObject getGroupJson = validatedRequest.getBody().getJsonObject();
             validatedRequest.getHeaders();
 
-            GroupOpenApi groupOpenApi = OpenApiRouter.getGroupOpenApi();
+            GroupOpenApi groupOpenApi = new GroupOpenApiSql();
 
             try {
               groupOpenApi.getMembersList(getGroupJson).onSuccess(getGroupObject -> {
@@ -68,7 +67,7 @@ public class OpenApiRouter {
                     .onFailure(Throwable::printStackTrace);
               });
             } catch (InterruptedException | SQLException | IOException e) {
-              e.printStackTrace();
+              throw new RuntimeException(e);
             }
           });
         }
@@ -82,7 +81,7 @@ public class OpenApiRouter {
             JsonObject addGroupJson = validatedRequest.getBody().getJsonObject();
             validatedRequest.getHeaders();
 
-            GroupOpenApi groupOpenApi = OpenApiRouter.getGroupOpenApi();
+            GroupOpenApi groupOpenApi = new GroupOpenApiSql();
 
             try {
               groupOpenApi.addGroupAndMembers(addGroupJson).onSuccess(addGroupObject -> {
@@ -98,7 +97,7 @@ public class OpenApiRouter {
                     .onFailure(Throwable::printStackTrace);
               });
             } catch (InterruptedException | SQLException | IOException e) {
-              e.printStackTrace();
+              throw new RuntimeException(e);
             }
           });
         }
@@ -110,7 +109,7 @@ public class OpenApiRouter {
             JsonObject deleteGroupJson = validatedRequest.getBody().getJsonObject();
             validatedRequest.getHeaders();
 
-            GroupOpenApi groupOpenApi = OpenApiRouter.getGroupOpenApi();
+            GroupOpenApi groupOpenApi = new GroupOpenApiSql();
 
             try {
               groupOpenApi.deleteGroupOrMembers(deleteGroupJson).onSuccess(deleteGroupObject -> {
@@ -127,7 +126,7 @@ public class OpenApiRouter {
                     .onFailure(Throwable::printStackTrace);
               });
             } catch (InterruptedException | SQLException | IOException e) {
-              e.printStackTrace();
+              throw new RuntimeException(e);
             }
           });
         }
@@ -165,18 +164,4 @@ public class OpenApiRouter {
     return openApiPromise.future();
   }
 
-  private static GroupOpenApi getGroupOpenApi() {
-    String defaultDb = null;
-    try {
-      defaultDb = new DodexUtil().getDefaultDb().toLowerCase();
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    switch (defaultDb) {
-      case "mongo":
-        return new GroupOpenApiMongo();
-      default:
-    }
-    return new GroupOpenApiSql();
-  }
 }

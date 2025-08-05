@@ -16,7 +16,6 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.mongo.MongoClientDeleteResult;
 import io.vertx.ext.mongo.MongoClientUpdateResult;
-import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.ext.mongo.MongoClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,22 +53,26 @@ public class GroupOpenApiMongo implements GroupOpenApi {
         if (groupJson.getInteger("status") == 0 &&
             entry0 != null && !entry0.isEmpty()) {
           try {
-            addMembers(selectedUsers, groupJson, mongoClient).onSuccess(promise::complete).onFailure(err -> {
-              logger.error("Add group/member err: {}", err.getMessage());
+            addMembers(selectedUsers, groupJson, mongoClient)
+                .onSuccess(promise::complete).onFailure(err -> {
+              logger.error("Add members err: {}", err.getMessage());
               addGroupJson.put("status", -1);
               addGroupJson.put("errorMessage", err.getMessage());
               mongoClient.close().doOnComplete(() -> promise.complete(groupJson)).subscribe();
             });
           } catch (InterruptedException | SQLException | IOException err) {
-            err.printStackTrace();
             addGroupJson.put("status", -1);
             addGroupJson.put("errorMessage", err.getMessage());
+            mongoClient.close().doOnComplete(() -> {
+              promise.complete(addGroupJson);
+              throw new RuntimeException(err);
+            }).subscribe();
           }
         } else {
           mongoClient.close().doOnComplete(() -> promise.complete(groupJson)).subscribe();
         }
       }).onFailure(err -> {
-        logger.error("Add group/member err: " + err.getMessage());
+        logger.error("Add group err: {}", err.getMessage());
         mongoClient.close().doOnComplete(() -> promise.complete(addGroupJson)).subscribe();
       });
     } catch (ExecutionException e) {
@@ -136,7 +139,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
   private Future<JsonObject> deleteMembers(
       List<String> selectedUsers, JsonObject deleteGroupJson, MongoClient mongoClient) {
     Promise<JsonObject> promise = Promise.promise();
-
+logger.info("Selected Users: {}", selectedUsers.toArray());
     checkOnGroupOwner(deleteGroupJson, mongoClient).onSuccess(checkedJson -> {
       deleteGroupJson.put("id", 0);
       if (checkedJson.getBoolean("isValidForOperation")) {
@@ -161,17 +164,20 @@ public class GroupOpenApiMongo implements GroupOpenApi {
                       mongoClient.updateCollection("group_member", groupQuery, updateObject);
                   Disposable update = membersUpdated.doOnSuccess(result -> {
                         getMembersList(deleteGroupJson).onSuccess(membersList -> {
+                        if( membersList.getString("members") == null) {
+                          membersList.put("members", "");
+                        }
                           deleteGroupJson.put("status", 0)
                               .put("groupMessage", "")
                               .put("errorMessage", "Members deleted: " + selectedUsers.size())
                               .put("members", membersList.getString("members"));
                           promise.complete(deleteGroupJson);
                         }).onFailure(err -> {
-                          err.printStackTrace();
                           deleteGroupJson.put("status", -1)
                               .put("errorMessages", "Member list failed")
                               .put("groupMessage", "");
                           promise.complete(deleteGroupJson);
+                          throw new RuntimeException(err);
                         });
                       }).doOnError(err -> errData(err, promise, deleteGroupJson))
                       .subscribe(v -> {
@@ -256,7 +262,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
   private Future<JsonObject> addGroup(JsonObject addGroupJson, MongoClient mongoClient)
       throws InterruptedException, SQLException, IOException, ExecutionException {
     Promise<JsonObject> promise = Promise.promise();
-    String mongoDate = DbMongoBase.getMongoDate();
+    Object mongoDate = DbMongoBase.getMongoDate();
 
     DodexMongo dodexMongo = DbConfiguration.getDefaultDb();
     MessageUser messageUser = dodexMongo.createMessageUser();
@@ -284,7 +290,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
 
               mongoClient.insert("group_member", insertGroup).doOnSuccess(_id -> {
 
-                addGroupJson.put("created", mongoDate)
+                addGroupJson.put("created", mongoDate.toString())
                     .put("status", 0)
                     .put("id", 0)
                     .put("_id", _id)
@@ -294,8 +300,8 @@ public class GroupOpenApiMongo implements GroupOpenApi {
 
               }).subscribe(rows -> {
               }, err -> {
-                logger.error(String.format("%sError Adding group: %s%s", ColorUtilConstants.RED,
-                    err, ColorUtilConstants.RESET));
+                logger.error("{}Error Adding group: {}{}",
+                    ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
                 if (addGroupJson.getInteger("id") == null) {
                   addGroupJson.put("id", -1);
                 }
@@ -333,7 +339,7 @@ public class GroupOpenApiMongo implements GroupOpenApi {
                   members.add(member);
                 }
                 groupObject.put("members", members);
-                String mongoDate = DbMongoBase.getMongoDate();
+                JsonObject mongoDate = DbMongoBase.getMongoDate();
                 groupObject.put("updated", mongoDate);
 
                 mongoClient.save("group_member", groupObject)
@@ -346,10 +352,10 @@ public class GroupOpenApiMongo implements GroupOpenApi {
                     })
                     .subscribe(v -> {
                     }, err -> {
-                      err.printStackTrace();
                       addGroupJson.put("status", -1)
                           .put("errorMessage", err.getMessage());
                       promise.complete(addGroupJson);
+                      throw new RuntimeException(err);
                     });
               }
             }).subscribe();

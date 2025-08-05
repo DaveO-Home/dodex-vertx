@@ -188,7 +188,7 @@ public class DodexDatabaseCubrid extends DbCubrid {
       try {
         setupSql(pool);
       } catch (SQLException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }, err -> {
       logger.info(String.format("Tables Create Error: %s", err.getMessage()));

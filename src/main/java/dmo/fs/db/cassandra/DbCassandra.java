@@ -6,7 +6,7 @@ public abstract class DbCassandra extends DbCassandraBase implements DodexCassan
 	private enum CreateTable {
 		CreateDummy("");
 
-        String sql;
+        final String sql;
 
         CreateTable(String sql) {
             this.sql = sql;

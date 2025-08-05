@@ -86,14 +86,13 @@ public class KafkaConsumerDodex {
             topicDescription.getPartitions().size()));
 
         for (TopicPartitionInfo topicPartitionInfo : topicDescription.getPartitions()) {
-          logger.info(String.format("Partition id=%s leaderId= %s replicas= %s isr= %s",
-              topicPartitionInfo.getPartition(),
-              topicPartitionInfo.getLeader().getId(),
-              topicPartitionInfo.getReplicas(), topicPartitionInfo.getIsr()));
+          logger.info("Partition id={} leaderId= {} replicas= {} isr= {}",
+              topicPartitionInfo.getPartition(), topicPartitionInfo.getLeader().getId(),
+              topicPartitionInfo.getReplicas(), topicPartitionInfo.getIsr());
         }
       }
     }).onFailure(err -> {
-      err.printStackTrace();
+      throw new RuntimeException(err);
     }).succeeded();
 
 
@@ -103,7 +102,7 @@ public class KafkaConsumerDodex {
     updateConfig.put(resource, newConfig);
     adminClient.alterConfigs(updateConfig).onSuccess(v -> {
       if (logger.isDebugEnabled()) {
-        logger.debug(String.format("Kafka retention configured to: %s millisconds", value));
+        logger.debug("Kafka retention configured to: {} millisconds", value);
       }
     }).onFailure(Throwable::printStackTrace);
   }

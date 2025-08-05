@@ -12,7 +12,10 @@ import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import golf.handicap.vertx.HandicapGrpcServer;
 import golf.handicap.vertx.MainVerticle;
-import io.vertx.core.*;
+import io.vertx.core.DeploymentOptions;
+import io.vertx.core.Promise;
+import io.vertx.core.ThreadingModel;
+import io.vertx.core.Verticle;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
@@ -20,8 +23,8 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Route;
-import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.AbstractVerticle;
+import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.file.FileSystem;
 import io.vertx.rxjava3.core.http.HttpServer;
 import io.vertx.rxjava3.ext.eventbus.bridge.tcp.TcpEventBusBridge;
@@ -32,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Locale;
 
@@ -72,6 +76,7 @@ public class Server extends AbstractVerticle {
   private static HttpServer server;
   private static JsonObject config;
   private JsonObject alternateConfig;
+  private String defaultDb;
 
   @Override
   public void stop() throws Exception {
@@ -92,7 +97,7 @@ public class Server extends AbstractVerticle {
 
     rxVertx = vertx;
     DodexUtil.setVertx(vertx);
-
+    defaultDb = new DodexUtil().getDefaultDb();
     HttpServerOptions options = new HttpServerOptions();
     options.setLogActivity(true);
     config = Vertx.currentContext().config();
@@ -134,6 +139,39 @@ public class Server extends AbstractVerticle {
       server = rxVertx.createHttpServer(options);
     }
 
+    if ("cassandra".equals(defaultDb)) {
+      if ("true".equals(useMqtt)) {
+        DodexMqttServer dodexMqttServer = new DodexMqttServer();
+        CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+        cassandraRouter.setMqttServer(dodexMqttServer);
+        try {
+          cassandraRouter.setWebSocket(server);
+        } catch (InterruptedException | IOException | SQLException e) {
+          throw new RuntimeException(e);
+        }
+      } else {
+        TcpEventBusBridge bridge = TcpEventBusBridge.create(rxVertx,
+            new BridgeOptions().addInboundPermitted(new PermittedOptions().setAddress("vertx"))
+                .addOutboundPermitted(new PermittedOptions().setAddress("akka"))
+                .addInboundPermitted(new PermittedOptions().setAddress("akka"))
+                .addOutboundPermitted(new PermittedOptions().setAddress("vertx")));
+
+        int eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
+            : config.getInteger(development + "bridge.port");
+
+        bridge.rxListen(eventBridgePort).doOnSuccess(res -> {
+          logger.info("{}{}{}{}",
+              ColorUtilConstants.GREEN_BOLD_BRIGHT,
+              "TCP Event Bus Bridge Started: ", eventBridgePort, ColorUtilConstants.RESET);
+          setupEventBridge();
+          CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+          cassandraRouter.setWebSocket(server);
+        }).doOnError(err -> {
+          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getMessage(), ColorUtilConstants.RESET);
+        }).subscribe();
+      }
+    }
+
     Routes routes = new Routes(rxVertx, server, vertxVersion);
 
     FileSystem fs = rxVertx.fileSystem();
@@ -154,9 +192,9 @@ public class Server extends AbstractVerticle {
     }
 
     routes.getRouter().onSuccess(router -> {
-      new SpaRoutes(rxVertx, server, router, routes.getFirestore());
-
-      server.getDelegate().requestHandler(router);
+      if (!("oracle".equals(defaultDb)) && !("mssql".equals(defaultDb))) {
+        new SpaRoutes(rxVertx, server, router, routes.getFirestore());
+      }
 
       if (!"prod".equalsIgnoreCase(development)) {
         List<Route> routesList = router.getRoutes(); // allRoutes.getRouter().getRoutes();
@@ -169,6 +207,7 @@ public class Server extends AbstractVerticle {
       }
 
       try {
+        server.getDelegate().requestHandler(router);
         server.rxListen(port).doOnSuccess(result -> {
           logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT,
               "HTTP Started on port: ", Integer.toString(port), ColorUtilConstants.RESET));
@@ -185,8 +224,9 @@ public class Server extends AbstractVerticle {
             logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
                 ColorUtilConstants.RESET);
           }
-          /*
-            Handicap Verticle
+
+            /*
+              Handicap Verticle
            */
           if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
             boolean useGrpcServer = alternateConfig.getBoolean("grpc.server") != null ?
@@ -199,56 +239,38 @@ public class Server extends AbstractVerticle {
             Verticle handicapVerticle;
             if (useGrpcServer) {
               handicapVerticle = new MainVerticle();
+              rxVertx.deployVerticle(handicapVerticle).subscribe();
             } else {
+              DeploymentOptions options2 = new DeploymentOptions();
+              if ("oracle".equals(defaultDb) || "mssql".equals(defaultDb)) {
+                options2.setThreadingModel(ThreadingModel.VIRTUAL_THREAD);
+              }
               handicapVerticle = new HandicapGrpcServer();
+              rxVertx.deployVerticle(handicapVerticle, options2).subscribe();
             }
-            rxVertx.deployVerticle(handicapVerticle).subscribe();
-          }
-          /*
-            Test Java 21 Virtual Threads
-           */
-          if (Boolean.TRUE.equals(config.getBoolean("dodex.virtual.threads"))) {
-            DeploymentOptions options2 = new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD);
-            VirtualThreadServer vts = new VirtualThreadServer();
-            vertx.deployVerticle(vts, options2);
+
           }
         }).doOnError(err -> {
           logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
               ColorUtilConstants.RESET);
           promise.fail(err.getCause());
         }).subscribe();
+        /*
+          Test Java 21 Virtual Threads - Using Hibernate 7 against Oracle and MSSql
+         */
+        if (Boolean.TRUE.equals(config.getBoolean("dodex.virtual.threads"))) {
+          DeploymentOptions options2 = new DeploymentOptions().setThreadingModel(ThreadingModel.VIRTUAL_THREAD);
+          VirtualThreadServer vts = new VirtualThreadServer();
+          vertx.deployVerticle(vts, options2);
+        }
       } catch (Exception e) {
         logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
             ColorUtilConstants.RESET);
       }
+
+      logger.info("{}{}{}{}{}", ColorUtilConstants.PURPLE_BOLD_BRIGHT, "Using ", defaultDb,
+          " database", ColorUtilConstants.RESET);
     });
-    String defaultDb = new DodexUtil().getDefaultDb();
-    logger.info("{}{}{}{}{}", ColorUtilConstants.PURPLE_BOLD_BRIGHT, "Using ", defaultDb,
-        " database", ColorUtilConstants.RESET);
-
-    if ("cassandra".equals(defaultDb)) {
-      if ("true".equals(useMqtt)) {
-        new DodexMqttServer();
-      } else {
-        TcpEventBusBridge bridge = TcpEventBusBridge.create(rxVertx,
-            new BridgeOptions().addInboundPermitted(new PermittedOptions().setAddress("vertx"))
-                .addOutboundPermitted(new PermittedOptions().setAddress("akka"))
-                .addInboundPermitted(new PermittedOptions().setAddress("akka"))
-                .addOutboundPermitted(new PermittedOptions().setAddress("vertx")));
-
-        int eventBridgePort = config.getInteger(development + "bridge.port") == null ? 7032
-            : config.getInteger(development + "bridge.port");
-
-        bridge.rxListen(eventBridgePort).doOnSuccess(res -> {
-          logger.info(String.format("%s%s%d%s", ColorUtilConstants.GREEN_BOLD_BRIGHT,
-              "TCP Event Bus Bridge Started: ", eventBridgePort, ColorUtilConstants.RESET));
-          setupEventBridge();
-        }).doOnError(err -> {
-          logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause().getMessage(), ColorUtilConstants.RESET);
-        }).subscribe();
-      }
-    }
-//    return Future.succeededFuture();
   }
 
   private void setupEventBridge() {
@@ -370,7 +392,7 @@ public class Server extends AbstractVerticle {
   public static Boolean getUseMqtt() {
     return "true".equals(useMqtt);
   }
-  
+
   public static Vertx getRxVertx() {
     return rxVertx;
   }

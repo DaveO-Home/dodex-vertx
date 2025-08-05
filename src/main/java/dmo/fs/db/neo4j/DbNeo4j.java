@@ -32,7 +32,7 @@ public abstract class DbNeo4j extends DbNeo4jBase implements DodexNeo4j {
 			"CREATE CONSTRAINT ON (m:Message) ASSERT m.password IS UNIQUE;"
 		);
 		
-        String sql;
+        final String sql;
 
         CreateSchema(String sql) {
             this.sql = sql;

@@ -43,9 +43,9 @@
 
 * The frontend html/gRPC javascript client should display. See operation section on how to use the form.
     
-    **Note:** Only `sqlite3`, `h2`, `mariadb` and `postgres` support the handicap application. 
+    **Note:** Only `h2`, `mariadb`, `postgres`, `sqlite3`, `oracle` and `mssql` support the handicap application. 
     
-    * The default database is `h2`. To change the default database, execute **`export DEFAULT_DB=mariadb`**, **`export DEFAULT_DB=postgres`** or **`export DEFAULT_DB=sqlite3`**.
+    * The default database is `h2`. To change the default database, execute **`export DEFAULT_DB=mariadb`**, **`export DEFAULT_DB=postgres`**, **`export DEFAULT_DB=sqlite3`**, **`export DEFAULT_DB=mssql`** or **`export DEFAULT_DB=oracle`**.
     * The default Gradle version is 8.14 and JDK 21 should be used.  
 
 [//]: # ()

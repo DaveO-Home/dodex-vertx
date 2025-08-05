@@ -143,7 +143,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                 getCreateTable("USERS").replaceAll("dummy", dbProperties.get("user").toString());
 
             Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute().doOnError(err -> {
-              logger.info(String.format("Users Table Error: %s", err.getMessage()));
+              logger.info("Users Table Error: {}", err.getMessage());
             }).doOnSuccess(result -> {
               logger.info("Users Table Added.");
             });
@@ -151,11 +151,11 @@ public class DodexDatabasePostgres extends DbPostgres {
             crow.subscribe(result -> {
               //
             }, err -> {
-              logger.info(String.format("Users Table Error: %s", err.getMessage()));
+              logger.info("Users Create Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.info(String.format("Users Table Error: %s", err.getMessage()));
+          logger.info("Users Error: {}", err.getMessage());
 
         }).flatMap(result -> conn.query(CHECKMESSAGESSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
@@ -169,7 +169,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                 getCreateTable("MESSAGES").replaceAll("dummy", dbProperties.get("user").toString());
 
             Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
-              logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.info("Messages Table Error: {}", err.getMessage());
             }).doOnSuccess(row2 -> {
               logger.info("Messages Table Added.");
             });
@@ -177,11 +177,11 @@ public class DodexDatabasePostgres extends DbPostgres {
             crow.subscribe(res -> {
               //
             }, err -> {
-              logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.info("Messages Create Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.info(String.format("Messages Table Error: %s", err.getMessage()));
+          logger.info("Messages Error: {}", err.getMessage());
 
         })).flatMap(result -> conn.query(CHECKUNDELIVEREDSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
@@ -195,7 +195,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                 dbProperties.get("user").toString());
 
             Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
-              logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
+              logger.info("Undelivered Table Error: {}", err.getMessage());
             }).doOnSuccess(row2 -> {
               tx.commit();
               logger.info("Undelivered Table Added.");
@@ -204,13 +204,13 @@ public class DodexDatabasePostgres extends DbPostgres {
             crow.subscribe(result2 -> {
               //
             }, err -> {
-              logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
+              logger.info("Undelivered Check Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.info(String.format("Undelivered Table Error: %s", err.getMessage()));
+          logger.info("Undelivered Error: {}", err.getMessage());
         })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
-          logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+          logger.error("Golfer Table Error: {}", err.getMessage());
           conn.close().subscribe();
         }).doOnSuccess(rows -> {
           if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
@@ -225,7 +225,7 @@ public class DodexDatabasePostgres extends DbPostgres {
               sql = SELECTONE;
             }
             conn.query(sql).rxExecute().doOnError(err -> {
-              logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+              logger.error("Golfer Check Table Error: {}", err.getMessage());
               conn.close().subscribe();
               throw new SQLException(err.getMessage());
             }).doOnSuccess(row1 -> {
@@ -238,7 +238,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                 sql2 = SELECTONE;
               }
               conn.query(sql2).rxExecute().doOnError(err -> {
-                logger.warn(String.format("Course Table Error: %s", err.getMessage()));
+                logger.warn("Course Table Error: {}", err.getMessage());
                 conn.close().subscribe();
                 throw new SQLException(err.getMessage());
               }).doOnSuccess(row2 -> {
@@ -251,7 +251,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                   sql3 = SELECTONE;
                 }
                 conn.query(sql3).rxExecute().doOnError(err -> {
-                  logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
+                  logger.warn("Ratings Table Error: {}", err.getMessage());
                   conn.close().subscribe();
                   throw new SQLException(err.getMessage());
                 }).doOnSuccess(row3 -> {
@@ -264,7 +264,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                     sql4 = SELECTONE;
                   }
                   conn.query(sql4).rxExecute().doOnError(err -> {
-                    logger.error(String.format("Scores Table Error: %s", err.getMessage()));
+                    logger.error("Scores Table Error: {}", err.getMessage());
                     conn.close().subscribe();
                     throw new SQLException(err.getMessage());
                   }).doOnSuccess(row4 -> {
@@ -277,7 +277,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                       sql5 = SELECTONE;
                     }
                     conn.query(sql5).rxExecute().doOnError(err -> {
-                      logger.error(String.format("Groups Table Error: %s", err.getMessage()));
+                      logger.error("Groups Table Error: {}", err.getMessage());
                       conn.close().subscribe();
                       throw new SQLException(err.getMessage());
                     }).doOnSuccess(row5 -> {
@@ -290,7 +290,7 @@ public class DodexDatabasePostgres extends DbPostgres {
                         sql6 = SELECTONE;
                       }
                       conn.query(sql6).rxExecute().doOnError(err -> {
-                        logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                        logger.error("Member Table Error: {}", err.getMessage());
                         conn.close().subscribe();
                         throw new SQLException(err.getMessage());
                       }).doOnSuccess(row6 -> {
@@ -322,7 +322,7 @@ public class DodexDatabasePostgres extends DbPostgres {
           try {
             setupSql(pool5);
           } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
           }
         }
       });

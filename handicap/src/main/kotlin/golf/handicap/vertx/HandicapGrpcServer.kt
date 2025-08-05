@@ -7,6 +7,8 @@ import dmo.fs.utils.DodexUtil
 import dmo.fs.utils.DodexUtils
 import golf.handicap.routes.GrpcRoutes
 import golf.handicap.routes.HandicapRoutes
+import golf.handicap.routes.HibernateHandicapService
+import golf.handicap.routes.RxJavaHandicapService
 import io.vertx.core.Handler
 import io.vertx.core.Promise
 import io.vertx.core.http.HttpServerOptions
@@ -27,15 +29,7 @@ class HandicapGrpcServer : AbstractVerticle() {
         var port = 8070
         private var enableHandicap: Boolean? = null
         var enableHandicapAdmin: Boolean? = null
-        var enableHandicapPin: String? = null
-
-//        @Throws(IOException::class)
-//        private fun setupLogging() {
-//            HandicapGrpcServer::class.java.getResourceAsStream("/vertx-default-jul-logging.properties").use { f
-//                ->
-//                LogManager.getLogManager().readConfiguration(f)
-//            }
-//        }
+        var handicapAdminPin: String? = null
 
         val development: String = System.getenv("VERTXWEB_ENVIRONMENT") ?: "prod"
         private val useHandicap = "true" == System.getenv("USE_HANDICAP")
@@ -62,7 +56,7 @@ class HandicapGrpcServer : AbstractVerticle() {
             if (config != null && config!!.getBoolean("handicap.enableHandicap") != null) {
                 enableHandicap = config!!.getBoolean("handicap.enableHandicap")
                 enableHandicapAdmin = config!!.getBoolean("handicap.enableAdmin")
-                enableHandicapPin = config!!.getString("handicap.adminPin")
+                handicapAdminPin = config!!.getString("handicap.adminPin")
             }
             var configPort = appConfig.getInteger("grpc.port")
             port = configPort ?: port
@@ -77,9 +71,9 @@ class HandicapGrpcServer : AbstractVerticle() {
             enableHandicapAdmin =
                 if (enableHandicapAdmin == null) appConfig.getBoolean("handicap.enableAdmin")
                 else enableHandicapAdmin
-            enableHandicapPin =
-                if (enableHandicapPin == null) appConfig.getString("handicap.adminPin")
-                else enableHandicapPin
+            handicapAdminPin =
+                if (handicapAdminPin == null) appConfig.getString("handicap.adminPin")
+                else handicapAdminPin
             enableHandicap =
                 if (System.getProperty("USE_HANDICAP") != null) "true" == System.getProperty("USE_HANDICAP")
                 else enableHandicap
@@ -115,6 +109,7 @@ class HandicapGrpcServer : AbstractVerticle() {
 
         DodexUtils.setEnv(development)
         DodexUtil.setEnv(development)
+        val defaultDb = DodexUtils().defaultDb
 
         logger.warn(
             String.format("Disable File Caching: %s", System.getProperty("vertx.disableFileCaching"))
@@ -124,14 +119,18 @@ class HandicapGrpcServer : AbstractVerticle() {
         val router: Router = routes.getVertxRouter()
 
         val grpcServer: GrpcIoServer = GrpcIoServer.server(vertx.delegate)
+
         router.route()
             .consumes("application/grpc-web-text")
             .handler(Handler { rc: RoutingContext? ->
                 grpcServer.handle(rc?.delegate!!.request())
             })
 
-        val handicapIndexService = GrpcRoutes.HandicapIndexService()
-        grpcServer.addService(handicapIndexService)
+        if ("oracle" == defaultDb || "mssql" == defaultDb) {
+            grpcServer.addService(HibernateHandicapService())
+        } else {
+            grpcServer.addService(RxJavaHandicapService())
+        }
 
         if (enableHandicap!!) {
             vertx.delegate

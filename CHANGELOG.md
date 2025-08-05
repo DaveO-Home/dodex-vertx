@@ -1,6 +1,22 @@
 # Changelog
 
-# [v4.0.2](https://github.com/DaveO-Home/dodex-vertx/tree/v4.0.0) (2025-06-03)
+# [v4.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.0) (2025-08-05)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.0.2..v4.1.0)
+
+* Upgraded Vertx
+* Fixed Handicap login to allow a selected date
+* Fixed golfer pull-down on scores tab to not display `Admin User`
+* Added Hibernate 7 for usage with __`Oracle`__ and __`MSsql`__ in dodex and grpc handicap applications 
+* Upgraded JavaScript dependencies
+* Upgraded Neo4j to 4.4.44
+* Fixed Neo4j dodex websocket router for Vert.x 5
+* Fixed Firebase dodex websocket router for Vert.x 5
+  * see build.gradle and uncomment required google jar. Make sure it is commented for other databases.
+* Fixed MongoDB dodex websocket router for Vert.x 5
+* Fixed Cassandra/Akka dodex websocket router for Vert.x 5
+
+# [v4.0.2](https://github.com/DaveO-Home/dodex-vertx/tree/v4.0.2) (2025-06-03)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.0.0..v4.0.2)
 
@@ -11,7 +27,7 @@
 * Changed README.md for building docker/podman/minikube applications
 * See `./kube/dev_minikube.txt` cheat sheet for building docker/minikube vert.x application exposed to the internet using `loophole` tunnelling software.
 
-# [v4.0.0](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.1) (2025-05-20)
+# [v4.0.0](https://github.com/DaveO-Home/dodex-vertx/tree/v4.0.0) (2025-05-20)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v3.3.1..v4.0.0)
 
@@ -20,7 +36,7 @@
 * The Envoy proxy can still be used by setting the environment variable `GRPC_SERVER=true`
 * Dodex-Vertx does not use the new Vert.x 5.0.0 Launcher and VerticleBase Class
   * The new Launcher for development uses a maven plugin for reload. Not useful when using Gradle
-  * The VerticalBase required more code changes. Anything related to Vert.x classes and rxjava3, e.g. io.vertx.rxjava3.core.Vertx needs to change to io.vertx.core.Vertx.
+  * The Verticle required more code changes. Anything related to Vert.x classes and rxjava3, e.g. io.vertx.rxjava3.core.Vertx needs to change to io.vertx.core.Vertx.
 
 ## [v3.3.1](https://github.com/DaveO-Home/dodex-vertx/tree/v3.3.1) (2025-01-27)
 

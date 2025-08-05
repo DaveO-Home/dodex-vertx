@@ -1,6 +1,5 @@
 package dmo.fs.mqtt;
 
-import dmo.fs.router.CassandraRouter;
 import dmo.fs.utils.DodexUtil;
 import io.netty.handler.codec.mqtt.MqttProperties;
 import io.netty.handler.codec.mqtt.MqttQoS;
@@ -110,9 +109,9 @@ public class DodexMqttServer {
 
           } else {
             logger.info("Error on starting the server");
-            ar.cause().printStackTrace();
+            throw new RuntimeException(ar.cause());
           }
-        }).onSuccess(mqServer -> CassandraRouter.setMqttServer(this));
+        });
   }
 
   public void publish(String topic, Object message) {

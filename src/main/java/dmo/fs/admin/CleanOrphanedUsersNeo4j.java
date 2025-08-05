@@ -1,16 +1,16 @@
 package dmo.fs.admin;
 
-import java.io.IOException;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import dmo.fs.db.MessageUser;
+import dmo.fs.db.MessageUserImpl;
+import dmo.fs.db.neo4j.DbNeo4jBase;
+import dmo.fs.router.Neo4jRouter;
+import dmo.fs.utils.ColorUtilConstants;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.functions.Action;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.vertx.core.Future;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Value;
 import org.neo4j.driver.internal.shaded.reactor.core.publisher.Flux;
@@ -21,27 +21,24 @@ import org.neo4j.driver.reactive.RxTransaction;
 import org.neo4j.driver.summary.ResultSummary;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import dmo.fs.db.neo4j.DbNeo4jBase;
-import dmo.fs.db.MessageUser;
-import dmo.fs.db.MessageUserImpl;
-import dmo.fs.router.Neo4jRouter;
-import dmo.fs.utils.ColorUtilConstants;
-import io.reactivex.rxjava3.core.Flowable;
-import io.reactivex.rxjava3.functions.Action;
-import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.json.JsonObject;
+
+import java.io.IOException;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Optional auto user cleanup - config in "application-conf.json". When client changes handle when
  * server is down, old users and undelivered messages will be orphaned.
- * 
+
  * Defaults: off - when turned on 1. execute on start up and every 7 days thereafter. 2. remove
  * users who have not logged in for 90 days.
  */
 public class CleanOrphanedUsersNeo4j extends DbNeo4jBase {
-    private static Logger logger = LoggerFactory.getLogger(CleanOrphanedUsers.class.getName());
+    private static final Logger logger = LoggerFactory.getLogger(CleanOrphanedUsersNeo4j.class.getName());
 
     private Driver driver;
     private static Integer age;
@@ -94,8 +91,8 @@ public class CleanOrphanedUsersNeo4j extends DbNeo4jBase {
             return String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
                     "Starting User/Undelivered/Message Clean: ", ColorUtilConstants.RESET);
 
-        }).subscribeOn(Schedulers.io()).observeOn(Schedulers.single()).subscribe(logger::info,
-                Throwable::printStackTrace);
+        }).subscribeOn(Schedulers.io()).observeOn(Schedulers.single())
+            .subscribe(logger::info, Throwable::printStackTrace);
     }
 
     private Future<Set<MessageUser>> getUsers() throws SQLException {
@@ -111,29 +108,28 @@ public class CleanOrphanedUsersNeo4j extends DbNeo4jBase {
             Mono.fromSupplier(driver::rxSession),
             rxSession -> rxSession.readTransaction(tx -> {
                 RxResult result = tx.run(query);
-                Mono<ResultSummary> mono = Flux.from(result.records())
-                    .doOnNext(record -> {
-                        MessageUser messageUser = createMessageUser();
-                        Value value = record.get("u");
-                        messageUser.setId(0l);
-                        messageUser.setName(value.get("name").asString());
-                        messageUser.setPassword(value.get("password").asString());
-                        messageUser.setIp(value.get("ip").asString());
-                        messageUser.setLastLogin(value.get("lastLogin").asZonedDateTime());
-                        listOfUsers.add(messageUser);
-                        if(logger.isDebugEnabled()) {
-                            logger.info("{}--{}", record.get("u").get("lastLogin").asZonedDateTime(), messageUser.toString());
-                        }
-                    }).doFinally(onFinally -> {
-                        try {
-                            gotUsers.run();
-                            tx.close();
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
-                    })
-                    .then(Mono.from(result.consume()));
-                return mono;
+              return Flux.from(result.records())
+                  .doOnNext(record -> {
+                      MessageUser messageUser = createMessageUser();
+                      Value value = record.get("u");
+                      messageUser.setId(0L);
+                      messageUser.setName(value.get("name").asString());
+                      messageUser.setPassword(value.get("password").asString());
+                      messageUser.setIp(value.get("ip").asString());
+                      messageUser.setLastLogin(value.get("lastLogin").asZonedDateTime());
+                      listOfUsers.add(messageUser);
+                      if(logger.isDebugEnabled()) {
+                          logger.info("{}--{}", record.get("u").get("lastLogin").asZonedDateTime(), messageUser.toString());
+                      }
+                  }).doFinally(onFinally -> {
+                      try {
+                          gotUsers.run();
+                          tx.close();
+                      } catch (Exception e) {
+                          throw new RuntimeException(e);
+                      }
+                  })
+                  .then(Mono.from(result.consume()));
             }),
             RxSession::close).subscribe();
        
@@ -155,14 +151,18 @@ public class CleanOrphanedUsersNeo4j extends DbNeo4jBase {
     }
 
     private static Long getLastLogin(Object lastLogin) {
-        Long currentDate = new Date().getTime();
-        Long diffInDays = 0L;
-        Long loginDate = 0L;
+        long currentDate = new Date().getTime();
+        long diffInDays;
+        long loginDate;
 
         if (lastLogin instanceof Date) {
             loginDate = ((Date) lastLogin).getTime();
         } else {
-            loginDate = ((Timestamp) lastLogin).getTime();
+            if(lastLogin != null) {
+                loginDate = ((Timestamp) lastLogin).getTime();
+            } else {
+                loginDate = new Timestamp(new Date().getTime()).getTime();
+            }
         }
 
         long diff = currentDate - loginDate;
@@ -182,7 +182,7 @@ public class CleanOrphanedUsersNeo4j extends DbNeo4jBase {
                     RxResult result = tx.run(query, parameter);
                     Mono<ResultSummary> mono = Flux.from(result.records())
                         .doOnEach(record -> {
-                            cleanUser(userId, tx);
+                            int count = cleanUser(userId, tx);
                             tx.commit();
                         })
                         .doOnError(Throwable::printStackTrace)
@@ -210,7 +210,7 @@ public class CleanOrphanedUsersNeo4j extends DbNeo4jBase {
         return new MessageUserImpl();
     }
 
-    class GotUsers implements Action {
+    static class GotUsers implements Action {
         Set<MessageUser> listOfUsers;
         Promise<Set<MessageUser>> promise;
 
@@ -232,7 +232,7 @@ public class CleanOrphanedUsersNeo4j extends DbNeo4jBase {
         }
     }
 
-    class CleanObjects implements Action {
+    static class CleanObjects implements Action {
         Object object;
         Promise<Object> promise;
         Integer count = 0;

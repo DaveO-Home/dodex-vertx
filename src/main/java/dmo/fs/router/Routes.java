@@ -1,6 +1,8 @@
 package dmo.fs.router;
 
 import com.google.cloud.firestore.Firestore;
+import dmo.fs.hib.routes.OpenApiEndpoint;
+import dmo.fs.hib.routes.WebSocketEndpoint;
 import dmo.fs.kafka.KafkaConsumerDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
@@ -37,8 +39,9 @@ public class Routes {
   protected static KafkaProducer<String, Integer> producer;
   Firestore firestore;
   Promise<Router> routerPromise = Promise.promise();
+  String defaultDb = new DodexUtil().getDefaultDb();
 
-  public Routes(Router router) {
+  public Routes(Router router) throws IOException {
     this.router = router;
   }
 
@@ -54,8 +57,18 @@ public class Routes {
     } else {
       DodexUtil.setEnv("prod");
     }
-//    DodexUtil.setVertx(vertx);
-    OpenApiRouter.setOpenApiRouter(vertx).onSuccess(router -> {
+
+    Future<Router> routesFuture;
+    // @todo: implement group/member openapi for Neo4j, Cassandra & Firebase
+    if("oracle".equals(defaultDb) || "mssql".equals(defaultDb)) {
+      routesFuture = OpenApiEndpoint.setOpenApiRouter(vertx); // Using blocking Hibernate on Virtual Threads
+    } else if("mongo".equals(defaultDb)) {
+      routesFuture = OpenApiRouterMongo.setOpenApiRouter(vertx);
+    } else {
+      routesFuture = OpenApiRouter.setOpenApiRouter(vertx);
+    }
+
+    routesFuture.onSuccess(router -> {
       if (Server.getUseKafka()) {
         setMonitorRoute(router);
       }
@@ -64,8 +77,7 @@ public class Routes {
       try {
         setDodexRoute(router);
       } catch (InterruptedException | IOException | SQLException | ExecutionException e) {
-        e.printStackTrace();
-        return;
+        throw new RuntimeException("OpenApi Route Failure");
       }
 
       if ("dev".equals(DodexUtil.getEnv())) {
@@ -83,7 +95,7 @@ public class Routes {
 
         producer = KafkaProducer.create(vertx, config);
       }
-      // this.router = router;
+
       routerPromise.complete(router);
     }).onFailure(Throwable::printStackTrace);
   }
@@ -103,12 +115,13 @@ public class Routes {
       int length = routingContext.request().path().length();
       String path = routingContext.request().path();
       String file = length < 7 ? "test/index.html" : path.substring(1);
-
       response.sendFile(file);
     });
     route.failureHandler(ctx ->
-        logger.error(String.format("%sFAILURE in /test/ route: %d - %s - %s%s",
-            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute(), ctx.body(), ColorUtilConstants.RESET))
+        logger.error("{}FAILURE in /test/ route: {} - {} - {}{}",
+            ColorUtilConstants.RED_BOLD_BRIGHT,
+            ctx.statusCode(), ctx.currentRoute(), ctx.body(),
+            ColorUtilConstants.RESET)
     );
   }
 
@@ -126,19 +139,16 @@ public class Routes {
       response.sendFile(file);
     });
     route.failureHandler(ctx ->
-        logger.error(String.format("%sFAILURE in prod/dodex route: %d%s",
-            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET))
+        logger.error("{}FAILURE in prod/dodex route: {}{}",
+            ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ColorUtilConstants.RESET)
     );
   }
 
   public void setStaticRoute(Router router) {
     Route staticRoute = router.route();
     StaticHandler staticHandler = StaticHandler.create("static");
-    if ("dev".equals(DodexUtil.getEnv())) {
-      staticHandler.setCachingEnabled(true);
-    } else {
-      staticHandler.setCachingEnabled(true);
-    }
+    staticHandler.setCachingEnabled(!"dev".equals(DodexUtil.getEnv()));
+
     router.route("/*").handler(staticHandler)
         .produces("text/plain")
         .produces("text/html")
@@ -149,9 +159,7 @@ public class Routes {
 
     staticRoute.handler(staticHandler);
     staticRoute.failureHandler(ctx -> {
-      ;
-      logger.error("{}FAILURE in static route(likely caused by Music tab): {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET);
-//      ctx.response().end(Integer.valueOf(ctx.statusCode()).toString());
+      logger.error("{}FAILURE in static route: {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET);
       ctx.next();
     });
 
@@ -178,7 +186,7 @@ public class Routes {
         response.send(kafkaConsumerDodex.list(
             routingContext.pathParam("command"), routingContext.pathParam("init")));
       } catch (Exception e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
       if ("-1".equals(routingContext.pathParam("init"))) {
         session.destroy();
@@ -187,60 +195,46 @@ public class Routes {
     route.failureHandler(ctx ->
         logger.error("{}FAILURE in /monitor/ route: {} -- {} -- {} -- {} --{}{}",
             ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.request().method(), ctx.mountPoint(),
-            ctx.normalizedPath(), ctx.response().headers().entries().get(0).getKey(), ColorUtilConstants.RESET)
+            ctx.normalizedPath(), ctx.response().headers().entries().getFirst().getKey(), ColorUtilConstants.RESET)
     );
   }
 
   public void setDodexRoute(Router router) throws InterruptedException, IOException, SQLException, ExecutionException {
-    DodexUtil du = new DodexUtil();
-    String defaultDbName = du.getDefaultDb();
-
-    switch (defaultDbName) {
+    switch (defaultDb) {
       case "firebase" -> {
-        try {
-          FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
-          firebaseRouter.setWebSocket(server);
-          firestore = firebaseRouter.getDbf();
-        } catch (Exception ex) {
-          ex.printStackTrace();
-          throw ex;
-        }
+        FirebaseRouter firebaseRouter = new FirebaseRouter(vertx);
+        firebaseRouter.setWebSocket(server);
+        firestore = firebaseRouter.getDbf();
+        break;
       }
       case "cassandra" -> {
-        try {
-          CassandraRouter cassandraRouter = new CassandraRouter(vertx);
-          cassandraRouter.setWebSocket(server);
-        } catch (Exception ex) {
-          ex.printStackTrace();
-          throw ex;
-        }
+//        CassandraRouter cassandraRouter = new CassandraRouter(vertx);
+//        cassandraRouter.setWebSocket(server);
+        break;
       }
       case "neo4j" -> {
-        try {
-          Neo4jRouter neo4jRouter = new Neo4jRouter(vertx);
-          neo4jRouter.setWebSocket(server);
-        } catch (Exception ex) {
-          ex.printStackTrace();
-          throw ex;
-        }
+        Neo4jRouter neo4jRouter = new Neo4jRouter(vertx);
+        neo4jRouter.setWebSocket(server);
+        break;
       }
       case "mongo" -> {
-        try {
-          MongoRouter mongoRouter = new MongoRouter(vertx);
-          mongoRouter.setWebSocket(server);
-        } catch (Exception ex) {
-          ex.printStackTrace();
-          throw ex;
-        }
+        MongoRouter mongoRouter = new MongoRouter(vertx);
+        mongoRouter.setWebSocket(server);
+        break;
+      }
+      case "mssql"-> {  // Using blocking Hibernate on Virtual Threads
+        WebSocketEndpoint webSocketEndpoint = new WebSocketEndpoint();
+        webSocketEndpoint.setWebSocket(server);
+        break;
+      }
+      case "oracle" -> {
+        WebSocketEndpoint webSocketEndpoint = new WebSocketEndpoint();
+        webSocketEndpoint.setWebSocket(server);
+        break;
       }
       case null, default -> {
-        try {
-          DodexRouter dodexRouter = new DodexRouter(vertx);
-          dodexRouter.setWebSocket(server);
-        } catch (Exception ex) {
-          ex.printStackTrace();
-          throw ex;
-        }
+        DodexRouter dodexRouter = new DodexRouter(vertx);
+        dodexRouter.setWebSocket(server);
       }
     }
   }

@@ -35,8 +35,8 @@ public abstract class DbDefinitionBase {
 
     pool = client;
 
-      Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx/Postgres
-      create = DSL.using(DodexUtils.getSqlDialect(), settings);
+    Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx/Postgres
+    create = DSL.using(DodexUtils.getSqlDialect(), settings);
 
     // PgClient client = PgClient.pool(vertx, config);
 

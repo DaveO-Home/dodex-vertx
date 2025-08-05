@@ -65,7 +65,6 @@ public class KafkaEmitterDodex {
     try {
       try (InputStream in = getClass().getResourceAsStream("/application-conf.json")) {
         node = jsonMapper.readTree(in);
-        in.close();
       }
       jsonObject = JsonObject.mapFrom(node);
 
@@ -80,9 +79,10 @@ public class KafkaEmitterDodex {
       if (logger.isDebugEnabled()) {
         logger.info("Dodex Config Setup(parts/top/limit/remove): {} -- {} -- {} -- {}", dodexEventsPartitions, dodexEventsTopic, messageLimit, removeMessages);
       }
-    } catch (final Exception exception) {
-      logger.info("{}Context Configuration failed...{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, exception.getMessage(), ColorUtilConstants.RESET);
-      exception.printStackTrace();
+    } catch (final Exception e) {
+      logger.info("{}Context Configuration failed...{}{}", ColorUtilConstants.RED_BOLD_BRIGHT,
+          e.getMessage(), ColorUtilConstants.RESET);
+      throw new RuntimeException(e);
     }
   }
 

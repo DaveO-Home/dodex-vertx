@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
+import dmo.fs.hib.fac.DbConfiguration;
 import org.jooq.SQLDialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -206,6 +207,22 @@ public class DodexUtil {
 
     return SQLDialect.DEFAULT;
   }
+
+  public static String getMode() {
+    String development = System.getenv("MODE");
+    if(development == null || development.isEmpty()) {
+      development = System.getProperty("MODE");
+    }
+    if (development != null && development.toLowerCase().startsWith("prod")) {
+      return "prod";
+    }
+    if(development == null || development.isEmpty()) {
+      return DbConfiguration.pu.replaceFirst("^.*[^(prod|dev)$]", "");
+    }
+
+    return development;
+  }
+
 
   public static Vertx getVertx() {
     return vertx;

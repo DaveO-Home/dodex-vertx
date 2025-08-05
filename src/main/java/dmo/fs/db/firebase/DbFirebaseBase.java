@@ -52,11 +52,8 @@ public abstract class DbFirebaseBase {
 
     public FirebaseUser updateUser(ServerWebSocket ws, FirebaseUser firebaseUser)
             throws InterruptedException, ExecutionException {
-        Map<String, Object> lastLogin = new ConcurrentHashMap<>();
         DocumentReference userDoc = dbf.collection("users").document(firebaseUser.getName());
 
-        lastLogin.put("lastLogin", Timestamp.now());
-        lastLogin.put("ip", firebaseUser.getIp());
         ApiFuture<WriteResult> apiFuture =
                 userDoc.update("lastLogin", Timestamp.now(), "ip", firebaseUser.getIp());
 
@@ -101,7 +98,7 @@ public abstract class DbFirebaseBase {
                     promise.complete(firebaseMessage);
                 }
             } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
         });
 
@@ -161,20 +158,19 @@ public abstract class DbFirebaseBase {
         try {
             apiFuture.get().forEach(user -> {
                 String name = user.getString("name");
-                if (!name.equals(messageUser.getName())) {
+              assert name != null;
+              if (!name.equals(messageUser.getName())) {
                     ja.add(new JsonObject().put("name", name));
                 }
             });
         } catch (ExecutionException e) {
-            logger.error(String.format("%sError build user json: %s%s", ColorUtilConstants.RED,
-                    e.getMessage(), ColorUtilConstants.RESET));
+            logger.error("{}Error build user json: {}{}",
+                ColorUtilConstants.RED, e.getMessage(), ColorUtilConstants.RESET);
         }
         promise.complete(new StringBuilder(ja.toString()));
 
         return promise.future();
     }
-
-
 
     public Future<Map<String, Integer>> processUserMessages(ServerWebSocket ws,
             FirebaseUser firebaseUser) throws Exception {

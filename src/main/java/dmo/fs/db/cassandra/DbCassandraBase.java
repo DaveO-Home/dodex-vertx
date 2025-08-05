@@ -45,7 +45,7 @@ public abstract class DbCassandraBase<T> {
       try {
         mqttServer.publish("dodex-topic", jsonPayLoad);
       } catch (Exception ex) {
-        ex.printStackTrace();
+        throw new RuntimeException(ex);
       }
     } else {
       EventBus eb = (EventBus) transport;
@@ -191,7 +191,7 @@ public abstract class DbCassandraBase<T> {
           .set("password", messageUser.getPassword()).set("name", messageUser.getName())
           .set("ws", ws.remoteAddress().toString() + cmd);
     } catch (Exception ex) {
-      ex.printStackTrace();
+      throw new RuntimeException(ex);
     }
     return mess;
   }
@@ -279,7 +279,7 @@ public abstract class DbCassandraBase<T> {
           break;
       }
     } catch (Exception ex) {
-      ex.printStackTrace();
+      throw new RuntimeException(ex);
     }
   }
 }

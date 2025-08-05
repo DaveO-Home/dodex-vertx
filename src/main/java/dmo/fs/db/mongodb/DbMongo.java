@@ -91,9 +91,9 @@ public abstract class DbMongo extends DbMongoBase implements DodexMongo {
     properties.put("user_id", property);
     property = new JsonObject().put("bsonType", "string").put("description", "generated 'from handle' of required message");
     properties.put("from_handle", property);
-    property = new JsonObject().put("bsonType", "date").put("description", "generated 'message' of required message");
+    property = new JsonObject().put("bsonType", "string").put("description", "generated 'message' of required message");
     properties.put("message", property);
-    property = new JsonObject().put("bsonType", "string").put("description", "required posted date"); // seems "date" fails with bulkWrite
+    property = new JsonObject().put("bsonType", "date").put("description", "required posted date"); // seems "date" fails with bulkWrite
     properties.put("post_date", property);
     schema.put("$jsonSchema", new JsonObject().put("bsonType", "object")
         .put("title", "Messages Object Validation")
@@ -111,9 +111,9 @@ public abstract class DbMongo extends DbMongoBase implements DodexMongo {
     properties.put("name", property);
     property = new JsonObject().put("bsonType", "string").put("description", "required Owner of group");
     properties.put("owner", property);
-    property = new JsonObject().put("bsonType", "string").put("description", "0 to N members(user_messages(_ids))");
+    property = new JsonObject().put("bsonType", "date").put("description", "0 to N members(user_messages(_ids))");
     properties.put("created", property);
-    property = new JsonObject().put("bsonType", "string").put("description", "last updated date");
+    property = new JsonObject().put("bsonType", "date").put("description", "last updated date");
     properties.put("updated", property);
     schema.put("$jsonSchema", new JsonObject().put("bsonType", "object")
         .put("title", "Groups Object Validation")

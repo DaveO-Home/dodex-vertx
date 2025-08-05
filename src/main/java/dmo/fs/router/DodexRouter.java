@@ -108,10 +108,10 @@ public class DodexRouter {
         if (ke != null) {
           ke.setValue("sessions", clients.size());
         }
-        ws.closeHandler(ch -> {
+          ws.closeHandler(ch -> {
           if (logger.isInfoEnabled()) {
-            logger.info(String.join("", ColorUtilConstants.BLUE_BOLD_BRIGHT,
-                "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET));
+            logger.info("{}{}{}{}", ColorUtilConstants.BLUE_BOLD_BRIGHT,
+                "Closing ws-connection to client: ", messageUser.getName(), ColorUtilConstants.RESET);
           }
           wsChatSessions.remove(ws.remoteAddress().toString());
           clients.remove(ws.remoteAddress().toString());
@@ -144,8 +144,8 @@ public class DodexRouter {
               try {
                 deleted = dodexDatabase.deleteUser(ws, messageUser);
               } catch (InterruptedException | SQLException e) {
-                e.printStackTrace();
                 ws.writeTextMessage("Your Previous handle did not delete: " + e.getMessage());
+                throw new RuntimeException(e);
               }
             } else {
               deleted = promise.future();
@@ -219,11 +219,11 @@ public class DodexRouter {
                         try {
                           dodexDatabase.addUndelivered(ws, disconnectedUsers, key);
                         } catch (final SQLException e) {
-                          e.printStackTrace();
+                          throw new RuntimeException(e);
                         }
                       });
                     } catch (final SQLException | InterruptedException e) {
-                      e.printStackTrace();
+                      throw new RuntimeException(e);
                     }
                   }
                 }
@@ -264,25 +264,25 @@ public class DodexRouter {
                   dodexDatabase.processUserMessages(ws, mUser).onComplete(fut -> {
                     final int messageCount = fut.result().get("messages");
                     if (messageCount > 0) {
-                      logger.info(String.format("%sMessages Delivered: %d to %s%s",
-                          ColorUtilConstants.BLUE_BOLD_BRIGHT, messageCount,
-                          mUser.getName(), ColorUtilConstants.RESET));
+                      logger.info("{}Messages Delivered: {} to {}{}",
+                          ColorUtilConstants.BLUE_BOLD_BRIGHT, messageCount, mUser.getName(),
+                          ColorUtilConstants.RESET);
                       if (ke != null) {
                         ke.setValue("delivered", messageCount);
                       }
                     }
                   });
                 } catch (final Exception e) {
-                  e.printStackTrace();
+                  throw new RuntimeException(e);
                 }
               });
             } catch (InterruptedException | SQLException e) {
-              e.printStackTrace();
+              throw new RuntimeException(e);
             }
           });
 
         } catch (InterruptedException | SQLException e) {
-          e.printStackTrace();
+          throw new RuntimeException(e);
         }
       }
     });

@@ -18,8 +18,10 @@ import dmo.fs.db.mongodb.DodexDatabaseMongo;
 import dmo.fs.db.mongodb.DodexMongo;
 import dmo.fs.db.neo4j.DodexDatabaseNeo4j;
 import dmo.fs.db.neo4j.DodexNeo4j;
+import dmo.fs.db.ora.DodexDatabaseOracle;
 import dmo.fs.db.postgres.DodexDatabasePostgres;
 import dmo.fs.db.sqlite3.DodexDatabaseSqlite3;
+import dmo.fs.dbh.mssql.DodexDatabaseMssql;
 import dmo.fs.utils.DodexUtil;
 
 public abstract class DbConfiguration {
@@ -37,10 +39,12 @@ public abstract class DbConfiguration {
   private static Boolean isUsingNeo4j = false;
   private static Boolean isUsingH2 = false;
   private static Boolean isUsingMongo = false;
+  private static Boolean isUsingOracle = false;
+  private static Boolean isUsingMssql = false;
   private static String defaultDb = "h2";
   private static DodexUtil dodexUtil = new DodexUtil();
   private static DodexDatabase dodexDatabase;
-  private static DodexCassandra dodexCassandra;
+  private static DodexCassandra<Object> dodexCassandra;
   private static DodexFirebase dodexFirebase;
   private static DodexNeo4j dodexNeo4j;
   private static DodexMongo dodexMongo;
@@ -48,7 +52,7 @@ public abstract class DbConfiguration {
   private enum DbTypes {
     POSTGRES("postgres"), SQLITE3("sqlite3"), CUBRID("cubrid"), MARIADB("mariadb"),
     IBMDB2("ibmdb2"), CASSANDRA("cassandra"), FIREBASE("firebase"),
-    NEO4J("neo4j"), H2("h2"), MONGO("mongo");
+    NEO4J("neo4j"), H2("h2"), MONGO("mongo"), ORACLE("oracle"), MSSQL("mssql");
 
     final String db;
 
@@ -56,8 +60,6 @@ public abstract class DbConfiguration {
       this.db = db;
     }
   }
-
-  ;
 
   public static boolean isUsingSqlite3() {
     return isUsingSqlite3;
@@ -97,6 +99,14 @@ public abstract class DbConfiguration {
 
   public static boolean isUsingMongo() {
     return isUsingMongo;
+  }
+
+  public static boolean isUsingOracle() {
+    return isUsingOracle;
+  }
+
+  public static boolean isUsingMssql() {
+    return isUsingMssql;
   }
 
   @SuppressWarnings("unchecked")
@@ -140,6 +150,12 @@ public abstract class DbConfiguration {
       dodexMongo = new DodexDatabaseMongo();
       isUsingMongo = true;
       return (T) dodexMongo;
+    } else if (defaultDb.equals(DbTypes.ORACLE.db)) {
+      isUsingOracle = true;
+      return (T) new DodexDatabaseOracle();
+    } else if (defaultDb.equals(DbTypes.MSSQL.db)) {
+      isUsingMssql = true;
+      return (T) new DodexDatabaseMssql();
     }
 
     return (T) dodexDatabase;
@@ -212,9 +228,9 @@ public abstract class DbConfiguration {
 
   }
 
+  // let duplicate key in map2 win
   public static void mapMerge(Map<String, String> map1, Map<String, String> map2) {
-    map2.forEach((key, value) -> map1.merge(key, value, (v1, v2) -> v2)); // let duplicate key
-    // in map2 win
+    map2.forEach((key, value) -> map1.merge(key, value, (v1, v2) -> v2));
   }
 
 }

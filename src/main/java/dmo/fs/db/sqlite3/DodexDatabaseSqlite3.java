@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import dmo.fs.db.DbConfiguration;
 import dmo.fs.db.MessageUser;
@@ -38,7 +39,6 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
   protected JsonNode defaultNode;
   protected String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
   protected DodexUtil dodexUtil = new DodexUtil();
-  protected JDBCPool pool4;
   protected Boolean isCreateTables = false;
   protected Promise<String> returnPromise = Promise.promise();
 
@@ -52,17 +52,16 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 
     dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
     dbProperties = dodexUtil.mapToProperties(dbMap);
+    dbProperties.setProperty("foreign_keys", "true");
 
-    if (dbOverrideProps != null && dbOverrideProps.size() > 0) {
+    if (dbOverrideProps != null && !dbOverrideProps.isEmpty()) {
       this.dbProperties = dbOverrideProps;
     }
     if (dbOverrideMap != null) {
+      DbConfiguration.mapMerge(dbMap, dbOverrideMap);
       this.dbOverrideMap = dbOverrideMap;
     }
 
-    dbProperties.setProperty("foreign_keys", "true");
-
-    DbConfiguration.mapMerge(dbMap, dbOverrideMap);
     databaseSetup();
   }
 
@@ -107,7 +106,8 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
     }
 
     PoolOptions poolOptions =
-        new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
+        new PoolOptions().setMaxSize(5).setMaxWaitQueueSize(10)
+            .setIdleTimeoutUnit(TimeUnit.MILLISECONDS).setIdleTimeout(3000);
 
     JDBCConnectOptions connectOptions;
 
@@ -120,7 +120,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
 
     pool = JDBCPool.pool(Server.getRxVertx(), connectOptions, poolOptions);
 
-    Completable completable = pool4.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
+    Completable completable = pool.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin()
         .flatMapCompletable(tx -> conn.query(CHECKUSERSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
           String val = null;
@@ -132,7 +132,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
             final String usersSql = getCreateTable("USERS");
 
             Single<RowSet<Row>> crow = conn.query(usersSql).rxExecute().doOnError(err -> {
-              logger.error(String.format("Users Table Error: %s", err.getCause().getMessage()));
+              logger.error("Users Table Error: {}", err.getCause().getMessage());
             }).doOnSuccess(result -> {
               logger.warn("Users Table Added.");
             });
@@ -140,11 +140,11 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
             crow.subscribe(result -> {
               //
             }, err -> {
-              logger.warn(String.format("Users Table Error: %s", err.getMessage()));
+              logger.warn("Returning Users Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.warn(String.format("Users Table Error: %s", err.getMessage()));
+          logger.warn("Users Table Error: {}", err.getMessage());
 
         }).flatMap(result -> conn.query(CHECKMESSAGESSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
@@ -157,7 +157,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
             final String sql = getCreateTable("MESSAGES");
 
             Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
-              logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.error("Returning Messages Error: {}", err.getMessage());
             }).doOnSuccess(row2 -> {
               logger.warn("Messages Table Added.");
             });
@@ -165,11 +165,11 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
             crow.subscribe(res -> {
               //
             }, err -> {
-              logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.error("Messages Table Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+          logger.error("Querying Messages Error: {}", err.getMessage());
 
         })).flatMap(result -> conn.query(CHECKUNDELIVEREDSQL).rxExecute().doOnSuccess(row -> {
           RowIterator<Row> ri = row.iterator();
@@ -182,7 +182,7 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
             final String sql = getCreateTable("UNDELIVERED");
 
             Single<RowSet<Row>> crow = conn.query(sql).rxExecute().doOnError(err -> {
-              logger.error(String.format("Undelivered Table Error: %s", err.getMessage()));
+              logger.error("Returning Undelivered Error: {}", err.getMessage());
             }).doOnSuccess(row2 -> {
               logger.warn("Undelivered Table Added.");
             });
@@ -190,13 +190,13 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
             crow.subscribe(result2 -> {
               //
             }, err -> {
-              logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+              logger.error("Undelivered Table Error: {}", err.getMessage());
             });
           }
         }).doOnError(err -> {
-          logger.error(String.format("Messages Table Error: %s", err.getMessage()));
+          logger.error("Querying Undelivered Error: {}", err.getMessage());
         })).flatMap(result -> conn.query(CHECKHANDICAPSQL).rxExecute().doOnError(err -> {
-          logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+          logger.error("Golfer Exists Error: {}", err.getMessage());
         }).doOnSuccess(rows -> {
           Set<String> names = new HashSet<>();
 
@@ -204,48 +204,50 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
             names.add(row.getString(0));
           }
           conn.query(getCreateTable("GOLFER")).rxExecute().doOnError(err -> {
-            logger.error(String.format("Golfer Table Error: %s", err.getMessage()));
+            logger.error("Golfer Table Error: {}", err.getMessage());
           }).doOnSuccess(row1 -> {
             if (!names.contains("golfer")) {
               logger.warn("Golfer Table Added.");
             }
 
             conn.query(getCreateTable("COURSE")).rxExecute().doOnError(err -> {
-              logger.warn(String.format("Course Table Error: %s", err.getMessage()));
+              logger.warn("Course Table Error: {}", err.getMessage());
             }).doOnSuccess(row2 -> {
               if (!names.contains("course")) {
                 logger.warn("Course Table Added.");
               }
               conn.query(getCreateTable("RATINGS")).rxExecute().doOnError(err -> {
-                logger.warn(String.format("Ratings Table Error: %s", err.getMessage()));
+                logger.warn("Ratings Table Error: {}", err.getMessage());
               }).doOnSuccess(row3 -> {
                 if (!names.contains("ratings")) {
                   logger.warn("Ratings Table Added.");
                 }
                 conn.query(getCreateTable("SCORES")).rxExecute().doOnError(err -> {
-                  logger.error(String.format("Scores Table Error: %s", err.getMessage()));
+                  logger.error("Scores Table Error: {}", err.getMessage());
                 }).doOnSuccess(row4 -> {
                   if (!names.contains("scores")) {
                     logger.warn("Scores Table Added.");
                   }
                   conn.query(getCreateTable("GROUPS")).rxExecute().doOnError(err -> {
-                    logger.error(String.format("Scores Table Error: %s", err.getMessage()));
+                    logger.error("Creating Groups Error: {}", err.getMessage());
                   }).doOnSuccess(row5 -> {
                     if (!names.contains("groups")) {
                       logger.warn("Groups Table Added.");
                     }
                     conn.query(getCreateTable("MEMBER")).rxExecute().doOnError(err -> {
-                      logger.error(String.format("Member Table Error: %s", err.getMessage()));
+                      logger.error("Member Table Error: {}", err.getMessage());
                     }).doOnSuccess(row6 -> {
                       if (!names.contains("member")) {
                         logger.warn("Member Table Added.");
                       }
-                      tx.commit();
-                      conn.close().subscribe();
-                      if (isCreateTables) {
-                        returnPromise.complete(isCreateTables.toString());
-                      }
-                      finalPromise.complete(isCreateTables.toString());
+                      tx.rxCommit().doOnComplete(() -> {
+                        conn.rxClose().doOnComplete(() -> {
+                          if (isCreateTables) {
+                            returnPromise.complete(isCreateTables.toString());
+                          }
+                          finalPromise.complete(isCreateTables.toString());
+                        }).subscribe();
+                      }) .subscribe();
                     }).subscribe();
                   }).subscribe();
                 }).subscribe();
@@ -258,15 +260,15 @@ public class DodexDatabaseSqlite3 extends DbSqlite3 {
       finalPromise.future().onComplete(c -> {
         if (!isCreateTables) {
           try {
-            setupSql(pool4);
+            setupSql(pool);
           } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
           }
         }
       });
     }, err -> {
-      logger.info(String.format("Tables Create Error: %s", err.getMessage()));
-      err.printStackTrace();
+      logger.info("Tables Create Error: {}", err.getMessage());
+      throw new RuntimeException(err);
     });
   }
 

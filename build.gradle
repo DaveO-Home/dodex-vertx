@@ -20,6 +20,8 @@ plugins {
     id 'pmd'
 
     id 'maven-publish'
+
+    id "org.hibernate.orm" version "${hibernateOrmGradlePluginVersion}"
 }
 
 repositories {
@@ -47,10 +49,11 @@ java {
 }
 println("Java Version: " + JavaVersion.current())
 ext {
-    vertxVersion = "5.0.0"
+    vertxVersion = "5.0.2"
     junitJupiterEngineVersion = "5.10.2"
     jooqVersion = "3.19.3"
     protoVersion = "3.25.5"
+    hibernateVersion = "7.0.5.Final"
 }
 
 java {
@@ -89,10 +92,12 @@ dependencies {
 
     implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.46.0.0'
     implementation group: 'cubrid', name: 'cubrid-jdbc', version: '11.2.1.0038'
-
-    implementation "com.google.firebase:firebase-admin:9.4.1"
-
-    implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: "4.4.18"
+    /*
+        This is required when using "firebase" database. Comment for other databases using "gRPC"
+    */
+//    implementation "com.google.cloud:google-cloud-firestore-admin:3.31.8"
+    implementation "com.google.firebase:firebase-admin:9.5.0"
+    implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: "4.4.20"
     implementation "io.vertx:vertx-mongo-client:$vertxVersion"
     implementation "io.smallrye.reactive:smallrye-mutiny-vertx-core:2.30.1"
     implementation group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
@@ -106,13 +111,20 @@ dependencies {
     implementation "dmo.fs.utils:generate"
 
     implementation "io.vertx:vertx-web-openapi-router:$vertxVersion"
-//    compile 'io.vertx:vertx-web-openapi-router:4.5.14'
 //    implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
 
     implementation "io.vertx:vertx-mqtt:$vertxVersion"
 
-    implementation group: "jakarta.xml.bind", name: "jakarta.xml.bind-api", version: "4.0.0"
-    runtimeOnly group: "com.sun.xml.bind", name: "jaxb-impl", version: "4.0.0"
+    annotationProcessor("org.hibernate.orm:hibernate-jpamodelgen:$hibernateVersion")
+    implementation "org.hibernate:hibernate-core:$hibernateVersion"
+    implementation "org.hibernate.orm:hibernate-agroal:$hibernateVersion"
+    implementation "org.hibernate.validator:hibernate-validator:9.0.0.Final"
+    implementation "com.oracle.database.jdbc:ojdbc11:23.8.0.25.04"
+    implementation "com.microsoft.sqlserver:mssql-jdbc:12.10.1.jre11"
+    implementation "jakarta.persistence:jakarta.persistence-api:3.2.0"
+
+    runtimeOnly "org.glassfish.jersey.media:jersey-media-json-binding:3.1.10"
+    runtimeOnly "org.glassfish.expressly:expressly:6.0.0"
 
     testImplementation "io.vertx:vertx-junit5:$vertxVersion"
     testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:$junitJupiterEngineVersion"
@@ -120,10 +132,11 @@ dependencies {
     testImplementation "junit:junit:4.13.2"
 }
 
+hibernate {  }
 
 def mainVerticleName = "dmo.fs.vertx.Server"
 //def mainClassName = "io.vertx.launcher.application.VertxApplication"
- def mainClassName = "io.vertx.core.Launcher"
+def mainClassName = "io.vertx.core.Launcher"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = "src/main/java/**/*.java, handicap/src/main/**/*"
 def debug = ""

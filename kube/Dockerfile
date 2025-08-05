@@ -34,8 +34,6 @@ RUN adduser dodex
 EXPOSE 8880
 EXPOSE 8070
 
-COPY run_dodex.sh /usr/bin
-RUN chmod o+x /usr/bin/run_dodex.sh
 RUN mkdir /data && chown dodex /data && cd /data && mkdir db && chown dodex db
 
 USER dodex:dodex

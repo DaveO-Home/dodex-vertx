@@ -88,7 +88,6 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
     // .setCachePreparedStatements(true)
     ;
 
-//    pool4 = DB2Pool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
     pool = DB2Builder
         .pool()
         .with(poolOptions)
@@ -171,7 +170,7 @@ public class DodexDatabaseIbmDB2 extends DbIbmDB2 {
       try {
         setupSql(pool);
       } catch (SQLException e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }, err -> {
       logger.info("Tables Create Error: {}", err.getMessage());

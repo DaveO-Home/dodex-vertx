@@ -1,7 +1,4 @@
 import { validateForm, popupMessage, sleep } from "./validate/validate-form.js";
-//import("jquery").then(jQuery => {
-//  window.$ = jQuery.default;
-//});
 import "./jquery.js";
 import {
   Command, HandicapSetup, RepeatHandicapSetup,
@@ -496,8 +493,8 @@ function golferData() {
   golferObject.course = document.getElementById("course").value.toHtmlEntities();
 
   golferObject.tee = selectedTee().value;
-  const teetimeValue = document.getElementById("teetime").value;
-  golferObject.teeDate = teetimeValue ? Date.parse(teetimeValue.substring(0, 8)) : new Date().getTime();
+  const teetimeValue = getTeeTime()
+  golferObject.teeDate = teetimeValue ? new Date(teetimeValue).getTime() : new Date().getTime();
 
   let message;
   if (useProtobuf) {

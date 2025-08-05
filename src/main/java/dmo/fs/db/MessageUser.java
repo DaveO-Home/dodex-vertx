@@ -1,5 +1,7 @@
 package dmo.fs.db;
 
+import jakarta.persistence.EntityManager;
+
 import java.sql.Timestamp;
 
 public interface MessageUser {
@@ -15,4 +17,6 @@ public interface MessageUser {
     Timestamp getLastLogin();
     void set_id(String hex);
     String get_id();
+    EntityManager getEntityManager();
+    void setEntityManager(EntityManager em);
 }

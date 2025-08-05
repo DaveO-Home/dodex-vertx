@@ -6,12 +6,10 @@ import dmo.fs.dbh.DbConfiguration
 import dmo.fs.utils.ColorUtilConstants
 import golf.handicap.Golfer
 import golf.handicap.generated.tables.references.GOLFER
-import handicap.grpc.*
+import handicap.grpc.ListPublicGolfers
 import io.grpc.stub.StreamObserver
-import io.reactivex.rxjava3.core.Single
 import io.vertx.core.Future
 import io.vertx.core.Promise
-import io.vertx.rxjava3.sqlclient.RowSet
 import io.vertx.rxjava3.sqlclient.Tuple
 import org.jooq.impl.DSL.*
 import org.slf4j.LoggerFactory

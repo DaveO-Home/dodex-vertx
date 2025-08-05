@@ -20,18 +20,17 @@ import io.vertx.rxjava3.sqlclient.Row;
 import io.vertx.rxjava3.sqlclient.Tuple;
 
 public abstract class DbCubridOverride extends DbDefinitionBase {
-  private static Logger logger = LoggerFactory.getLogger(DbCubridOverride.class.getName());
+  private static final Logger logger = LoggerFactory.getLogger(DbCubridOverride.class.getName());
 
   @Override
   public Future<MessageUser> addUser(ServerWebSocket ws, MessageUser messageUser)
       throws InterruptedException, SQLException {
     Promise<MessageUser> promise = Promise.promise();
     Timestamp current = new Timestamp(new Date().getTime());
-    Object lastLogin = current;
 
     pool.rxGetConnection().doOnSuccess(conn -> {
       Tuple parameters = Tuple.of(messageUser.getName(), messageUser.getPassword(),
-          messageUser.getIp(), lastLogin);
+          messageUser.getIp(), current);
       // SqlConnection conn = c.result();
       String sql = getInsertUser();
 
@@ -47,14 +46,12 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         conn.close().subscribe();
         promise.tryComplete(messageUser);
       }).doOnError(err -> {
-        logger.error(String.format("%sError adding user: %s%s", ColorUtilConstants.RED, err,
-            ColorUtilConstants.RESET));
+        logger.error("{}Error adding user: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
       }).subscribe(rows -> {
         //
       }, err -> {
-        logger.error(String.format("%sError Adding user: %s%s", ColorUtilConstants.RED, err,
-            ColorUtilConstants.RESET));
-        err.printStackTrace();
+        logger.error("{}Error Adding user: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
+        throw new RuntimeException(err);
       });
     }).subscribe();
 
@@ -82,8 +79,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
         conn.close().subscribe();
         promise.complete(count);
       }).doOnError(err -> {
-        logger.error(String.format("%sError deleting user: %s%s", ColorUtilConstants.RED,
-            err, ColorUtilConstants.RESET));
+        logger.error("{}Error deleting user: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
         ws.writeTextMessage(err.toString());
         conn.close().subscribe();
       }).subscribe(rows -> {
@@ -101,21 +97,15 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
       // SqlConnection conn = c.result();
       String query = create.query(getUserByName(), name).toString();
       conn.query(query).rxExecute().doOnSuccess(rows -> {
-        // if (ar.succeeded()) {
-        // RowSet<Row> rows = ar.result();
         Long id = 0L;
         for (Row row : rows) {
           id = row.getLong(0);
         }
         conn.close().subscribe();
         promise.complete(id);
-        // } else {
-
-        // }
       }).doOnError(err -> {
-        logger.error(String.format("%sError finding user by name: %s - %s%s",
-            ColorUtilConstants.RED, name, err.getCause().getMessage(),
-            ColorUtilConstants.RESET));
+        logger.error("{}Error finding user by name: {} - {}{}",
+            ColorUtilConstants.RED, name, err.getCause().getMessage(), ColorUtilConstants.RESET);
         conn.close().subscribe();
       }).subscribe();
     }).subscribe();
@@ -131,9 +121,8 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
     pool.rxGetConnection().doOnSuccess(conn -> {
       conn.query(create.query(getUserById(), messageUser.getName(), messageUser.getPassword())
           .toString()).rxExecute().doOnSuccess(rows -> {
-        // if (ar.succeeded()) {
-        Future<Integer> future1 = null;
-        // RowSet<Row> rows = ar.result();
+
+        Future<Integer> future1 = Future.future(p -> {});
 
         if (rows.size() == 0) {
           try {
@@ -151,10 +140,9 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
               promise.complete(resultUser);
             });
           } catch (InterruptedException | SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
           } catch (Exception ex) {
-            logger.error(String.format("%s%s%s", ColorUtilConstants.RED,
-                ex.getCause().getMessage(), ColorUtilConstants.RESET));
+            logger.error("{}{}{}", ColorUtilConstants.RED, ex.getCause().getMessage(), ColorUtilConstants.RESET);
           }
         } else {
           for (Row row : rows) {
@@ -172,13 +160,13 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
             future1 = updateUser(ws, resultUser);
             promise.complete(resultUser);
           } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
           }
         }
 
         if (rows.size() > 0) {
           future1.onComplete(v -> {
-            //
+            logger.warn("{}", v.result());
           });
         }
       }).doOnError(err -> {
@@ -207,9 +195,8 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
             conn.close().subscribe();
             promise.complete(new StringBuilder(ja.toString()));
           }).doOnError(err -> {
-            logger.error(String.format("%sError build user json: %s%s",
-                ColorUtilConstants.RED, err.getCause().getMessage(),
-                ColorUtilConstants.RESET));
+            logger.error("{}Error build user json: {}{}",
+                ColorUtilConstants.RED, err.getCause().getMessage(), ColorUtilConstants.RESET);
             conn.close().subscribe();
           }).subscribe();
     }).subscribe();
@@ -255,29 +242,24 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                   removeMessage.getMessageIds().add(row.getLong(1));
                 }
               }).doOnError(err -> {
-                logger.info(String.format("%sRetriveing Messages Error: %s%s",
-                    ColorUtilConstants.RED, err.getMessage(),
-                    ColorUtilConstants.RESET));
-                err.printStackTrace();
+                logger.info("{}Retriveing Messages Error: {}{}",
+                    ColorUtilConstants.RED, err.getMessage(), ColorUtilConstants.RESET);
+                throw new RuntimeException(err);
               }).flatMapCompletable(res -> tx.rxCommit().doFinally(completePromise)
                   .doOnSubscribe(onSubscribe -> {
                     tx.completion().doOnError(err -> {
-                      // if (x.failed()) {
                       tx.rollback();
-                      logger.error(String.format(
-                          "%sMessages Transaction Error: %s%s",
-                          ColorUtilConstants.RED, err.getCause(),
-                          ColorUtilConstants.RESET));
-                      // }
+                      logger.error("{}Messages Transaction Error: {}{}",
+                          ColorUtilConstants.RED, err.getCause(), ColorUtilConstants.RESET);
                       conn.close().subscribe();
                     }).subscribe();
                   })))
           .doOnError(err -> {
-            logger.info(String.format("%sDatabase for Messages Error: %s%s",
-                ColorUtilConstants.RED, err.getMessage(),
-                ColorUtilConstants.RESET));
-            err.printStackTrace();
-            conn.close().subscribe();
+            logger.info("{}Database for Messages Error: {}{}",
+                ColorUtilConstants.RED, err.getMessage(), ColorUtilConstants.RESET);
+            conn.close().doOnComplete(() -> {
+              throw new RuntimeException(err);
+            }).subscribe();
           })).subscribe();
     });
 
@@ -286,7 +268,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
       try {
         removeUndelivered.run();
       } catch (Exception e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
       if (removeUndelivered.getCount() > 0) {
         logger.info(String.join(ColorUtilConstants.BLUE_BOLD_BRIGHT,
@@ -298,7 +280,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
       try {
         removeMessage.run();
       } catch (Exception e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }));
 
@@ -326,14 +308,13 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                 conn.close().subscribe();
                 completePromise.run();
               } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
               }
               counts.put("messages", count);
               promise2.complete(counts);
             }
           }).doOnError(err -> {
-            logger.error(String.format("Deleting Undelivered: %s",
-                err.getCause().getMessage()));
+            logger.error("Deleting Undelivered: {}", err.getCause().getMessage());
             conn.close().subscribe();
           }).subscribe();
         }).subscribe();
@@ -359,13 +340,12 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
                 conn.close().subscribe();
                 completePromise.run();
               } catch (Exception e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
               }
             }
           }).doOnError(err -> {
-            logger.error(
-                String.format("%sDeleting Message: %s%s", ColorUtilConstants.RED,
-                    err.getCause().getMessage(), ColorUtilConstants.RESET));
+            logger.error("{}Deleting Message: {}{}",
+                ColorUtilConstants.RED, err.getCause().getMessage(), ColorUtilConstants.RESET);
           }).subscribe();
         }).subscribe();
       }
@@ -377,9 +357,7 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
       throws InterruptedException, SQLException {
     Promise<Long> promise = Promise.promise();
 
-    Timestamp current = new Timestamp(new Date().getTime());
-
-    Object postDate = current;
+    Object postDate = new Timestamp(new Date().getTime());
 
     pool.rxGetConnection().doOnSuccess(conn -> {
       String query = create.query(getAddMessage(), message, messageUser.getName(), postDate)
@@ -397,16 +375,16 @@ public abstract class DbCubridOverride extends DbDefinitionBase {
           promise.complete(id);
         }).subscribe();
       }).doOnError(err -> {
-        logger.error(String.format("%sError adding messaage: %s%s", ColorUtilConstants.RED,
-            err, ColorUtilConstants.RESET));
-        err.printStackTrace();
+        logger.error("{}Error adding messaage: {}{}",
+            ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
         ws.writeTextMessage(err.toString());
         conn.close();
+        throw new RuntimeException(err);
       }).subscribe(rows -> {
         //
       }, err -> {
         if (err != null && err.getMessage() != null) {
-          err.printStackTrace();
+          throw new RuntimeException(err);
         }
       });
     }).doOnError(Throwable::printStackTrace).subscribe();

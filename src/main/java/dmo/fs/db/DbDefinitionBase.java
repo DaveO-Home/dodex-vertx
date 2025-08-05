@@ -1,34 +1,13 @@
 
 package dmo.fs.db;
 
-import static org.jooq.impl.DSL.deleteFrom;
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.insertInto;
-import static org.jooq.impl.DSL.notExists;
-import static org.jooq.impl.DSL.select;
-import static org.jooq.impl.DSL.table;
-
-import java.sql.Blob;
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.text.DateFormat;
-import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-//import io.vertx.pgclient.impl.PgPoolImpl;
-import io.vertx.rxjava3.sqlclient.SqlConnection;
-import org.jooq.DSLContext;
-import org.jooq.conf.Settings;
-import org.jooq.impl.DSL;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import golf.handicap.db.PopulateCourse;
+import golf.handicap.db.PopulateGolfer;
+import golf.handicap.db.PopulateGolferScores;
+import golf.handicap.db.PopulateScore;
+import golf.handicap.vertx.MainVerticle;
 import io.reactivex.rxjava3.functions.Action;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -40,10 +19,22 @@ import io.vertx.rxjava3.jdbcclient.JDBCPool;
 import io.vertx.rxjava3.mysqlclient.MySQLClient;
 import io.vertx.rxjava3.sqlclient.Pool;
 import io.vertx.rxjava3.sqlclient.Row;
+import io.vertx.rxjava3.sqlclient.SqlConnection;
 import io.vertx.rxjava3.sqlclient.Tuple;
-import golf.handicap.db.*;
-import golf.handicap.vertx.*;
-import golf.handicap.vertx.MainVerticle;
+import org.jooq.DSLContext;
+import org.jooq.conf.Settings;
+import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.text.DateFormat;
+import java.time.OffsetDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static org.jooq.impl.DSL.*;
 
 public abstract class DbDefinitionBase {
   private final static Logger logger = LoggerFactory.getLogger(DbDefinitionBase.class.getName());
@@ -83,17 +74,13 @@ public abstract class DbDefinitionBase {
   protected static Pool pool;
   private static boolean qmark = true;
 
-  public static <T> void setupSql(Pool pool) throws SQLException {
+  public static <T> void setupSql(Pool pool5) throws SQLException {
     // Non-Blocking Drivers
     if (DbConfiguration.isUsingPostgres()) {
       qmark = false;
     }
-    DbDefinitionBase.pool = pool;
-//    else if (pool4 instanceof JDBCPool) {
-//      pool = (JDBCPool) pool4;
-//    } else {
-//      pool = (Pool)pool4;
-//    }
+
+    pool = pool5;
 
     Settings settings = new Settings().withRenderNamedParamPrefix("$"); // making compatible with Vertx4/Postgres
 
@@ -408,14 +395,17 @@ public abstract class DbDefinitionBase {
           conn.close().subscribe();
           promise.tryComplete(messageUser);
         }
-      }).doOnError(err -> logger.error(String.format("%sError adding user: %s%s", ColorUtilConstants.RED, err,
-          ColorUtilConstants.RESET))).subscribe(rows -> {
+      }).doOnError(err -> logger.error("{}Error adding user: {}{}",
+          ColorUtilConstants.RED, err, ColorUtilConstants.RESET)).subscribe(rows -> {
         //
       }, err -> {
-        logger.error(String.format("%sError Adding user: %s%s", ColorUtilConstants.RED, err,
-            ColorUtilConstants.RESET));
-        err.printStackTrace();
+        logger.error("{}Error Adding user: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
+        throw new RuntimeException(err);
       });
+    }).doOnError(err -> {
+      logger.error("{}Database Error: {}{}",
+          ColorUtilConstants.RED, err.getMessage(), ColorUtilConstants.RESET);
+      throw new RuntimeException(err);
     }).subscribe();
 
     return promise.future();
@@ -443,7 +433,7 @@ public abstract class DbDefinitionBase {
         //
       }, err -> {
         logger.error("{}Error Updating user2: {}{}", ColorUtilConstants.RED, err, ColorUtilConstants.RESET);
-        err.printStackTrace();
+        throw new RuntimeException(err);
       });
     }).subscribe();
 
@@ -498,7 +488,7 @@ public abstract class DbDefinitionBase {
                 for (Row row : rows) {
                   id = row.getLong(0);
                 }
-                Long count = Long.valueOf(rows.rowCount());
+                Long count = (long) rows.rowCount();
                 messageUser.setId(id > 0L ? id : count);
                 conn.close().subscribe();
                 promise.complete(count);
@@ -509,28 +499,26 @@ public abstract class DbDefinitionBase {
                 } else {
                   errMessage = String.format("%s%s", "Error deleting user: ", err);
                 }
-                logger.error(String.format("%s%s%s", ColorUtilConstants.RED, errMessage, ColorUtilConstants.RESET));
+                logger.error("{}{}{}", ColorUtilConstants.RED, errMessage, ColorUtilConstants.RESET);
                 promise.complete(-1L);
                 conn.close().subscribe();
               }).subscribe(rows -> {
                 //
               }, err -> {
-                if (err != null && err.getMessage() != null) {
-                  err.printStackTrace();
-                }
+                  throw new RuntimeException(err);
               });
         }).doOnError(Throwable::printStackTrace).subscribe(v -> {
         }, err -> {
           promise.tryComplete(-1L);
           conn.close().subscribe();
           String errMessage = String.format("%s%s", "Error deleting Group Members: ", err);
-          logger.error(String.format("%s%s%s", ColorUtilConstants.RED, errMessage, ColorUtilConstants.RESET));
+          logger.error("{}{}{}", ColorUtilConstants.RED, errMessage, ColorUtilConstants.RESET);
         });
       }).subscribe();
     }).onFailure(err -> {
       promise.tryComplete(-1L);
       String errMessage = String.format("%s%s", "Error Finding User: ", err);
-      logger.error(String.format("%s%s%s", ColorUtilConstants.RED, errMessage, ColorUtilConstants.RESET));
+      logger.error("{}{}{}", ColorUtilConstants.RED, errMessage, ColorUtilConstants.RESET);
     });
     return promise.future();
   }
@@ -585,11 +573,11 @@ public abstract class DbDefinitionBase {
           //
         }, err -> {
           if (err != null && err.getMessage() != null) {
-            err.printStackTrace();
+            throw new RuntimeException(err);
           }
         });
       }).doOnError(err -> logger.error(String.format("%sError Adding Message: - %s%s", ColorUtilConstants.RED,
-          err.getCause().getMessage(), ColorUtilConstants.RESET))).subscribe();
+          err.getMessage(), ColorUtilConstants.RESET))).subscribe();
     }).subscribe();
     return promise.future();
   }
@@ -605,14 +593,14 @@ public abstract class DbDefinitionBase {
           promise.complete();
         }).doOnError(err -> {
           logger.error(String.format("%sAdd Undelivered Error: %s%s", ColorUtilConstants.RED,
-              err.getCause().getMessage(), ColorUtilConstants.RESET));
+              err.getMessage(), ColorUtilConstants.RESET));
           conn.close().subscribe();
         }).subscribe()).subscribe();
 
     return promise.future();
   }
 
-  public Future<Void> addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId) {
+  public void addUndelivered(ServerWebSocket ws, List<String> undelivered, Long messageId) {
     Promise<Void> promise = Promise.promise();
     try {
       for (String name : undelivered) {
@@ -629,7 +617,7 @@ public abstract class DbDefinitionBase {
     } catch (Exception e) {
       ws.writeTextMessage(e.getMessage());
     }
-    return promise.future();
+    promise.future();
   }
 
   public Future<Long> getUserIdByName(String name) throws InterruptedException {
@@ -646,7 +634,7 @@ public abstract class DbDefinitionBase {
           promise.complete(id);
         }).doOnError(err -> {
           logger.error(String.format("%sError finding user by name: %s - %s%s", ColorUtilConstants.RED,
-              name, err.getCause().getMessage(), ColorUtilConstants.RESET));
+              name, err.getMessage(), ColorUtilConstants.RESET));
           conn.close().subscribe();
         }).subscribe()).subscribe();
     return promise.future();
@@ -681,9 +669,9 @@ public abstract class DbDefinitionBase {
                 promise.complete(resultUser);
               });
             } catch (InterruptedException | SQLException e) {
-              e.printStackTrace();
+              throw new RuntimeException(e);
             } catch (Exception ex) {
-              ex.getCause().getMessage();
+              logger.info("Unexpected Error: {}", ex.getMessage());
             }
           } else {
             for (Row row : rows) {
@@ -701,26 +689,19 @@ public abstract class DbDefinitionBase {
               future1 = updateUser(ws, resultUser);
               promise.complete(resultUser);
             } catch (Exception e) {
-              e.printStackTrace();
+              throw new RuntimeException(e);
             }
           }
-
-//            if (rows.size() > 0) {
-//                future1.onComplete(v -> {
-//                    // logger.info(String.format("%sLogin Time Changed: %s%s",
-//                    // ColorUtilConstants.BLUE,
-//                    // resultUser.getName(), ColorUtilConstants.RESET));
-//                });
-//            }
         }).doOnError(err -> {
-          logger.error(String.format("%sError selecting user: %s%s", ColorUtilConstants.RED,
-              err.getCause().getMessage(), ColorUtilConstants.RESET));
+          logger.error("{}Error selecting user: {}{}",
+              ColorUtilConstants.RED, err.getMessage(), ColorUtilConstants.RESET);
           conn.close().subscribe();
         }).subscribe()).subscribe();
     return promise.future();
   }
 
-  public Future<StringBuilder> buildUsersJson(MessageUser messageUser) throws InterruptedException, SQLException {
+  public Future<StringBuilder> buildUsersJson(MessageUser messageUser)
+      throws InterruptedException, SQLException {
     Promise<StringBuilder> promise = Promise.promise();
 
     pool.rxGetConnection().doOnSuccess(conn -> conn.preparedQuery(getAllUsers())
@@ -734,8 +715,8 @@ public abstract class DbDefinitionBase {
           conn.close().subscribe();
           promise.complete(new StringBuilder(ja.toString()));
         }).doOnError(err -> {
-          logger.error(String.format("%sError build user json: %s%s", ColorUtilConstants.RED,
-              err.getCause().getMessage(), ColorUtilConstants.RESET));
+          logger.error("{}Error build user json: {}{}",
+              ColorUtilConstants.RED, err.getMessage(), ColorUtilConstants.RESET);
           conn.close().subscribe();
         }).subscribe()).subscribe();
 
@@ -758,44 +739,42 @@ public abstract class DbDefinitionBase {
       Tuple parameters = Tuple.of(messageUser.getId());
 
       pool.rxGetConnection().flatMapCompletable(conn -> conn.rxBegin().flatMapCompletable(
-              tx -> conn.preparedQuery(getUserUndelivered()).rxExecute(parameters).doOnSuccess(rows -> {
-                for (Row row : rows) {
-                  DateFormat formatDate = DateFormat.getDateInstance(DateFormat.DEFAULT,
-                      Locale.getDefault());
+              tx -> conn.preparedQuery(getUserUndelivered()).rxExecute(parameters)
+                  .doOnSuccess(rows -> {
+                    for (Row row : rows) {
+                      DateFormat formatDate = DateFormat.getDateInstance(DateFormat.DEFAULT,
+                          Locale.getDefault());
 
-                  String message = null;
-                  Object mariadbMessage = null;
-//                  if(!DbConfiguration.isUsingMariadb() ){
-//                    message = row.getString(2);
-//                  } else {
-                    mariadbMessage = row.getValue(2);
-//                  }
-                  String handle = row.getString(4);
-                  messageUser.setLastLogin(row.getValue(3));
+                      String message = null;
+                      Object mariadbMessage = null;
+                      mariadbMessage = row.getValue(2);
 
-                  // Send messages back to client
-                  ws.writeTextMessage(
-                      handle + formatDate.format(messageUser.getLastLogin()) + " " + mariadbMessage);
-                  removeUndelivered.getMessageIds().add(row.getLong(1));
-                  removeMessage.getMessageIds().add(row.getLong(1));
-                }
-              }).doOnError(err -> {
-                logger.info("{}Retrieving Messages Error: {}{}", ColorUtilConstants.RED,
-                    err.getMessage(), ColorUtilConstants.RESET);
-                err.printStackTrace();
-              }).flatMapCompletable(
-                  res -> tx.rxCommit().doFinally(completePromise)
-                      .doOnSubscribe(onSubscribe -> tx.rxCompletion()
-                          .doOnError(err -> {
-                            tx.rollback();
-                            logger.error("{}Messages Transaction Error: {}{}",
-                                    ColorUtilConstants.RED, err.getCause(), ColorUtilConstants.RESET);
-                          }))))
+                      String handle = row.getString(4);
+                      messageUser.setLastLogin(row.getValue(3));
+
+                      // Send messages back to client
+                      ws.writeTextMessage(
+                          handle + formatDate.format(messageUser.getLastLogin()) + " " + mariadbMessage);
+                      removeUndelivered.getMessageIds().add(row.getLong(1));
+                      removeMessage.getMessageIds().add(row.getLong(1));
+                    }
+                  }).doOnError(err -> {
+                    logger.info("{}Retrieving Messages Error: {}{}", ColorUtilConstants.RED,
+                        err.getMessage(), ColorUtilConstants.RESET);
+                    throw new RuntimeException(err);
+                  }).flatMapCompletable(
+                      res -> tx.rxCommit().doFinally(completePromise)
+                          .doOnSubscribe(onSubscribe -> tx.rxCompletion()
+                              .doOnError(err -> {
+                                tx.rollback();
+                                logger.error("{}Messages Transaction Error: {}{}",
+                                    ColorUtilConstants.RED, err.getMessage(), ColorUtilConstants.RESET);
+                              }))))
           .doOnError(err -> {
             logger.info("{}Database for Messages Error: {}{}", ColorUtilConstants.RED,
                 err.getMessage(), ColorUtilConstants.RESET);
-            err.printStackTrace();
             conn.close().subscribe();
+            throw new RuntimeException(err);
           })).subscribe();
     });
 
@@ -804,7 +783,7 @@ public abstract class DbDefinitionBase {
       try {
         removeUndelivered.run();
       } catch (Exception e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
       if (removeUndelivered.getCount() > 0) {
         logger.info(String.join(ColorUtilConstants.BLUE_BOLD_BRIGHT,
@@ -816,7 +795,7 @@ public abstract class DbDefinitionBase {
       try {
         removeMessage.run();
       } catch (Exception e) {
-        e.printStackTrace();
+        throw new RuntimeException(e);
       }
     }));
 
@@ -887,12 +866,13 @@ public abstract class DbDefinitionBase {
               conn.close().subscribe();
               completePromise.run();
             } catch (Exception e) {
-              e.printStackTrace();
+              throw new RuntimeException(e);
             }
             counts.put("messages", count);
             promise2.complete(counts);
           }
-        }).doOnError(err -> logger.error("Deleting Undelivered: " + err.getCause().getMessage())).subscribe()).subscribe();
+        }).doOnError(err -> logger.error("Deleting Undelivered: {}",
+            err.getMessage())).subscribe()).subscribe();
       }
     }
 
@@ -963,7 +943,7 @@ public abstract class DbDefinitionBase {
               || DbConfiguration.isUsingSqlite3()) {
             sql = getCustomDeleteMessages();
           } else {
-            if(DbConfiguration.isUsingPostgres()) {
+            if (DbConfiguration.isUsingPostgres()) {
               parameters = Tuple.of(messageId);
             }
             sql = getRemoveMessage();
@@ -1005,7 +985,7 @@ public abstract class DbDefinitionBase {
     this.isTimestamp = isTimestamp;
   }
 
-  public boolean getisTimestamp() {
+  public boolean getIsTimestamp() {
     return this.isTimestamp;
   }
 

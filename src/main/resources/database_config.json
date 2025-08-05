@@ -209,7 +209,7 @@
         "dev": { 
             "credentials": {
                 "user": "neo4j",
-		        "password": "Neo4jSecret",
+		        "password": "secret",
                 "ssl": "false"
             },
             "config": {
@@ -262,6 +262,76 @@
                 "minPoolSize" : "25",
                 "useObjectId": "true",
                 "dbname": "dodex"
+            }
+        }
+    },
+    "oracle": {
+        "dev": {
+            "credentials": {
+                "user": "dodex",
+                "password": "dodex2",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "@//172.17.0.3:",
+                "host2": "172.17.0.3",
+                "url": "jdbc:oracle:thin:",
+                "dbname": "/XEPDB1",
+                "database": "XEPDB1",
+                "tablespace": "dodex",
+                "port": "1521"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "dodex",
+                "password": "dodex2",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "@//172.17.0.2:",
+                "host2": "172.17.0.3",
+                "url": "jdbc:oracle:thin:",
+                "dbname": "/XEPDB1",
+                "database": "XEPDB1",
+                "tablespace": "dodex",
+                "port": "1521"
+            }
+        }
+    },
+    "mssql": {
+        "dev": {
+            "credentials": {
+                "user": "dodex",
+                "password": "V3rtx@D0d3x2",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:",
+                "host2": "172.17.0.2",
+                "url": "jdbc:sqlserver:",
+                "dbname": ";database=dodex",
+                "database": ";database=dodex",
+                "port": "1433",
+                "encrypt": ";encrypt=false",
+                "security": ";integratedSecurity=false;"
+            }
+        },
+        "prod": {
+            "credentials": {
+                "user": "sa",
+                "password": "Vertx@Dodex",
+                "ssl": "false"
+            },
+            "config": {
+                "host": "//localhost:",
+                "host2": "172.17.0.2",
+                "url": "jdbc:sqlserver:",
+                "dbname": ";database=proddb",
+                "database": ";database=proddb",
+                "port": "1433",
+                "encrypt": ";encrypt=true",
+                "security": ";integratedSecurity=false;"
             }
         }
     }

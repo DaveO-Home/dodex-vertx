@@ -139,7 +139,7 @@ public abstract class DbPostgres extends DbDefinitionBase implements DodexDataba
 					"WITH (OIDS = FALSE) TABLESPACE pg_default;" +
 			"ALTER TABLE public.member OWNER to dummy;");
 
-        String sql;
+        final String sql;
 
         CreateTable(String sql) {
             this.sql = sql;

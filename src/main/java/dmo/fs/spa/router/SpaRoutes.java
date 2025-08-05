@@ -62,7 +62,7 @@ public class SpaRoutes {
 
 //    if ("dev".equals(DodexUtil.getEnv())) {
       route.handler(CorsHandler.create().getDelegate().allowedMethod(HttpMethod.GET)
-          .addOrigins(List.of("http://localhost:8070", "http://localhost:8087", "http://localhost:9876"))
+          .addOrigins(List.of("http://localhost:8070", "http://localhost:8087", "http://localhost:7087", "http://localhost:9876"))
           .allowedHeaders(
               Set.of(
                   "keep-alive",

@@ -4,6 +4,9 @@ import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import dmo.fs.dbh.DbConfiguration
 import dmo.fs.dbh.HandicapDatabase
+import dmo.fs.dbh.ora.DodexDatabaseOracle
+import dmo.fs.dbh.mssql.DodexDatabaseMssql
+import dmo.fs.utils.DodexUtils
 import golf.handicap.Golfer
 import golf.handicap.Handicap
 import golf.handicap.db.PopulateCourse
@@ -30,42 +33,56 @@ import org.slf4j.LoggerFactory
 
 
 class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
-  val router: Router = Router.router(vertx)
-  private val faviconHandler: FaviconHandler = FaviconHandler.create(vertx)
-  private val grpcVertx = vertx.delegate
-  var promise: Promise<Void> = Promise.promise()
+    val router: Router = Router.router(vertx)
+    private val faviconHandler: FaviconHandler = FaviconHandler.create(vertx)
+    private val grpcVertx = vertx.delegate
+    var promise: Promise<Void> = Promise.promise()
 
 
-  companion object {
-    private val logger = LoggerFactory.getLogger(GrpcRoutes::class.java.name)
-    private var dodexDatabase: HandicapDatabase? = null
-    private val config = MainVerticle.getAlternateConfig()
-    private val grpcPort = config.getInteger("grpc4:port")
+    companion object {
+        private val logger = LoggerFactory.getLogger(GrpcRoutes::class.java.name)
 
-    init {
-      dodexDatabase = DbConfiguration.getDefaultDb()
+        //    private var dodexDatabase: HandicapDatabase? = null
+        private val config = MainVerticle.getAlternateConfig()
+        private val grpcPort = config.getInteger("grpc4:port")
+        private val dodexUtil: DodexUtils = DodexUtils()
+
+        init {
+            val defaultDb = dodexUtil.getDefaultDb()
+            if ("oracle" == defaultDb) {
+                val oracle: DodexDatabaseOracle = DbConfiguration.getDefaultDb()
+                oracle.entityManagerSetup()
+                oracle.configDatabase()
+            } else if ("mssql" == defaultDb) {
+                val mssql: DodexDatabaseMssql = DbConfiguration.getDefaultDb()
+                mssql.entityManagerSetup()
+                mssql.configDatabase()
+            } else {
+                DbConfiguration.getDefaultDb<HandicapDatabase>()
+            }
+
+        }
     }
-  }
 
-  override fun getVertxRouter(): Router {
-    val staticHandler: StaticHandler = StaticHandler.create("static")
-    staticHandler.setCachingEnabled(false)
-    staticHandler.setMaxAgeSeconds(0)
+    override fun getVertxRouter(): Router {
+        val staticHandler: StaticHandler = StaticHandler.create("static")
+        staticHandler.setCachingEnabled(false)
+        staticHandler.setMaxAgeSeconds(0)
 
-    val staticRoute: Route = router.route("/handicap/*").handler(TimeoutHandler.create(2000))
-    staticRoute.handler(staticHandler)
-    staticRoute.failureHandler { err ->
-        logger.error(String.format("FAILURE in static route: %s", err.statusCode()))
+        val staticRoute: Route = router.route("/handicap/*").handler(TimeoutHandler.create(2000))
+        staticRoute.handler(staticHandler)
+        staticRoute.failureHandler { err ->
+            logger.error(String.format("FAILURE in static route: %s", err.statusCode()))
+        }
+
+        router.route().handler(staticHandler)
+        router.route().handler(faviconHandler)
+
+
+
+        router.route().handler(getCorsHandler())
+        return router
     }
-
-    router.route().handler(staticHandler)
-    router.route().handler(faviconHandler)
-
-
-
-    router.route().handler(getCorsHandler())
-    return router
-}
 
     override fun setRoutePromise(promise: Promise<Void>) {
         this.promise = promise
@@ -79,7 +96,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
 
     private fun grpcServer() {
         promise.future().onComplete {
-            val service = HandicapIndexService()
+            val service = RxJavaHandicapService()
             val rpcServer: VertxServer =
                 VertxServerBuilder.forAddress(grpcVertx, "localhost", grpcPort)
                     .addService(service)
@@ -107,14 +124,18 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
 //        .allowedHeader("https://coolapp2.loca.lt")
 //        .addOrigin("https://<your tunnel url>2.loca.lt")
 //        .allowedHeader("https://<your tunnel url>2.loca.lt")
-            .addOrigins(mutableListOf<String?>(
-                "http://localhost:8070",
-                "http://localhost:8087",
-                "http://localhost:8880",
-                "http://localhost:8085",
-                "http://192.168.49.2:30080",   // IP generated from "minikube service vertx-service"
-                "http://192.168.42.2:30070"
-            ))
+            .addOrigins(
+                mutableListOf<String?>(
+                    "http://localhost:8070",
+                    "http://localhost:8087",
+                    "http://localhost:7087",
+                    "http://localhost:8880",
+                    "http://localhost:8085",
+                    "http://localhost:8881",        // Virtual Threads Verticle
+                    "http://192.168.49.2:30080",    // IP generated from "minikube service vertx-service"
+                    "http://192.168.42.2:30070"
+                )
+            )
             .addOriginWithRegex("^https:\\/\\/\\w+handicap\\d?\\.loophole\\.site$")
             .allowedHeaders(
                 mutableSetOf<String?>(
@@ -170,7 +191,7 @@ class GrpcRoutes(vertx: Vertx) : HandicapRoutes {
             populateCourse
                 .getCourseWithTee(ratingMap, responseObserver)
                 .onSuccess { responseObserve -> responseObserve.onCompleted() }
-                .onFailure{ err ->
+                .onFailure { err ->
                     logger.error("Error Adding Rating: " + err.message)
                     responseObserver.onCompleted()
                 }

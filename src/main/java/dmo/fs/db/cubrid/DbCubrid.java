@@ -38,7 +38,7 @@ public abstract class DbCubrid extends DbCubridOverride implements DodexDatabase
 				"REUSE_OID; "
 				);
 
-        String sql;
+        final String sql;
 
         CreateTable(String sql) {
             this.sql = sql;

@@ -17,6 +17,7 @@ import dmo.fs.db.MessageUser;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.Record;
 import org.neo4j.driver.reactive.RxResult;
+import org.neo4j.driver.reactive.RxSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.smallrye.mutiny.Multi;
@@ -184,23 +185,23 @@ public abstract class DbNeo4jBase {
         
         params.put("name", messageUser.getName());
         params.put("password", messageUser.getPassword());
-        Uni.createFrom().item(driver::rxSession).call(session -> {  
+        CompletableFuture<RxSession> cs = Uni.createFrom().item(driver::rxSession).call(session -> {
             RxResult result = session.run("MATCH (u:User) where u.name = $name and u.password = $password RETURN count(*) as count;", params);
             CompletableFuture<Record> cf = Uni.createFrom().publisher(result.records()).call(record  -> {
                 int count = record.get("count").asInt();
 
                 if(count == 0) {
-                    addUser(messageUser);
+                    Timestamp timestamp = addUser(messageUser);
                 } else {
-                    updateUser(messageUser);
+                    MessageUser mu = updateUser(messageUser);
                 }
                 return Uni.createFrom().item(record);
-            }).onFailure().invoke(Throwable::getMessage).subscribeAsCompletionStage();
+            }).onFailure().invoke(Throwable::printStackTrace).subscribeAsCompletionStage();
             // Blocking until finished - just another way
             try {
                 cf.get();
             } catch (InterruptedException | ExecutionException e) {
-                e.printStackTrace();
+                throw new RuntimeException(e);
             }
             return Uni.createFrom().item(session);
         }).onFailure().invoke(Throwable::printStackTrace).subscribeAsCompletionStage();
@@ -230,9 +231,9 @@ public abstract class DbNeo4jBase {
 				return Uni.createFrom().publisher(session.close());
 			})
 			.onFailure().invoke(Throwable::printStackTrace)
-			.subscribe().asStream();
+      .subscribe().asStream();
     
-        return promise;
+      return promise;
 	}
 
     public Driver getDriver() {

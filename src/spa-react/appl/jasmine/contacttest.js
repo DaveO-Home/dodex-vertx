@@ -29,15 +29,15 @@ export default function (timer, React) {
             expect(contact.find("input[type=checkbox]")[0].validity.valueMissing).toBe(false); // Not required
         });
 
-        it("Contact form - validate populated fields, email mismatch.", done => {
+        it("Contact form - validate populated fields, email mismatch.", async() => {
             submitObject = contact.find("input[type=submit]");
 
             nameObject.val("me");
             emailObject.val("not-an-email-address");
             commentObject.val("Stuff");
-
-            submitObject.click();
-
+            await act(async() => {
+                await submitObject.click();
+            })
             expect(nameObject[0].validity.valueMissing).toBe(false);
             expect(nameObject[0].checkValidity()).toBe(true);
             expect(commentObject[0].validity.valueMissing).toBe(false);
@@ -49,7 +49,6 @@ export default function (timer, React) {
             expect(contact[0]).toBeInDOM();
             expect(contact[0]).toExist();
 
-            done();
         });
 
         it("Contact form - validate email with valid email address.", done => {

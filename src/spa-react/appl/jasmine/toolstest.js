@@ -1,5 +1,7 @@
 import ToolsSM from "../js/utils/tools.sm";
 import popper from "@popperjs/core";
+import { act } from 'react';
+
 export default function (Tools, Helpers, React, timer) {
     /*
      * Test that new data are loaded when the select value changes.
@@ -14,35 +16,34 @@ export default function (Tools, Helpers, React, timer) {
         let defaultReduxValue;
         let newReduxValue;
 
-        beforeAll(done => {
+        beforeAll(async() => {
             $("#dropdown1").remove();
             if(!window.main) {
                 const container = document.getElementById("main_container");
                 window.main = createRoot(container);
             }
-            window.main.render(
-                <Tools />
-            );
+            await act(async() => {
+                await window.main.render(
+                    <Tools />
+                );
+            })
 
-            const numbers = timer(50, 50);
-            const observable = numbers.subscribe(timer => {
-                if ($("#tools").length > 0 || timer === 25) {
-                    tools = $("#tools");
-                    beforeValue = tools.find("tbody").find("tr:nth-child(1)").find("td:nth-child(2)").text();
-                    defaultReduxValue = $("#tools-state").text().split(" ", 1);
+            tools = $("#tools");
+            beforeValue = tools.find("tbody").find("tr:nth-child(1)").find("td:nth-child(2)").text();
+            defaultReduxValue = $("#tools-state").text().split(" ", 1);
 
-                    selectorObject = $("#dropdown0");
-                    selectorObject = document.activeElement;
-                    selectorObject.click();
-                    selectorItem = $("#dropdown1 a")[1];
-//                    spyToolsEvent = spyOnEvent(selectorItem, "select");
-                    selectorItem.click();
-                    Helpers.fireEvent(selectorItem, "select");
-                    observable.unsubscribe();
-                    done();
-                }
+            selectorObject = $("#dropdown0");
+            selectorObject = document.activeElement;
+            await act(async() => {
+                await selectorObject.click();
             });
-    }, 3000);
+            selectorItem = $("#dropdown1 a")[1];
+//                    spyToolsEvent = spyOnEvent(selectorItem, "select");
+            await act(async() => {
+                await selectorItem.click();
+            })
+            Helpers.fireEvent(selectorItem, "select");
+        }, 3000);
 
         it("setup and click events executed.", done =>  {
             const numbers = timer(100, 50);

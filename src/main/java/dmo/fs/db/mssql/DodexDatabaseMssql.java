@@ -34,8 +34,12 @@ public class DodexDatabaseMssql extends DodexDatabaseBase implements Serializabl
   public void entityManagerSetup() {
     SessionFactory sessionFactory;
     try {
-      sessionFactory = new DodexEntityManager().getEmf();
-      emf = sessionFactory;
+      sessionFactory = DodexEntityManager.getEmf();
+      if(sessionFactory == null) {
+        new DodexEntityManager();
+        sessionFactory = DodexEntityManager.getEmf();
+        emf = sessionFactory;
+      }
     } catch (IOException ioe) {
       throw new RuntimeException(ioe.getMessage());
     }

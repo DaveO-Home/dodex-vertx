@@ -31,7 +31,7 @@ export default function (App) {
     describe("Application Integration suite - AppTest", () => {
         beforeAll(() => {
             karmaDisplay();
-            
+
             spyOn(App, "loadController").and.callThrough();
             spyOn(App, "renderTools").and.callThrough();
             spyOn(Helpers, "isResolved").and.callThrough();
@@ -77,10 +77,10 @@ export default function (App) {
             });
         });
 
-        it("Is Pdf Loaded", done => {
+        it("Is Pdf Loaded", async() => {
                 const PdfComp = getPdfComp;
-                act(() => {
-                    window.main.render(
+                await act(async() => {
+                    await window.main.render(
                         <PdfComp/>
                     );
                 });
@@ -90,7 +90,6 @@ export default function (App) {
                        expect(document.querySelector("#main_container").children.length === 1).toBe(true);
                        domTest("pdf", document.querySelector("#main_container"));
                        observable.unsubscribe();
-                       done();
                     }
                 });
         });
@@ -163,37 +162,37 @@ async function karmaDisplay() {
       originalConsoleError.apply(console, args);
     };
 
-//    $("body").load(url, function () {
-//        if(!window.rootRoot) {
-//            const rootContainer = document.getElementById("root");
-//            window.rootRoot = createRoot(rootContainer);
-//        }
-//        act(() => {
-//            window.rootRoot.render(
-//                <Menulinks />
-//            );
-//        });
-//
-//        if(!window.loginRoot) {
-//            const loginContainer = document.querySelector("nav-login");
-//            window.loginRoot = createRoot(loginContainer);
-//        }
-//        act(() => {
-//            window.loginRoot.render(
-//                <LoginC />
-//            );
-//        });
-//
-//        if(!window.dodexRoot) {
-//            const dodexContainer = document.querySelector(".dodex--ico");
-//            window.dodexRoot = createRoot(dodexContainer);
-//        }
-//        act(() => {
-//            window.dodexRoot.render(
-//                <Dodexlink />
-//            );
-//        });
-//    });
+    $("body").load(url, async function() {
+        if(!window.rootRoot) {
+            const rootContainer = document.getElementById("root");
+            window.rootRoot = createRoot(rootContainer);
+        }
+        await act(async() => {
+            await window.rootRoot.render(
+                <Menulinks />
+            );
+        });
+
+        if(!window.loginRoot) {
+            const loginContainer = document.querySelector("nav-login");
+            window.loginRoot = createRoot(loginContainer);
+        }
+        await act(async() => {
+            await window.loginRoot.render(
+                <LoginC />
+            );
+        });
+
+        if(!window.dodexRoot) {
+            const dodexContainer = document.querySelector(".dodex--ico");
+            window.dodexRoot = createRoot(dodexContainer);
+        }
+        await act(async() => {
+            await window.dodexRoot.render(
+                <Dodexlink />
+            );
+        });
+    });
 }
 
 function getAdditionalContent() {

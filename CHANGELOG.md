@@ -1,9 +1,30 @@
 # Changelog
 
+# [v4.1.1](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.0) (2025-10-09)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.0..v4.1.1)
+
+* Upgraded to use jdk 24
+  * See: https://github.com/protocolbuffers/protobuf/issues/20760 for issue with **`protobuf`**
+    ```
+    WARNING: A terminally deprecated method in sun.misc.Unsafe has been called
+    WARNING: sun.misc.Unsafe::arrayBaseOffset has been called by com.google.protobuf.UnsafeUtil$MemoryAccessor  
+     (file:/home/daveo/.m2/repository/com/google/protobuf/protobuf-java/4.30.0/protobuf-java-4.30.0.jar)
+    WARNING: Please consider reporting this to the maintainers of class com.google.protobuf.UnsafeUtil$MemoryAccessor
+    WARNING: sun.misc.Unsafe::arrayBaseOffset will be removed in a future release
+    ```
+  * Optimizes contention issues for Virtual-Threads    
+* Upgraded dependencies to handle jdk24 - kotlin
+* Upgraded javascript dependencies
+* Fixed multiple **`EntityManager`** instances for `Dodex`
+* Changed shadowJar plugin to com.gradleup.shadow
+* Fixed the spa jasmine tests for react. Note; only one(1) browser at a time is allowed, defaults to `FirefoxHeadless`.
+    * export `USE_BROWSERS=ChromiumHeadless` etc.
+
 # [v4.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.0) (2025-08-05)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.0.2..v4.1.0)
-
+https://github.com/protocolbuffers/protobuf/issues/20760
 * Upgraded Vertx
 * Fixed Handicap login to allow a selected date
 * Fixed golfer pull-down on scores tab to not display `Admin User`

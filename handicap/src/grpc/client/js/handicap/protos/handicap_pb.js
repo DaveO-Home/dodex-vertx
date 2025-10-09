@@ -13,7 +13,13 @@
 
 var jspb = require('google-protobuf');
 var goog = jspb;
-var global = (function() { return this || window || global || self || Function('return this')(); }).call(null);
+var global =
+    (typeof globalThis !== 'undefined' && globalThis) ||
+    (typeof window !== 'undefined' && window) ||
+    (typeof global !== 'undefined' && global) ||
+    (typeof self !== 'undefined' && self) ||
+    (function () { return this; }).call(null) ||
+    Function('return this')();
 
 goog.exportSymbol('proto.handicap.grpc.Command', null, global);
 goog.exportSymbol('proto.handicap.grpc.Course', null, global);
@@ -223,9 +229,9 @@ proto.handicap.grpc.HandicapSetup.prototype.toObject = function(opt_includeInsta
  */
 proto.handicap.grpc.HandicapSetup.toObject = function(includeInstance, msg) {
   var f, obj = {
-    cmd: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    json: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    message: jspb.Message.getFieldWithDefault(msg, 3, "")
+cmd: jspb.Message.getFieldWithDefault(msg, 1, 0),
+json: jspb.Message.getFieldWithDefault(msg, 2, ""),
+message: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -413,9 +419,9 @@ proto.handicap.grpc.HandicapData.prototype.toObject = function(opt_includeInstan
  */
 proto.handicap.grpc.HandicapData.toObject = function(includeInstance, msg) {
   var f, obj = {
-    cmd: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    json: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    message: jspb.Message.getFieldWithDefault(msg, 3, "")
+cmd: jspb.Message.getFieldWithDefault(msg, 1, 0),
+json: jspb.Message.getFieldWithDefault(msg, 2, ""),
+message: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {
@@ -603,12 +609,12 @@ proto.handicap.grpc.Rating.prototype.toObject = function(opt_includeInstance) {
  */
 proto.handicap.grpc.Rating.toObject = function(includeInstance, msg) {
   var f, obj = {
-    tee: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    rating: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    slope: jspb.Message.getFieldWithDefault(msg, 3, 0),
-    par: jspb.Message.getFieldWithDefault(msg, 4, 0),
-    color: jspb.Message.getFieldWithDefault(msg, 5, ""),
-    seq: jspb.Message.getFieldWithDefault(msg, 6, 0)
+tee: jspb.Message.getFieldWithDefault(msg, 1, 0),
+rating: jspb.Message.getFieldWithDefault(msg, 2, ""),
+slope: jspb.Message.getFieldWithDefault(msg, 3, 0),
+par: jspb.Message.getFieldWithDefault(msg, 4, 0),
+color: jspb.Message.getFieldWithDefault(msg, 5, ""),
+seq: jspb.Message.getFieldWithDefault(msg, 6, 0)
   };
 
   if (includeInstance) {
@@ -890,9 +896,9 @@ proto.handicap.grpc.Course.prototype.toObject = function(opt_includeInstance) {
  */
 proto.handicap.grpc.Course.toObject = function(includeInstance, msg) {
   var f, obj = {
-    id: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    name: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    ratingsList: jspb.Message.toObjectList(msg.getRatingsList(),
+id: jspb.Message.getFieldWithDefault(msg, 1, 0),
+name: jspb.Message.getFieldWithDefault(msg, 2, ""),
+ratingsList: jspb.Message.toObjectList(msg.getRatingsList(),
     proto.handicap.grpc.Rating.toObject, includeInstance)
   };
 
@@ -1110,7 +1116,7 @@ proto.handicap.grpc.ListCoursesResponse.prototype.toObject = function(opt_includ
  */
 proto.handicap.grpc.ListCoursesResponse.toObject = function(includeInstance, msg) {
   var f, obj = {
-    coursesList: jspb.Message.toObjectList(msg.getCoursesList(),
+coursesList: jspb.Message.toObjectList(msg.getCoursesList(),
     proto.handicap.grpc.Course.toObject, includeInstance)
   };
 
@@ -1263,7 +1269,7 @@ proto.handicap.grpc.Golfer.prototype.toObject = function(opt_includeInstance) {
  */
 proto.handicap.grpc.Golfer.toObject = function(includeInstance, msg) {
   var f, obj = {
-    name: jspb.Message.getFieldWithDefault(msg, 1, "")
+name: jspb.Message.getFieldWithDefault(msg, 1, "")
   };
 
   if (includeInstance) {
@@ -1400,7 +1406,7 @@ proto.handicap.grpc.ListPublicGolfers.prototype.toObject = function(opt_includeI
  */
 proto.handicap.grpc.ListPublicGolfers.toObject = function(includeInstance, msg) {
   var f, obj = {
-    golferList: jspb.Message.toObjectList(msg.getGolferList(),
+golferList: jspb.Message.toObjectList(msg.getGolferList(),
     proto.handicap.grpc.Golfer.toObject, includeInstance)
   };
 
@@ -1553,9 +1559,9 @@ proto.handicap.grpc.Command.prototype.toObject = function(opt_includeInstance) {
  */
 proto.handicap.grpc.Command.toObject = function(includeInstance, msg) {
   var f, obj = {
-    cmd: jspb.Message.getFieldWithDefault(msg, 1, 0),
-    key: jspb.Message.getFieldWithDefault(msg, 2, ""),
-    json: jspb.Message.getFieldWithDefault(msg, 3, "")
+cmd: jspb.Message.getFieldWithDefault(msg, 1, 0),
+key: jspb.Message.getFieldWithDefault(msg, 2, ""),
+json: jspb.Message.getFieldWithDefault(msg, 3, "")
   };
 
   if (includeInstance) {

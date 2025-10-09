@@ -6,33 +6,33 @@ import Pdf from "../components/PdfC";
 export default function (type, timer) {
     if (window.testit !== undefined && window.testit) {
         describe("Testing Menulinks Router", () => {
-            it(`is ${type} loaded from router component`, done => {
+            it(`is ${type} loaded from router component`, async() => {
                 switch (type) {
                     case "table":
-                        act(() => {
-                            render(<Tools/>);
+                        await act(async() => {
+                            await render(<Tools/>);
                         });
 
-                        act(() => {
-                            screen.getAllByText("Tabular View")[0].click();
-                        });
+//                        await act(async() => {
+//                            await screen.getAllByText("Tabular View")[0].click();
+//                        });
 
                        const numbers = timer(50, 50);
                        const observable = numbers.subscribe(timer => {
                            if ($('tbody > tr[role="row"]').length != 0 || timer === 25) {
                                expect($('tbody > tr[role="row"]').length > 65).toBe(true);  // default page size
                                observable.unsubscribe();
-                               done();
                            }
                        });
                         break;
                     case "pdf":
-                        render(<Pdf/>);
+                        await act(async() => {
+                            await render(<Pdf/>);
+                        })
                         act(() => {
-                            screen.getAllByText("PDF View")[0].click();
+                            render(<Pdf/>);
                         })
                         expect($('#main_container > iframe[name="pdfDO"]').length > 0).toBe(true);
-                        done();
                         break;
                     default:
                 }

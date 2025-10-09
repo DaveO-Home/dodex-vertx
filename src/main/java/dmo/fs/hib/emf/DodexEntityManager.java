@@ -22,12 +22,14 @@ public class DodexEntityManager {
   protected static final Logger logger = LoggerFactory.getLogger(DodexEntityManager.class.getName());
   private final DodexUtil dodexUtil = new DodexUtil();
   private String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
-  private final SessionFactory emf;
+  private static SessionFactory emf;
 
   public DodexEntityManager() throws IOException {
-    HibernatePersistenceConfiguration  config = configSetup();
+    if(emf == null) {
+      HibernatePersistenceConfiguration config = configSetup();
 
-    emf = Objects.requireNonNull(config).createEntityManagerFactory();
+      emf = Objects.requireNonNull(config).createEntityManagerFactory();
+    }
   }
 
   private HibernatePersistenceConfiguration configSetup() throws IOException {
@@ -69,8 +71,7 @@ public class DodexEntityManager {
         .showSql(false, false, false);
   }
 
-  public SessionFactory getEmf() {
+  public static SessionFactory getEmf() {
     return emf;
   }
-
 }

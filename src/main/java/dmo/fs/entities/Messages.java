@@ -51,6 +51,10 @@ public class Messages implements Serializable {
     return id;
   }
 
+  public void setUndelivered(Set<Undelivered> undelivered) {
+    this.undelivered = undelivered;
+  }
+
   public void setId(int id) {
     this.id = id;
   }

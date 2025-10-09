@@ -1,6 +1,6 @@
 
 buildscript {
-  ext.kotlin_version = "2.0.21"
+  ext.kotlin_version = "2.2.20-RC"
 
   dependencies {
     classpath "com.google.protobuf:protobuf-gradle-plugin:0.9.5"
@@ -9,14 +9,15 @@ buildscript {
 
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id "org.jetbrains.kotlin.jvm" version "2.0.21"
-    id "org.jetbrains.kotlin.plugin.allopen" version "2.0.21"
+    id "org.jetbrains.kotlin.jvm" version "2.2.20-RC"
+    id "org.jetbrains.kotlin.plugin.allopen" version "2.2.20-RC"
 
 
     id "application"
 
-    id "com.github.johnrengelman.shadow" version "8.1.1"
+//    id "com.github.johnrengelman.shadow" version "8.1.1"
 
+//    id "com.gradleup.shadow" version "9.1.0"
 
     id "nu.studer.jooq" version "8.0"
 
@@ -37,10 +38,10 @@ repositories {
 version = "4.0.0"
 
 ext {
-  vertxVersion = "5.0.1"
+  vertxVersion = "5.0.4"
   protoVersion = "3.25.5"
   grpcVersion = "1.72.0"
-  hibernateVersion = "7.0.5.Final"
+  hibernateVersion = "7.0.10.Final"
 }
 
 def mainVerticleName = "golf.handicap.vertx.MainVerticle"
@@ -82,6 +83,23 @@ tasks.register('jooqGenerate', JavaExec) {
     mainClass = "dmo.fs.utils.JooqGenerate"
     args = ["dev"]
     dependsOn copyDatabaseConfig
+}
+
+tasks.withType(JavaExec).configureEach {
+    jvmArgs += ["--enable-native-access=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED"]
+
+    if(java.targetCompatibility  >= JavaVersion.VERSION_24) {
+//        jvmArgs += ["--sun-misc-unsafe-memory-access=allow"]
+        setJvmArgs(["--sun-misc-unsafe-memory-access=allow"])
+    }
+}
+
+tasks.run {
+    jvmArgs += ["--enable-native-access=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED"]
+    if(java.targetCompatibility  >= JavaVersion.VERSION_24) {
+//        jvmArgs += "--sun-misc-unsafe-memory-access=allow"
+        setJvmArgs(["--sun-misc-unsafe-memory-access=allow"])
+    }
 }
 
 run {
@@ -146,7 +164,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
     implementation "io.vertx:vertx-grpcio-server:$vertxVersion"
     implementation "io.vertx:vertx-grpcio-client:$vertxVersion"
-    shadow gradleApi()
+//    shadow gradleApi()
     implementation("io.vertx:vertx-core:$vertxVersion")
     implementation("io.vertx:vertx-rx-java3:$vertxVersion")
     implementation("io.vertx:vertx-config:$vertxVersion")
@@ -158,7 +176,7 @@ dependencies {
     implementation("io.vertx:vertx-grpc:$vertxVersion")
     implementation("io.vertx:vertx-grpc-client:$vertxVersion")
     implementation("io.agroal:agroal-pool:2.5")
-    implementation group: 'com.h2database', name: 'h2', version: '2.2.224'
+    runtimeOnly group: 'com.h2database', name: 'h2', version: '2.3.232'
     implementation("org.xerial:sqlite-jdbc:3.46.0.0")
     implementation("io.vertx:vertx-mysql-client:$vertxVersion")
     implementation("io.vertx:vertx-pg-client:$vertxVersion")
@@ -199,19 +217,19 @@ dependencies {
 
 apply plugin: "nu.studer.jooq"
 
-shadowJar {
-  zip64 = true
-
-  archiveClassifier = "fat"
-
-  mergeServiceFiles {
-    include "META-INF/services/io.vertx.core.spi.VerticleFactory"
-  }
-
-  manifest{
-    attributes 'Main-Verticle': mainVerticleName
-  }
-}
+//shadowJar {
+//  zip64 = true
+//
+//  archiveClassifier = "fat"
+//
+//  mergeServiceFiles {
+//    include "META-INF/services/io.vertx.core.spi.VerticleFactory"
+//  }
+//
+//  manifest{
+//    attributes 'Main-Verticle': mainVerticleName
+//  }
+//}
 
 test {
     // Use junit platform for unit tests

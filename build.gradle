@@ -43,23 +43,13 @@ repositories {
 group = 'dmo.fs'
 version = "4.0.0"
 
-java {
-    sourceCompatibility = JavaVersion.VERSION_21
-    targetCompatibility = JavaVersion.VERSION_21
-}
 println("Java Version: " + JavaVersion.current()+" -- target: " + java.targetCompatibility)
 ext {
-    vertxVersion = "5.0.4"
+    vertxVersion = "5.0.11"
     junitJupiterEngineVersion = "5.10.2"
-    jooqVersion = "3.19.3"
+    jooqVersion = "3.21.2"
     protoVersion = "3.25.5"
-    hibernateVersion = "7.0.10.Final"
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
+    hibernateVersion = "7.2.5.Final"
 }
 
 pmd {
@@ -80,27 +70,27 @@ dependencies {
     implementation(platform("io.vertx:vertx-stack-depchain:$vertxVersion"))
 //    implementation "io.vertx:vertx-launcher-application:$vertxVersion"
     implementation "io.vertx:vertx-launcher-legacy-cli:$vertxVersion"
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.18.3")
-    implementation group:"io.vertx", name:"vertx-core", version:"$vertxVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:2.18.3"
+    implementation "io.vertx:vertx-core:$vertxVersion"
     implementation "io.vertx:vertx-web:$vertxVersion"
-    implementation group: "io.agroal", name: "agroal-pool", version: "2.5"
+    implementation "io.agroal:agroal-pool:2.5"
     implementation "io.vertx:vertx-pg-client:$vertxVersion"
     implementation "io.vertx:vertx-mysql-client:$vertxVersion"
     implementation "io.vertx:vertx-jdbc-client:$vertxVersion"
     implementation "io.vertx:vertx-db2-client:$vertxVersion"
     implementation "io.vertx:vertx-rx-java3:$vertxVersion"
 
-    implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.46.0.0'
-    implementation group: 'cubrid', name: 'cubrid-jdbc', version: '11.2.1.0038'
+    implementation "org.xerial:sqlite-jdbc:3.46.0.0"
+    implementation "cubrid:cubrid-jdbc:11.2.1.0038"
     /*
         This is required when using "firebase" database. Comment for other databases using "gRPC"
     */
 //    implementation "com.google.cloud:google-cloud-firestore-admin:3.31.8"
     implementation "com.google.firebase:firebase-admin:9.5.0"
-    implementation group: "org.neo4j.driver", name: "neo4j-java-driver", version: "4.4.20"
+    implementation "org.neo4j.driver:neo4j-java-driver:4.4.22"
     implementation "io.vertx:vertx-mongo-client:$vertxVersion"
     implementation "io.smallrye.reactive:smallrye-mutiny-vertx-core:2.30.1"
-    implementation group: 'javax.ws.rs', name: 'jsr311-api', version: '1.1.1'
+    implementation "javax.ws.rs:jsr311-api:1.1.1"
 
     implementation "org.jooq:jooq"
     implementation "io.vertx:vertx-tcp-eventbus-bridge:$vertxVersion"
@@ -108,14 +98,11 @@ dependencies {
 
     implementation "com.google.guava:guava:33.2.1-jre"
     implementation project(":handicap")
-    implementation "dmo.fs.utils:generate"
 
     implementation "io.vertx:vertx-web-openapi-router:$vertxVersion"
-//    implementation "io.vertx:vertx-web-api-contract:$vertxVersion"
-
     implementation "io.vertx:vertx-mqtt:$vertxVersion"
 
-    annotationProcessor("org.hibernate.orm:hibernate-jpamodelgen:$hibernateVersion")
+    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:$hibernateVersion"
     implementation "org.hibernate:hibernate-core:$hibernateVersion"
     implementation "org.hibernate.orm:hibernate-agroal:$hibernateVersion"
     implementation "org.hibernate.validator:hibernate-validator:9.0.0.Final"
@@ -123,7 +110,7 @@ dependencies {
     implementation "com.microsoft.sqlserver:mssql-jdbc:12.10.1.jre11"
     implementation "jakarta.persistence:jakarta.persistence-api:3.2.0"
 
-    runtimeOnly group: 'com.h2database', name: 'h2', version: '2.3.232'
+    runtimeOnly "com.h2database:h2:2.4.240"
     runtimeOnly "org.glassfish.jersey.media:jersey-media-json-binding:3.1.10"
     runtimeOnly "org.glassfish.expressly:expressly:6.0.0"
 
@@ -141,13 +128,10 @@ def mainClassName = "io.vertx.core.Launcher"
 def doOnChange = ".${File.separator}gradlew classes"
 def watchForChange = "src/main/java/**/*.java, handicap/src/main/**/*"
 def debug = ""
-def cache = "--java-opts=-Dvertx.disableFileCaching=true"
+def cache = "--java-opts=-Dvertx.disableFileCaching=true --sun-misc-unsafe-memory-access=allow"
 def OS = System.getProperty("os.name").toLowerCase()
 def usr = System.getProperty("user.home")
 
-application {
-    getMainClass().set(mainClassName)
-}
 
 apply plugin: "nu.studer.jooq"
 
@@ -155,14 +139,6 @@ tasks.withType(JavaCompile).configureEach {
     options.compilerArgs << "-Xlint:deprecation"
     if(project.hasProperty("compiler.prop")) {
 	    options.compilerArgs << project.property("compiler.prop")
-    }
-}
-
-tasks.withType(JavaExec).configureEach {
-    jvmArgs += ["--enable-native-access=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED"]
-
-    if(java.targetCompatibility >= JavaVersion.VERSION_24) {
-        jvmArgs += ["--sun-misc-unsafe-memory-access=allow"]
     }
 }
 
@@ -184,13 +160,15 @@ ext {
 }
 
 application {
+    getMainClass().set(mainClassName)
     mainClassName = javaMainClass
+    applicationDefaultJvmArgs = ["--sun-misc-unsafe-memory-access=allow", "--enable-native-access=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED"]
 }
 
 run {
 
     if (System.getProperty("DEBUG", "false") == "true") {
-        debug = "--java-opts=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dvertx.disableFileCaching=true"
+        debug = "--java-opts=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 -Dvertx.disableFileCaching=true --sun-misc-unsafe-memory-access=allow"
         cache = ""
     }
 
@@ -204,14 +182,9 @@ run {
         environment "GRPC_SERVER", "false"
     }
 
-    jvmArgs += ["--enable-native-access=ALL-UNNAMED", "--add-opens", "java.base/java.lang=ALL-UNNAMED"]
-    if(java.targetCompatibility  >= JavaVersion.VERSION_24) {
-        jvmArgs += "--sun-misc-unsafe-memory-access=allow"
-    }
-
     args = ['run', mainVerticleName,  debug, "--redeploy=$watchForChange", "--launcher-class=$mainClassName",
             "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json",
-            cache]
+             cache]
 }
 
 /*
@@ -299,3 +272,4 @@ test {
         events "PASSED", "FAILED", "SKIPPED"
     }
 }
+

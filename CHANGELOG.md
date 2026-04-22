@@ -1,5 +1,16 @@
 # Changelog
 
+# [v4.1.2](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.2) (2026-04-21)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.1..v4.1.2)
+
+* Upgraded Vert.x to 5.0.11
+* Upgraded javascript dependencies
+* Simplified 'kube/Dockerfile' to handle java 25
+* Migrated kotlin code to latest version
+* Upgraded gradle to 9.4.1
+* Default JVM 25+
+
 # [v4.1.1](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.0) (2025-10-09)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.0..v4.1.1)

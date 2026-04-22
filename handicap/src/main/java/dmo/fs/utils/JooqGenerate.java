@@ -50,7 +50,7 @@ public class JooqGenerate {
           dbUrl = dbMap.get("url") + dbMap.get("host") + dbMap.get("dbname") + "?user=" + dbMap.get("CRED:user")
               + "&password=" + dbMap.get("CRED:password");
           jooqMetaName = "org.jooq.meta.postgres.PostgresDatabase";
-          databaseDbname = dbMap.get("database");
+          databaseDbname = "public"; //dbMap.get("database");
         }
         logger.info("Generate: " + dbUrl + " -- " + jooqMetaName + " -- " + databaseDbname);
         generateJooqObjects(dbUrl, jooqMetaName, databaseDbname);

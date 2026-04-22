@@ -213,6 +213,9 @@ public class DodexUtil {
     }
 
     public static io.vertx.rxjava3.core.Vertx getVertx() {
+        if(vertx == null) {
+            vertx = io.vertx.rxjava3.core.Vertx.vertx();
+        }
         return vertx;
     }
 

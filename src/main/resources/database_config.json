@@ -273,8 +273,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "@//172.17.0.3:",
-                "host2": "172.17.0.3",
+                "host": "@//172.17.0.2:",
+                "host2": "172.17.0.2",
                 "url": "jdbc:oracle:thin:",
                 "dbname": "/XEPDB1",
                 "database": "XEPDB1",
@@ -290,7 +290,7 @@
             },
             "config": {
                 "host": "@//172.17.0.2:",
-                "host2": "172.17.0.3",
+                "host2": "172.17.0.2",
                 "url": "jdbc:oracle:thin:",
                 "dbname": "/XEPDB1",
                 "database": "XEPDB1",

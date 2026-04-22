@@ -4,8 +4,8 @@
 ## Install Assumptions
 
 1. Using [Vertx5](<https://vertx.io/introduction-to-vertx-and-reactive/>)
-2. Java 21 or higher installed with JAVA_HOME set.
-3. Gradle 8+ installed(app will install gradle 8). If you have sdkman installed, execute `sdk install gradle 8.14`
+2. Java 25 or higher installed with JAVA_HOME set.
+3. Gradle 9.4+ installed(app will install gradle 9.4.1). If you have sdkman installed, execute `sdk install gradle 9.4.1`
 4. Node with npm javascript package manager installed.
 
 **Important Note;** The `kotlin, gRPC` application can now run **without** a proxy(Envoy). After initial configuration(javascript npm installs), the `gRPC` client now connects directly to Vert.x. Simply execute `gradlew run` and enter `localhost:8087/handicap.html` in a browser. 

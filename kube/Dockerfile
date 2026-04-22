@@ -1,31 +1,17 @@
-FROM debian:buster-slim
-ARG version=21.0.2.13-1
-
-# In addition to installing the Amazon corretto, we also install
-# fontconfig. The folks who manage the docker hub's
-# official image library have found that font management
-# is a common usecase, and painpoint, and have
-# recommended that Java images include font support.
-#
-# See:
-#  https://github.com/docker-library/official-images/blob/master/test/tests/java-uimanager-font/container.java
+FROM linuxcontainers/debian-slim:latest
 
 RUN ldd --version
 RUN set -eux \
     && apt-get update \
-    && apt-get install -y --no-install-recommends \
-        curl ca-certificates gnupg software-properties-common fontconfig java-common \
-    && curl -fL https://apt.corretto.aws/corretto.key | apt-key add - \
-    && add-apt-repository 'deb https://apt.corretto.aws stable main' \
-    && mkdir -p /usr/share/man/man1 || true \
-    && apt-get update \
-    && apt-get install -y java-21-amazon-corretto-jdk=1:$version \
-    && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-        curl gnupg software-properties-common \
+    && apt-get install -y wget \
+    && wget https://download.oracle.com/java/25/latest/jdk-25_linux-x64_bin.tar.gz \
+    && mkdir -p /usr/lib/jvm \
+    && tar -xzf jdk-25_linux-x64_bin.tar.gz -C /usr/lib/jvm \
     && apt-get update
 
 ENV LANG=C.UTF-8
-ENV JAVA_HOME=/usr/lib/jvm/java-21-amazon-corretto
+ENV JAVA_HOME=/usr/lib/jvm/jdk-25.0.2
+ENV PATH=$JAVA_HOME/bin:$PATH
 
 USER root
 
@@ -54,4 +40,4 @@ ENV USE_HANDICAP=true
 
 USER dodex
 
-CMD ["/usr/lib/jvm/java-21-amazon-corretto/bin/java", "-jar", "/home/dodex/vertx/dodex-vertx-4.0.0-prod.jar"]
+CMD ["/usr/lib/jvm/jdk-25.0.2/bin/java", "-jar", "/home/dodex/vertx/dodex-vertx-4.0.0-prod.jar"]

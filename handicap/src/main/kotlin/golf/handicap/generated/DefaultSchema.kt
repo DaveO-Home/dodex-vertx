@@ -5,7 +5,6 @@ package golf.handicap.generated
 
 
 import golf.handicap.generated.sequences.COURSE_ID_SEQ
-import golf.handicap.generated.sequences.GROUP_ID_SEQ
 import golf.handicap.generated.tables.Course
 import golf.handicap.generated.tables.Golfer
 import golf.handicap.generated.tables.Groups
@@ -73,8 +72,7 @@ open class DefaultSchema : SchemaImpl("", DefaultCatalog.DEFAULT_CATALOG) {
     override fun getCatalog(): Catalog = DefaultCatalog.DEFAULT_CATALOG
 
     override fun getSequences(): List<Sequence<*>> = listOf(
-        COURSE_ID_SEQ,
-        GROUP_ID_SEQ
+        COURSE_ID_SEQ
     )
 
     override fun getTables(): List<Table<*>> = listOf(

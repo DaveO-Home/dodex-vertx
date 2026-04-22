@@ -51,8 +51,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "//0.0.0.0",
-                "host2": "0.0.0.0",
+                "host": "//localhost",
+                "host2": "localhost",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
                 "dbname": "/dodex",

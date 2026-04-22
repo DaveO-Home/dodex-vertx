@@ -205,6 +205,9 @@ public class DodexUtils {
     }
 
     public static Vertx getVertx() {
+        if(vertx == null) {
+            vertx = Vertx.vertx();
+        }
         return vertx;
     }
 

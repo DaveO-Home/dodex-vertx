@@ -12,10 +12,11 @@ sudo docker build  -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube
 ./deleteapp
 minikube image remove dufferdo2/dodex-vertx
 minikube image load dufferdo2/dodex-vertx
+kubectl create -f kube/db-volumne.yml   <==== Run only once, 'deleteapp' does not remove the volume
 kubectl create -f kube/vertx.yml
 kubectl get pods -A
 
----- change "dv" to your two desired characters
+---- optionally change "dvhandicap" to your desired domain 
 loophole http 30080 $(minikube service vertx-service --url | cut -d":" -f2 | cut -d"/" -f3) --hostname dvhandicap
 
 loophole http 30070 $(minikube service vertx-service --url | cut -d":" -f2 | cut -d"/" -f3) --hostname dvhandicap2
@@ -23,7 +24,10 @@ loophole http 30070 $(minikube service vertx-service --url | cut -d":" -f2 | cut
 ---- logins
 docker exec -it <container>
 docker run --rm -it --entrypoint /bin/bash dufferdo2/dodex-vertx
+---into pod
+kubectl exec (-n <namespace>) <pod-name>  -it -- /bin/bash
 
 --- others
 ip addr show   # in minikube ssh
 nc -zv 192.168.49.1 3306   ----  this ip is my bridge ip, the bridge ip should be used to access databases running on the host
+

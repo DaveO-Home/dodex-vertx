@@ -193,7 +193,7 @@ class PopulateGolfer : SqlConstants(), IPopulateGolfer {
         persistedGolfer.golferId = handicapGolfer.pin?.let { PersistedGolfer.GolferId(it) }
         persistedGolfer.firstName = resultGolfer?.firstName ?: handicapGolfer.firstName
         persistedGolfer.lastName = resultGolfer?.lastName ?: handicapGolfer.lastName
-        persistedGolfer.handicap = resultGolfer?.handicap ?: handicapGolfer.handicap.toFloat()
+        persistedGolfer.handicap = resultGolfer?.handicap ?: handicapGolfer.handicap // .toFloat()
         persistedGolfer.lastLogin = LocalDateTime.now().withNano(0)
         /* Login first before changing values with subsequent login
         *  cmd = 3 - first login

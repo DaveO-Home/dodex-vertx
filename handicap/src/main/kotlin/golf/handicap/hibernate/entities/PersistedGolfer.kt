@@ -70,7 +70,7 @@ class PersistedGolfer : Serializable {
         constructor()
 
         override fun hashCode(): Int {
-            return (77).toInt() * "&".hashCode() * "$".hashCode() * LocalDateTime.now().second
+            return (77) * "&".hashCode() * "$".hashCode() * LocalDateTime.now().second
         }
 
         override fun equals(other: Any?): Boolean {

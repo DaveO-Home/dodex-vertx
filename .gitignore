@@ -47,3 +47,4 @@ handicap/src/main/resources/static/assets
 handicap/src/main/resources/static/service-worker.js
 dodex-vertx
 src/firebase/tests/tsconfig.tsbuildinfo
+src/firebase/tests/testsrc

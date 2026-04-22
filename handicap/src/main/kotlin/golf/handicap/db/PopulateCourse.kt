@@ -359,7 +359,7 @@ class PopulateCourse : SqlConstants() {
 
                                 courseBuilder = handicap.grpc.Course.newBuilder()
                                 courseBuilder!!.setId(row.getInteger(0)) // "COURSE_SEQ"))
-                                courseBuilder!!.setName(row.getString(1)) // "COURSE_NAME"))
+                                courseBuilder.setName(row.getString(1)) // "COURSE_NAME"))
                             }
 
                             val ratingBuilder =
@@ -369,12 +369,12 @@ class PopulateCourse : SqlConstants() {
                                     .setTee(row.getInteger(5)) // "TEE")
                                     .setColor(row.getString(6)) // "TEE_COLOR")
                                     .setPar(row.getInteger(9)) // "TEE_PAR")
-                            courseBuilder!!.addRatings(ratingBuilder)
+                            courseBuilder.addRatings(ratingBuilder)
                             ratingTees[row.getInteger(5)] = row.getInteger(5) // which tees have been added
                         }
 
                         if (courseBuilder != null) {
-                            setUndefinedTees(ratingTees, courseBuilder!!)
+                            setUndefinedTees(ratingTees, courseBuilder)
                             coursesBuilder.addCourses(courseBuilder)
                         }
                         responseObserver.onNext(coursesBuilder.build())

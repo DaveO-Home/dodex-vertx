@@ -6,7 +6,7 @@ import Pdf from "../components/PdfC";
 export default function (type, timer) {
     if (window.testit !== undefined && window.testit) {
         describe("Testing Menulinks Router", () => {
-            it(`is ${type} loaded from router component`, async() => {
+            it(`is ${type} loaded from router component`, async () => {
                 switch (type) {
                     case "table":
                         await act(async() => {

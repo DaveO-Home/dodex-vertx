@@ -94,6 +94,9 @@ public class HandicapDatabasePostgresG extends DbPostgres {
   }
 
   public Future<String> checkOnTables() throws InterruptedException, SQLException {
+    if(vertx == null) {
+      vertx = DodexUtil.getVertx();
+    }
     databaseSetup();
     return returnPromise.future();
   }
@@ -112,7 +115,8 @@ public class HandicapDatabasePostgresG extends DbPostgres {
         .setPort(Integer.valueOf(dbMap.get("port")))
         .setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setDatabase(dbMap.get("database")).setSslMode(SslMode.of(dbProperties.getProperty("ssl")));
+        .setDatabase(dbMap.get("database"));
+//        .setSslMode(SslMode.of(dbProperties.getProperty("ssl")));
 //        .setIdleTimeout(1)
     // .setCachePreparedStatements(true)
     ;
@@ -122,8 +126,6 @@ public class HandicapDatabasePostgresG extends DbPostgres {
         new PoolOptions().setMaxSize(Runtime.getRuntime().availableProcessors() * 5);
 
     // Create the client pool
-//    pool4 = PgPool.pool(DodexUtil.getVertx(), connectOptions, poolOptions);
-
     client = PgBuilder.pool()
         .with(poolOptions)
         .connectingTo(connectOptions)

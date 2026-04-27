@@ -45,6 +45,7 @@ scripts/*.java
 handicap/src/main/resources/static/json
 handicap/src/main/resources/static/assets
 handicap/src/main/resources/static/service-worker.js
+handicap/generate/main/kotlin/golf.handicap.generated
 dodex-vertx
 src/firebase/tests/tsconfig.tsbuildinfo
 src/firebase/tests/testsrc

@@ -64,7 +64,7 @@
 
 * In **dodex-vertx/handicap/src/grpc/client** execute **`npm run webpack:prod`** or **`npm run esbuild:prod`**
 * execute **`./gradlew clean`** and **`export USE_HANDICAP=true`**
-* Make sure your database configurations are correct; **./src/main/resources/database...**, **./handicap/src/main/resources/database...**, **./handicap/generate/src/main/resources/database...**
+* Make sure your database configurations are correct; **./src/main/resources/database_config.json** and **./handicap/src/main/resources/database_conf.json**
 * In **dodex-vertx** execute **`./gradlew shadowJar`** -  **Note:** The default database should be **sqlite3**
 * To start the production verticle, execute **`java -jar build/libs/dodex-vertx-4.0.0-prod.jar`**
 * Production runs on ports, **8880** and **8070**. When changing the `gRPC`port the javascript client and the`application-conf.json`files must reflect the change. 

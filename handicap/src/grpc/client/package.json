@@ -9,7 +9,9 @@
     "esbuild:build": "node config/esbuild.config.js false",
     "esbuild:prod": "node config/esbuild.config.js true",
     "group:build": "node config/esbuild.group.config.js false",
-    "group:prod": "node config/esbuild.group.config.js true"
+    "group:prod": "node config/esbuild.group.config.js true",
+    "monitor:build": "node config/esbuild.monitor.config.js false",
+    "monitor:prod": "node config/esbuild.monitor.config.js true"
   },
   "devDependencies": {
     "@craftamap/esbuild-plugin-html": "^0.9.0",
@@ -38,6 +40,7 @@
     "axios": "^1.15.1",
     "bootstrap": "^5.3.8",
     "bootstrap-table": "^1.27.2",
+    "chart.js": "^3.9.1",
     "date-time-picker-component": "^1.1.10",
     "dodex": "^1.4.1",
     "dodex-input": "^1.4.1",

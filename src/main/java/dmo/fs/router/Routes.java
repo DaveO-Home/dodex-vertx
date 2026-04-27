@@ -159,7 +159,7 @@ public class Routes {
 
     staticRoute.handler(staticHandler);
     staticRoute.failureHandler(ctx -> {
-      logger.error("{}FAILURE in static route: {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.currentRoute().getPath(), ctx.pathParams(), ColorUtilConstants.RESET);
+      logger.error("{}FAILURE in static route: {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.request().uri(), ctx.pathParams(), ColorUtilConstants.RESET);
       ctx.next();
     });
 

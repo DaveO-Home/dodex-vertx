@@ -1,5 +1,17 @@
 # Changelog
 
+# [v4.1.3](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.3) (2026-04-27)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.2..v4.1.3)
+
+* Removed Jooq codegen gradle plugin - `nu.studer.jooq`
+* Cleaned up execution of `dmo.fs.utils.JooqGenerate`
+* JooqGenerate now uses `database_config.json` from the 'handicap' directory
+* Streamlined the gradle build process  
+  **Note;** Dodex(src/main/java...) uses raw `JooQ` syntax, codegen is not used.  
+            Handicap uses the `JooQ` codegen capability thus proxy objects can be used in the queries.
+* Removed the inline javascript/css from `monitor.html`. Uses an esbuild build in handicap/grpc/client, `npm run esbuild:prod`;
+
 # [v4.1.2](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.2) (2026-04-21)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.1..v4.1.2)

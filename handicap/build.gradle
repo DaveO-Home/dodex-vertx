@@ -15,8 +15,6 @@ plugins {
 
     id "application"
 
-    id "nu.studer.jooq" version "8.0"
-
     id "java"
 
     id 'com.google.protobuf' version '0.9.5'
@@ -47,6 +45,7 @@ def watchForChange = "src/main/**/*"
 def doOnChange = "${projectDir}/gradlew classes"
 def OS = System.getProperty("os.name").toLowerCase();
 def javaTargetVersion = 25
+def jooqVersion="3.21.2"
 
 def mainClassName = "io.vertx.core.Launcher"
 application {
@@ -59,27 +58,20 @@ java {
     targetCompatibility = JavaVersion.VERSION_25
 }
 
-tasks.register('copyDatabaseConfig', Copy) {
-    dependsOn gradle.includedBuild("generate").task(":build")
-}
 /*
   Using a java class to generate jooq objects - allows for multiple db's - see ./generate directory
   Composite build - implementation("dmo.fs.utils:generate:0.0.1") - this avoids the circular dependancy error
 */
-tasks.register('jooqGenerate', JavaExec) {
-    group = "Execution"
-    doFirst {
-        classpath = sourceSets.main.runtimeClasspath
+tasks.register('jooqGenerate', Copy) {
+    dependsOn gradle.includedBuild("generate").task(":jooqGenerate")
+    def generateProject = gradle.includedBuild("generate")
+    def sourcePath = generateProject.projectDir.toString() + "/src/main/kotlin/golf/handicap"
+    def destinationPath = "${rootDir}/handicap/src/main/kotlin/golf/handicap"
+    copy {
+        from sourcePath
+        into destinationPath
+        include 'generated/**'
     }
-    // Needs work on setting up Jooq Code Generator for "mariadb"
-    def defaultValue = environment.get("DEFAULT_DB")
-    if("mariadb" == defaultValue) {
-        environment.remove("DEFAULT_DB")
-    }
-    environment "VERTXWEB_ENVIRONMENT", "dev"
-    mainClass = "dmo.fs.utils.JooqGenerate"
-    args = ["dev"]
-    dependsOn copyDatabaseConfig
 }
 
 run {
@@ -160,11 +152,11 @@ dependencies {
     implementation "io.vertx:vertx-mysql-client:$vertxVersion"
     implementation "io.vertx:vertx-pg-client:$vertxVersion"
     implementation "org.mariadb.jdbc:mariadb-java-client:3.4.1"
-    implementation "org.jooq:jooq"
-    implementation "org.jooq:jooq-codegen"
-    implementation "org.jooq:jooq-meta"
+    implementation "org.jooq:jooq:$jooqVersion"
+    implementation "org.jooq:jooq-codegen:$jooqVersion"
+    implementation "org.jooq:jooq-meta:$jooqVersion"
     implementation "javax.annotation:javax.annotation-api:1.3.2"
-    runtimeOnly "org.postgresql:postgresql:42.7.4"
+    runtimeOnly "org.postgresql:postgresql:42.7.10"
 
     implementation "io.vertx:vertx-grpc-server:$vertxVersion"
     implementation "io.vertx:vertx-grpc-protoc-plugin:$vertxVersion"
@@ -191,10 +183,8 @@ dependencies {
     testImplementation "org.junit.jupiter:junit-jupiter:$junitJupiterVersion"
     testImplementation "junit:junit:4.13.2"
 
-    implementation "dmo.fs.utils:generate:0.0.1"
+    implementation "dmo.fs.utils:generate"
 }
-
-apply plugin: "nu.studer.jooq"
 
 test {
     // Use junit platform for unit tests

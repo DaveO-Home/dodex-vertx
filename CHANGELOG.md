@@ -1,5 +1,11 @@
 # Changelog
 
+# [v4.1.4](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.4) (2026-04-27)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.2..v4.1.4)
+
+* Fixed typo
+
 # [v4.1.3](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.3) (2026-04-27)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.2..v4.1.3)

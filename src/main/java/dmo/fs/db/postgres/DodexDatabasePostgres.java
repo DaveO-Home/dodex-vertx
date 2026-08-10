@@ -213,7 +213,7 @@ public class DodexDatabasePostgres extends DbPostgres {
           logger.error("Golfer Table Error: {}", err.getMessage());
           conn.close().subscribe();
         }).doOnSuccess(rows -> {
-          if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
+          if (Boolean.TRUE.equals(HandicapGrpcServer.getEnableHandicap())) {
             Set<String> names = new HashSet<>();
 
             for (Row row : rows) {

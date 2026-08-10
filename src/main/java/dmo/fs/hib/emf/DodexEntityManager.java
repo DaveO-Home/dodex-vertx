@@ -34,7 +34,7 @@ public class DodexEntityManager {
 
   private HibernatePersistenceConfiguration configSetup() throws IOException {
     JsonNode defaultNode = dodexUtil.getDefaultNode();
-    webEnv = (webEnv == null || "prod".equals(webEnv)) ? "prod" : "dev";
+    webEnv = (webEnv == null || "prod".equals(webEnv)) ? "prod" : webEnv;
 
     Map<String, String> dbMap = dodexUtil.jsonNodeToMap(defaultNode, webEnv);
     Properties dbProperties = dodexUtil.mapToProperties(dbMap);
@@ -46,21 +46,24 @@ public class DodexEntityManager {
     }
     String defaultDb = dodexUtil.getDefaultDb();
     String pu = defaultDb + "." + webEnv;
+    String dialect = "org.hibernate.dialect.OracleDialect";
     String url = dbMap.get("url").concat(dbMap.get("host")).concat(dbMap.get("port")).concat(dbMap.get("dbname"));
     if("mssql".equals(defaultDb)) {
       url = url.concat(dbMap.get("encrypt")).concat(dbMap.get("security"));
+      dialect = "org.hibernate.dialect.SQLServerDialect";
     }
     ValidationMode validationMode = ValidationMode.AUTO;
     SharedCacheMode sharedCacheMode = SharedCacheMode.NONE;
 
     return new HibernatePersistenceConfiguration(pu)
         .provider("org.hibernate.jpa.HibernatePersistenceProvider")
-        .mappingFile("/dodex.xml")
+        .mappingFile("/META-INF/dodex.xml")
         .property(AGROAL_MIN_SIZE, 5)
         .property(AGROAL_MAX_SIZE, 10)
         .property(AGROAL_ACQUISITION_TIMEOUT, Duration.ofMillis(2000))
         .property(AGROAL_LEAK_TIMEOUT, Duration.ofMillis(2000))
         .property(AGROAL_FLUSH_ON_CLOSE, true)
+        .property("hibernate.dialect", dialect)
         .jdbcCredentials(
             dbProperties.getProperty("user"),
             dbProperties.getProperty("password")

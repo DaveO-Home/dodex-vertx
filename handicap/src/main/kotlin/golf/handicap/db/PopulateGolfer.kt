@@ -280,10 +280,9 @@ class PopulateGolfer : SqlConstants() {
     }
 
     @Throws(SQLException::class, InterruptedException::class)
-    fun getGolfers(
-        responseObserver: StreamObserver<ListPublicGolfers?>
-    ): Future<StreamObserver<ListPublicGolfers?>> {
-        val promise: Promise<StreamObserver<ListPublicGolfers?>> = Promise.promise()
+    fun getGolfers(promise: Promise<ListPublicGolfers?>
+    ) {
+//        val promise: Promise<ListPublicGolfers?> = Promise.promise()
 
         pool!!
             .connection
@@ -307,13 +306,12 @@ class PopulateGolfer : SqlConstants() {
                             golfersBuilder.addGolfer(golferBuilder)
                         }
                         conn.close().subscribe()
-                        responseObserver.onNext(golfersBuilder.build())
 
-                        promise.complete(responseObserver)
+                        promise.complete(golfersBuilder.build())
                     }
                     .doOnError { _ ->
                         conn.close().subscribe()
-                        promise.complete(responseObserver)
+                        promise.complete(golfersBuilder.build())
                     }
                     .subscribe(
                         {},
@@ -327,13 +325,11 @@ class PopulateGolfer : SqlConstants() {
                                     err.stackTraceToString()
                                 )
                             )
-                            promise.complete(responseObserver)
+                            promise.complete(golfersBuilder.build())
                         }
                     )
             }
             .subscribe()
-
-        return promise.future()
     }
 
     @Throws(SQLException::class, InterruptedException::class)

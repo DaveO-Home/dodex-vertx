@@ -33,15 +33,26 @@ const locaLt = ".loca.lt";
 const locaLt2 = "2" + locaLt;
 const loopSite = ".loophole.site";
 const loopSite2 = "2" + loopSite;
-let port = isNaN(window.location.hostname.split(".").join("")) ? ":8070" : ":30070"; // for minikube
-port = location.hostname === "127.0.0.1" ? ":8070" : port;
+// let port = isNaN(window.location.hostname.split(".").join("")) ? ":8087" : ":30070"; // for minikube
+// port = location.hostname === "127.0.0.1" ? ":8087" : port;
+let port = location.port === "" ? ":8087" : ":" + location.port  // Now that vertx gRPC uses the HTTP port.
 
 let grpcHost = location.hostname.replace(locaLt, locaLt2);
 if(!grpcHost.endsWith(locaLt)) {
     grpcHost = location.hostname.replace(loopSite, loopSite2);
 }
-const host = location.hostname.endsWith(locaLt) | location.hostname.endsWith(loopSite) ? grpcHost : location.hostname;
-port = grpcHost.endsWith(locaLt2) | grpcHost.endsWith(loopSite2) ? "" : port;
+const host = location.hostname.endsWith(locaLt) || location.hostname.endsWith(loopSite) ? grpcHost : location.hostname;
+port = grpcHost.endsWith(locaLt2) || grpcHost.endsWith(loopSite2) ? "" : port;
+
+const searchParams = new URLSearchParams(window.location.search);
+for (const key of searchParams.keys()) {
+  const keyValue = key.toString().toLowerCase();
+  if (keyValue === "grpcio") {
+    if("true" === searchParams.get(key)) {
+      port = ":8070";
+    }
+  }
+}
 
 const client = new HandicapIndexClient(location.protocol + "//" + host + port, null, null);
 

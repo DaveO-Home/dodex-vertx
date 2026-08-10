@@ -1,6 +1,7 @@
 # Ignore Gradle project-specific cache directory
+ssl
+tests2
 logs
-src/main/resources/META-INF/resources/dist
 csize
 *.jar
 bin
@@ -23,8 +24,13 @@ allure*
 my*
 *X*
 *.pem
+src/main/resources/META-INF/resources/dist
 src/main/resources/static/dist*
-src/main/resources/static/*.jpg
+handicap/src/main/resources/static/*.jpg
+handicap/src/main/resources/static/*.ico
+handicap/src/main/resources/static/*.png
+weather.html
+
 handicap/src/main/resources/static/dist*
 jsoneditor-icons-STGDAB4I.svg
 src/dist*

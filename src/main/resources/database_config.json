@@ -38,7 +38,7 @@
                 "ssl": "false"
             },
             "config": {
-                "filename": "file:/data/dodexh2.db",
+                "filename": "file:/data/dodexh2",
                 "url": "jdbc:h2:"
             }
         }
@@ -66,8 +66,8 @@
                 "ssl": "false"
             },
             "config": {
-                "host": "//192.168.49.1",
-                "host2": "192.168.49.1",
+                "host": "//localhost",
+                "host2": "localhost",
                 "port": "5432",
                 "url": "jdbc:postgresql:",
                 "dbname": "/dodex",
@@ -269,11 +269,11 @@
         "dev": {
             "credentials": {
                 "user": "dodex",
-                "password": "dodex2",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
-                "host": "@//172.17.0.2:",
+                "host": "@//localhost:",
                 "host2": "172.17.0.2",
                 "url": "jdbc:oracle:thin:",
                 "dbname": "/XEPDB1",
@@ -285,11 +285,11 @@
         "prod": {
             "credentials": {
                 "user": "dodex",
-                "password": "dodex2",
+                "password": "dodex",
                 "ssl": "false"
             },
             "config": {
-                "host": "@//172.17.0.2:",
+                "host": "@//localhost:",
                 "host2": "172.17.0.2",
                 "url": "jdbc:oracle:thin:",
                 "dbname": "/XEPDB1",
@@ -302,8 +302,12 @@
     "mssql": {
         "dev": {
             "credentials": {
-                "user": "dodex",
-                "password": "V3rtx@D0d3x2",
+                "userz": "dodex",
+                "passwordz": "Sqlserver2",
+                "userx": "dodex",
+                "passwordx": "V3rtx@D0d3x2",
+                "user": "sa",
+                "password": "Sqlserver2",
                 "ssl": "false"
             },
             "config": {
@@ -320,17 +324,17 @@
         "prod": {
             "credentials": {
                 "user": "sa",
-                "password": "Vertx@Dodex",
+                "password": "Sqlserver2",
                 "ssl": "false"
             },
             "config": {
                 "host": "//localhost:",
                 "host2": "172.17.0.2",
                 "url": "jdbc:sqlserver:",
-                "dbname": ";database=proddb",
-                "database": ";database=proddb",
+                "dbname": ";database=dodex",
+                "database": ";database=dodex",
                 "port": "1433",
-                "encrypt": ";encrypt=true",
+                "encrypt": ";encrypt=false",
                 "security": ";integratedSecurity=false;"
             }
         }

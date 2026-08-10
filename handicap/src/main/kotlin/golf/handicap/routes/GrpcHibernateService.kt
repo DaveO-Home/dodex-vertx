@@ -10,21 +10,27 @@ import golf.handicap.hibernate.db.PopulateGolferScores
 import golf.handicap.hibernate.db.PopulateScore
 import golf.handicap.vertx.HandicapGrpcServer
 import handicap.grpc.*
-import io.grpc.stub.StreamObserver
+import io.vertx.core.Future
+import io.vertx.core.Promise
 import io.vertx.core.json.JsonObject
+import io.vertx.grpc.server.Service
 import org.hibernate.SessionFactory
 import org.slf4j.LoggerFactory
 import java.sql.SQLException
 import java.util.*
 
-class HibernateHandicapService : HandicapIndexGrpc.HandicapIndexImplBase() {
-    companion object {
-        private val logger = LoggerFactory.getLogger(HibernateHandicapService::class.java.name)
-        val sessionFactory: SessionFactory = DodexEntityManager.getEmf()
+class GrpcHibernateService : HandicapIndexGrpcService(), Service {
+    private val logger = LoggerFactory.getLogger(GrpcHibernateService::class.java.name)
+    private var sessionFactory: SessionFactory
+
+    init {
+        DodexEntityManager()
+        sessionFactory = DodexEntityManager.getEmf()
     }
 
-    override fun getGolfer(request: HandicapSetup, observer: StreamObserver<HandicapData?>?) {
+    override fun getGolfer(request: HandicapSetup) : Future<HandicapData?> {
         val requestJson = JsonObject(request.json)
+        val promise = Promise.promise<HandicapData?>()
         val handicapGolfer = requestJson.mapTo(Golfer::class.java)
         var responseObject = JsonObject()
 
@@ -46,27 +52,29 @@ class HibernateHandicapService : HandicapIndexGrpc.HandicapIndexImplBase() {
             ex.printStackTrace()
         }
 
-        val handicapData = HandicapData.newBuilder()
+        promise.complete(HandicapData.newBuilder()
             .setMessage("success")
             .setCmd(request.cmd)
             .setJson(responseObject.toString())
-            .build()
+            .build())
 
-        observer?.onNext(handicapData)
-        observer?.onCompleted()
+        return promise.future()
     }
 
-    override fun addRating(request: Command, observer: StreamObserver<HandicapData?>?) {
+    override fun addRating(request: Command) : Future<HandicapData?> {
         val json = request.getJson()
+        val promise = Promise.promise<HandicapData?>()
         val populateCourse = PopulateCourse()
         val ratingMap: HashMap<String, Any> = populateCourse.getRatingMap(json)
         val handicapData: HandicapData? = populateCourse.getCourseWithTee(ratingMap, sessionFactory)
 
-        observer?.onNext(handicapData)
-        observer?.onCompleted()
+        promise.complete(handicapData)
+
+        return promise.future()
     }
 
-    override fun addScore(request: Command, responseObserver: StreamObserver<HandicapData?>?) {
+    override fun addScore(request: Command): Future<HandicapData?> {
+        val promise = Promise.promise<HandicapData?>()
         val requestJson = JsonObject(request.getJson())
         val golferScore: Score = requestJson.mapTo(Score::class.java)
         val populateScore = PopulateScore()
@@ -88,7 +96,7 @@ class HibernateHandicapService : HandicapIndexGrpc.HandicapIndexImplBase() {
 
         val jsonData: String = populateScore.setScore(golferScore, sessionFactory)
 
-        responseObserver?.onNext(
+        promise.complete(
             HandicapData.newBuilder()
                 .setMessage("Success")
                 .setCmd(request.cmd)
@@ -96,10 +104,11 @@ class HibernateHandicapService : HandicapIndexGrpc.HandicapIndexImplBase() {
                 .build()
         )
 
-        responseObserver?.onCompleted()
+        return promise.future()
     }
 
-    override fun golferScores(request: Command, responseObserver: StreamObserver<HandicapData?>) {
+    override fun golferScores(request: Command): Future<HandicapData?> {
+        val promise = Promise.promise<HandicapData?>()
         val populateScores = PopulateGolferScores()
         val requestJson = JsonObject(request.getJson())
         val golfer: Golfer = requestJson.mapTo(Golfer::class.java)
@@ -113,18 +122,20 @@ class HibernateHandicapService : HandicapIndexGrpc.HandicapIndexImplBase() {
             golfer.pin = ""
         }
 
-        val scoresMap: Map<String, Any?>? = populateScores.getGolferScores(golfer, 365, sessionFactory)
-        responseObserver.onNext(
+        val scoresMap: Map<String, Any?> = populateScores.getGolferScores(golfer, 365, sessionFactory)
+        promise.complete(
             HandicapData.newBuilder()
                 .setMessage("Success")
                 .setCmd(request.cmd)
-                .setJson(scoresMap!!["array"].toString())
+                .setJson(scoresMap["array"].toString())
                 .build()
         )
-        responseObserver.onCompleted()
+
+        return promise.future()
     }
 
-    override fun removeScore(request: Command, responseObserver: StreamObserver<HandicapData?>?) {
+    override fun removeScore(request: Command): Future<HandicapData?> {
+        val promise = Promise.promise<HandicapData?>()
         val populateGolferScores = PopulateGolferScores()
         val requestJson: JsonObject = JsonObject(request.getJson())
         val golfer: Golfer = requestJson.mapTo(Golfer::class.java)
@@ -142,39 +153,43 @@ class HibernateHandicapService : HandicapIndexGrpc.HandicapIndexImplBase() {
 
             val golferJson: String? = JsonObject.mapFrom(golfer).toString()
 
-            val handicapData = HandicapData.newBuilder()
+            promise.complete(HandicapData.newBuilder()
                 .setMessage("Success")
                 .setCmd(request.cmd)
                 .setJson(golferJson)
                 .build()
-
-            responseObserver?.onNext(handicapData)
-            responseObserver?.onCompleted()
+            )
+        } else {
+            promise.complete(null)
         }
+
+        return promise.future()
     }
 
     override fun listCourses(
-        request: Command,
-        responseObserver: StreamObserver<ListCoursesResponse?>?
-    ) {
+        request: Command
+    ): Future<ListCoursesResponse?> {
+        val promise = Promise.promise<ListCoursesResponse?>()
         val populateCourse = PopulateCourse()
         val coursesBuilder: ListCoursesResponse.Builder =
             populateCourse.listCourses(request.getKey(), sessionFactory)
 
-        responseObserver?.onNext(coursesBuilder.build())
-        responseObserver?.onCompleted()
+        promise.complete(coursesBuilder.build())
+
+        return promise.future()
     }
 
     override fun listGolfers(
-        request: Command,
-        responseObserver: StreamObserver<ListPublicGolfers?>
-    ) {
+        request: Command
+    ): Future<ListPublicGolfers?> {
+        val promise = Promise.promise<ListPublicGolfers?>()
         val populateGolfer = PopulateGolfer()
 
         val golfersBuilder: ListPublicGolfers.Builder = populateGolfer.getGolfers(sessionFactory)
         val listPublicGolfers = golfersBuilder.build()
 
-        responseObserver.onNext(listPublicGolfers)
-        responseObserver.onCompleted()
+        promise.complete(listPublicGolfers)
+
+        return promise.future()
     }
 }

@@ -165,10 +165,9 @@ class PopulateScore : SqlConstants() {
     }
 
     fun setScore(
-        score: golf.handicap.Score,
-        responseObserver: StreamObserver<HandicapData?>
-    ): Future<StreamObserver<HandicapData?>> {
-        val promise: Promise<StreamObserver<HandicapData?>> = Promise.promise()
+        score: golf.handicap.Score
+    ): Future<HandicapData?> {
+        val promise: Promise<HandicapData?> = Promise.promise()
 
         pool!!
             .rxGetConnection()
@@ -204,7 +203,7 @@ class PopulateScore : SqlConstants() {
                                         tx.commit().subscribe {
                                             conn.close().subscribe {
                                                 updateGolfer(score).onSuccess {
-                                                    promise.complete(responseObserver)
+                                                    promise.complete(null)
                                                 }
                                             }
                                         }
@@ -244,7 +243,7 @@ class PopulateScore : SqlConstants() {
                         conn.close().subscribe {
                             updateScore(score).onSuccess {
                                 updateGolfer(score).onSuccess {
-                                    promise.complete(responseObserver)
+                                    promise.complete(null)
                                 }
                             }
                         }

@@ -57,6 +57,7 @@ public class FirebaseRouter {
               .build();
 
     } catch (Exception e) {
+      logger.error("Firebase Options Failure: {}", e.getMessage());
       throw new RuntimeException(e);
     }
   }
@@ -64,6 +65,7 @@ public class FirebaseRouter {
   public FirebaseRouter(final Vertx vertx) throws InterruptedException, ExecutionException {
     this.vertx = vertx;
     vertx.exceptionHandler(e -> {
+      System.out.println("Vertx Exception: " + e.getMessage());
       throw new RuntimeException(e);
     });
 

@@ -92,7 +92,6 @@ public abstract class DbConfiguration {
     @SuppressWarnings("unchecked")
     public static <T> T getDefaultDb() throws InterruptedException, IOException, SQLException {
         defaultDb = dodexUtil.getDefaultDb().toLowerCase();
-
         try {
             if(defaultDb.equals(DbTypes.POSTGRES.db) && handicapDatabase == null) {
                 handicapDatabase = new HandicapDatabasePostgres();

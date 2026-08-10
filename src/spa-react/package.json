@@ -35,8 +35,8 @@
     "luxon": "^3.7.2",
     "marked": "^4.3.0",
     "mini-create-react-context": "^0.4.1",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
     "react-router-dom": "^6.30.3",
     "redux": "^5.0.1",
     "tablesorter": "^2.32.0"

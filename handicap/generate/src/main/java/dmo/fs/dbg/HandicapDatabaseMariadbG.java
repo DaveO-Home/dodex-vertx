@@ -94,6 +94,9 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
   }
 
   public Future<String> checkOnTables() throws InterruptedException, SQLException {
+    if(vertx == null) {
+      vertx = DodexUtil.getVertx();
+    }
     databaseSetup();
     return returnPromise.future();
   }
@@ -110,7 +113,7 @@ public class HandicapDatabaseMariadbG extends DbMariadb {
         .setPort(Integer.valueOf(dbMap.get("port"))).setHost(dbMap.get("host2"))
         .setDatabase(dbMap.get("database")).setUser(dbProperties.getProperty("user").toString())
         .setPassword(dbProperties.getProperty("password").toString())
-        .setSslMode(SslMode.of(dbProperties.getProperty("ssl")))
+//        .setSslMode(SslMode.of(dbProperties.getProperty("ssl")))
 //        .setIdleTimeout(1)
         .setCharset("utf8mb4");
 

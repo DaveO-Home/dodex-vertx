@@ -30,6 +30,7 @@ class HandicapGrpcServer : AbstractVerticle() {
         private var enableHandicap: Boolean? = null
         var enableHandicapAdmin: Boolean? = null
         var handicapAdminPin: String? = null
+        var appConfig: JsonObject = getAlternateConfig()
 
         val development: String = System.getenv("VERTXWEB_ENVIRONMENT") ?: "prod"
         private val useHandicap = "true" == System.getenv("USE_HANDICAP")
@@ -52,7 +53,9 @@ class HandicapGrpcServer : AbstractVerticle() {
             ) {
                 config = Vertx.currentContext().config()
             }
-            val appConfig = getAlternateConfig()
+
+//            appConfig = getAlternateConfig()
+
             if (config != null && config!!.getBoolean("handicap.enableHandicap") != null) {
                 enableHandicap = config!!.getBoolean("handicap.enableHandicap")
                 enableHandicapAdmin = config!!.getBoolean("handicap.enableAdmin")
@@ -80,11 +83,9 @@ class HandicapGrpcServer : AbstractVerticle() {
             if (useHandicap || "false" == System.getenv("USE_HANDICAP")) {
                 enableHandicap = useHandicap
             }
-
-            logger.warn("Initializing gRPC Handicap Service")
         }
 
-        private fun getAlternateConfig(): JsonObject {
+       fun getAlternateConfig(): JsonObject {
             val jsonMapper = ObjectMapper()
             var node: JsonNode?
             if ("true" == System.getProperty("kotlinTest")) {
@@ -133,6 +134,7 @@ class HandicapGrpcServer : AbstractVerticle() {
         }
 
         if (enableHandicap!!) {
+
             vertx.delegate
                 .createHttpServer(HttpServerOptions().setLogActivity(true))
                 .requestHandler(grpcServer)
@@ -143,7 +145,7 @@ class HandicapGrpcServer : AbstractVerticle() {
 
                     logger.warn(
                         String.format(
-                            "%sgRPC for Handicap Started on port: %s%s",
+                            "%sgRPCIo for Handicap Started on port: %s%s",
                             ColorUtilConstants.YELLOW, port, ColorUtilConstants.RESET
                         )
                     )

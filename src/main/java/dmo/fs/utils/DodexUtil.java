@@ -209,12 +209,16 @@ public class DodexUtil {
   }
 
   public static String getMode() {
+    String webEnv = System.getenv("VERTXWEB_ENVIRONMENT");
+    String prod = "prod";
     String development = System.getenv("MODE");
+
     if(development == null || development.isEmpty()) {
       development = System.getProperty("MODE");
     }
-    if (development != null && development.toLowerCase().startsWith("prod")) {
-      return "prod";
+    if ((development != null && development.toLowerCase().startsWith(prod)) ||
+        (webEnv == null || prod.equals(webEnv))) {
+      return prod;
     }
     if(development == null || development.isEmpty()) {
       return DbConfiguration.pu.replaceFirst("^.*[^(prod|dev)$]", "");

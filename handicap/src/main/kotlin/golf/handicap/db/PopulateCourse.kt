@@ -18,7 +18,7 @@ import org.jooq.impl.DSL.*
 import org.slf4j.LoggerFactory
 import java.sql.SQLException
 
-class PopulateCourse : SqlConstants() {
+open class PopulateCourse : SqlConstants() {
     companion object {
         private val logger = LoggerFactory.getLogger(PopulateCourse::class.java.name)
         private val regEx = "\\$\\d".toRegex()
@@ -225,10 +225,9 @@ class PopulateCourse : SqlConstants() {
     }
 
     fun getCourseWithTee(
-        courseMap: HashMap<String, Any>,
-        responseObserver: StreamObserver<HandicapData?>
-    ): Future<StreamObserver<HandicapData?>> {
-        val promise: Promise<StreamObserver<HandicapData?>> = Promise.promise()
+        courseMap: HashMap<String, Any>
+    ): Future<HandicapData?> {
+        val promise: Promise<HandicapData?> = Promise.promise()
         val course = Course()
 
         pool!!
@@ -274,14 +273,14 @@ class PopulateCourse : SqlConstants() {
                         if (rows.size() == 0) {
                             updateTees = false
                             courseMap["status"] = 2
-                            setCourse(courseMap, responseObserver).onSuccess {
-                                setRating(courseMap, responseObserver).onSuccess {
+                            setCourse(courseMap).onSuccess {
+                                setRating(courseMap).onSuccess {
                                     course.resetIterator()
                                 }
                             }
                         } else {
                             if (updateTees) {
-                                updateTee(courseMap, responseObserver).onFailure { err ->
+                                updateTee(courseMap).onFailure { err ->
                                     logger.error(
                                         String.format(
                                             "%sError updating tees - %s%s %s",
@@ -299,14 +298,14 @@ class PopulateCourse : SqlConstants() {
                         {
                             conn.close().subscribe()
                             val jsonString: String = JsonObject(courseMap).toString()
-                            responseObserver.onNext(
+
+                            promise.complete(
                                 HandicapData.newBuilder()
                                     .setMessage("Success")
                                     .setCmd(2)
                                     .setJson(jsonString)
                                     .build()
                             )
-                            promise.complete(responseObserver)
                         },
                         { err ->
                             logger.error(
@@ -318,7 +317,7 @@ class PopulateCourse : SqlConstants() {
                                     err.stackTraceToString()
                                 )
                             )
-                            promise.complete(responseObserver)
+                            promise.complete(null)
                         }
                     )
             }
@@ -330,9 +329,9 @@ class PopulateCourse : SqlConstants() {
     @Throws(SQLException::class, InterruptedException::class)
     fun getCourses(
         course: Course,
-        responseObserver: StreamObserver<ListCoursesResponse?>
-    ): Future<StreamObserver<ListCoursesResponse?>> {
-        val promise: Promise<StreamObserver<ListCoursesResponse?>> = Promise.promise()
+    ): Future<ListCoursesResponse?> {
+        val promise: Promise<ListCoursesResponse?> = Promise.promise()
+        var listCoursesResponse: ListCoursesResponse? = null
 
         pool!!
             .rxGetConnection()
@@ -377,8 +376,10 @@ class PopulateCourse : SqlConstants() {
                             setUndefinedTees(ratingTees, courseBuilder)
                             coursesBuilder.addCourses(courseBuilder)
                         }
-                        responseObserver.onNext(coursesBuilder.build())
-                        promise.complete(responseObserver)
+
+                        listCoursesResponse = coursesBuilder.build()
+
+                        promise.complete(listCoursesResponse)
                     }
                     .subscribe(
                         { conn.close().subscribe() },
@@ -393,7 +394,7 @@ class PopulateCourse : SqlConstants() {
                                 )
                             )
 
-                            promise.complete(responseObserver)
+                            promise.complete(listCoursesResponse)
                         }
                     )
             }
@@ -416,10 +417,9 @@ class PopulateCourse : SqlConstants() {
 
     @Throws(SQLException::class, InterruptedException::class)
     fun setCourse(
-        courseMap: HashMap<String, Any>,
-        responseObserver: StreamObserver<HandicapData?>
-    ): Future<StreamObserver<HandicapData?>> {
-        val ratingPromise: Promise<StreamObserver<HandicapData?>> = Promise.promise()
+        courseMap: HashMap<String, Any>
+    ): Future<HashMap<String, Any>?> {
+        val ratingPromise: Promise<HashMap<String, Any>> = Promise.promise()
 
         getCourse(courseMap).onSuccess { queryedCourse ->
             if (queryedCourse.courseKey == 0) {
@@ -442,14 +442,14 @@ class PopulateCourse : SqlConstants() {
                                     } else if (DbConfiguration.isUsingMariadb()) {
                                         courseMap["courseKey"] = rows.property(MySQLClient.LAST_INSERTED_ID)
                                     }
-                                    ratingPromise.complete(responseObserver)
+                                    ratingPromise.complete(courseMap)
                                     tx.commit().subscribe {
                                         conn.close().subscribe()
                                     }
                                 }
                                 .doOnError { _ ->
                                     tx.rollback().subscribe()
-                                    ratingPromise.complete(responseObserver)
+                                    ratingPromise.complete(courseMap)
                                 }
                                 .subscribe(
                                     {},
@@ -480,7 +480,7 @@ class PopulateCourse : SqlConstants() {
                     }
                     .subscribe()
             } else {
-                ratingPromise.complete(responseObserver)
+                ratingPromise.complete(courseMap)
             }
         }
         return ratingPromise.future()
@@ -488,10 +488,9 @@ class PopulateCourse : SqlConstants() {
 
     @Throws(SQLException::class, InterruptedException::class)
     fun setRating(
-        courseMap: HashMap<String, Any>,
-        responseObserver: StreamObserver<HandicapData?>
-    ): Future<StreamObserver<HandicapData?>> {
-        val ratingPromise: Promise<StreamObserver<HandicapData?>> = Promise.promise()
+        courseMap: HashMap<String, Any>
+    ): Future<HashMap<String, Any>?> {
+        val ratingPromise: Promise<HashMap<String, Any>?> = Promise.promise()
 
         getCourse(courseMap).onSuccess { queryedCourse ->
             if (queryedCourse.courseKey > 0) {
@@ -518,11 +517,11 @@ class PopulateCourse : SqlConstants() {
                                 .rxExecute(parameters)
                                 .doOnSuccess { _ ->
                                     tx.commit()
-                                    ratingPromise.complete(responseObserver)
+                                    ratingPromise.complete(courseMap)
                                 }
                                 .doOnError { _ ->
                                     tx.rollback()
-                                    ratingPromise.complete(responseObserver)
+                                    ratingPromise.complete(courseMap)
                                 }
                                 .subscribe(
                                     { conn.close().subscribe() },
@@ -551,7 +550,7 @@ class PopulateCourse : SqlConstants() {
                                 err.stackTraceToString()
                             )
                         )
-                        ratingPromise.complete(responseObserver)
+                        ratingPromise.complete(courseMap)
                     }
                     .subscribe()
             }
@@ -562,10 +561,9 @@ class PopulateCourse : SqlConstants() {
 
     @Throws(SQLException::class, InterruptedException::class)
     fun updateTee(
-        courseMap: HashMap<String, Any>,
-        responseObserver: StreamObserver<HandicapData?>
-    ): Future<StreamObserver<HandicapData?>> {
-        val ratingPromise: Promise<StreamObserver<HandicapData?>> = Promise.promise()
+        courseMap: HashMap<String, Any>
+    ): Future<HashMap<String, Any>?> {
+        val ratingPromise: Promise<HashMap<String, Any>?> = Promise.promise()
 
         pool!!
             .rxGetConnection()
@@ -591,11 +589,11 @@ class PopulateCourse : SqlConstants() {
                             tx.commit().subscribe {
                                 conn.close().subscribe()
                             }
-                            ratingPromise.complete(responseObserver)
+                            ratingPromise.complete(courseMap)
                         }
                         .doOnError { _ ->
                             tx.rollback().subscribe()
-                            ratingPromise.complete(responseObserver)
+                            ratingPromise.complete(courseMap)
                         }
                         .subscribe(
                             {},
@@ -623,7 +621,7 @@ class PopulateCourse : SqlConstants() {
                         err.stackTraceToString()
                     )
                 )
-                ratingPromise.complete(responseObserver)
+                ratingPromise.complete(courseMap)
             }
             .subscribe()
 

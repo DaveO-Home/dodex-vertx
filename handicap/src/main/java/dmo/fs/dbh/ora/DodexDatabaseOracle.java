@@ -40,6 +40,7 @@ public class DodexDatabaseOracle extends DbOracle implements Serializable {
       sessionFactory = DodexEntityManager.getEmf();
       DodexDatabaseOracle.emf = sessionFactory;
     } catch (IOException ioe) {
+      ioe.printStackTrace();
       throw new RuntimeException(ioe.getMessage());
     }
 

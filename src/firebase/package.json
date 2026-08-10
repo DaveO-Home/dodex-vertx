@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "./types/dodex.tests.d.ts",
   "scripts": {
-    "test": "tsc --build tsconfig.json && mocha tests/dodex.tests.js --exit",
+    "test": "tsc --build tsconfig.json && mocha tests/testsrc/dodex.tests.js --exit",
     "emulators": "firebase emulators:start"
   },
   "repository": {
@@ -21,17 +21,17 @@
   "author": "DaveO",
   "license": "ISC",
   "dependencies": {
-    "firebase": "^12.12.1",
-    "firebase-admin": "^13.8.0",
-    "firebase-tools": "^15.15.0"
+    "firebase": "^12.17.1",
+    "firebase-admin": "^13.10.0",
+    "firebase-tools": "^15.26.0"
   },
   "devDependencies": {
-    "@firebase/rules-unit-testing": "^5.0.0",
+    "@firebase/rules-unit-testing": "^5.0.1",
     "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
     "@types/uuid": "^10.0.0",
-    "mocha": "^12.0.0-beta-9.2",
-    "typescript": "^6.0.3",
-    "uuid": "^14.0.0"
+    "mocha": "^12.0.0-rc.6",
+    "typescript": "^7.0.2",
+    "uuid": "^14.0.1"
   }
 }

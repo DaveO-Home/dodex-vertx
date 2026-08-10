@@ -48,8 +48,8 @@ public class DodexService {
     List<Users> results = query.getResultList();
     List<Map<String, String>> userList = new ArrayList<>();
 
-    Map<String, String> userMap = new HashMap<>();
     results.forEach(user -> {
+      Map<String, String> userMap = new HashMap<>();
       userMap.put(Users_.NAME, user.getName());
       userList.add(userMap);
     });

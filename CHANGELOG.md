@@ -1,5 +1,30 @@
 # Changelog
 
+# [v5.1.0](https://github.com/DaveO-Home/dodex-vertx/tree/v5.1.0) (2026-08-10)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.5..v5.1.0)
+
+* Upgraded to 5.1.6 vertx
+* Removed node_modules from classpath(build). See directory `..../WEB/static/test`. Test examples now use a bundle.
+  * no need to install dodex `npm install` in `src/main/resources/WEB/static` included by default and `package.json` removed.
+  * to rebuild `cd .../handicap/src/grpc/client` and execute `npm run dodex:build` or `npm run dodex:prod`.
+* Vertx 5.1 has deprecated the external web server gRpc implementation. Using the Envoy proxy is no longer an option.
+* Implemented the new Vertx gRpc service
+  * Must now return a `Future` containing the gRpc return class.
+  * The `io.grpc.stub.StreamObserver` is not visible using the vertx `GrpcServer` and `Service` interface.
+  * If you want to use the default gRpc api, the GrpcIo server can be used.
+    * export `USE_GRPCIO=true` to startup gRpc on port `8070`. Then in a browser use `localhost:8087/handicap.html?grpcio=true`. This will notify the javascript client to use port `8070`. 
+  * Added '-Dcom.google.protobuf.use_unsafe_pre22_gencode=true' to the `run` task. Vertx seems to be using a `protobuf-java` version between `3.21.7` and `3.25.5`. See `https://protobuf.dev/news/2025-01-23/`.  
+  __Note;__ For `oracle`, `mssql` and `h2`, set `DEFAULT_DB=<db>` before executing `gradlew shadowJar`.  
+
+# [v4.1.5](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.5) (2026-05-27)
+
+[Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.4..v4.1.5)
+
+* If using mariadb 11, jooqGenerate will work 
+* Upgraded to 5.0.12 vertx
+* Fixed dodex-mess users display for private messages
+
 # [v4.1.4](https://github.com/DaveO-Home/dodex-vertx/tree/v4.1.4) (2026-04-27)
 
 [Full Changelog](https://github.com/DaveO-Home/dodex-vertx/compare/v4.1.2..v4.1.4)

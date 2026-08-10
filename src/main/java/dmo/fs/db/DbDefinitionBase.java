@@ -7,7 +7,7 @@ import golf.handicap.db.PopulateCourse;
 import golf.handicap.db.PopulateGolfer;
 import golf.handicap.db.PopulateGolferScores;
 import golf.handicap.db.PopulateScore;
-import golf.handicap.vertx.MainVerticle;
+import golf.handicap.vertx.HandicapGrpcServer;
 import io.reactivex.rxjava3.functions.Action;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
@@ -117,7 +117,7 @@ public abstract class DbDefinitionBase {
     GroupOpenApiSql.setQmark(qmark);
     GroupOpenApiSql.buildSql();
 
-    if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
+    if (Boolean.TRUE.equals(HandicapGrpcServer.getEnableHandicap())) {
       PopulateGolfer.setQMark(qmark);
       PopulateGolfer.setSqlPool(pool);
       PopulateGolfer.setDslContext(create);

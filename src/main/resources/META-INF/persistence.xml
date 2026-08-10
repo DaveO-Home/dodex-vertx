@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
+             version="3.2">
+
+    <persistence-unit name="oracle.dev" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <mapping-file>/META-INF/dodex.xml</mapping-file>
+        <!-- NONE ENABLE_SELECTIVE DISABLE_SELECTIVE -->
+        <shared-cache-mode>NONE</shared-cache-mode>
+        <validation-mode>CALLBACK</validation-mode>
+        <properties>
+            <property name="dbname" value=""/>
+            <property name="mode" value="dev"/>
+            <property name="hibernate.jdbc.batch_size" value="5"/>
+
+            <property name="hibernate.connection.driver_class" value="oracle.jdbc.OracleDriver"/>
+            <property name="javax.persistence.provider"
+                      value="org.hibernate.jpa.HibernatePersistenceProvider" />
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:oracle:thin:@//localhost:1521/XEPDB1" />
+            <property name="jdbcUser" value="dodex"/>
+            <property name="hibernate.agroal.minSize" value="5" />
+            <property name="hibernate.agroal.maxSize" value="10" />
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="oracle.prod" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <mapping-file>/META-INF/dodex.xml</mapping-file>
+        <!-- NONE ENABLE_SELECTIVE DISABLE_SELECTIVE -->
+        <shared-cache-mode>NONE</shared-cache-mode>
+        <validation-mode>CALLBACK</validation-mode>
+        <properties>
+            <property name="dbname" value=""/>
+            <property name="mode" value="prod"/>
+            <property name="hibernate.jdbc.batch_size" value="5"/>
+
+            <property name="javax.persistence.provider"
+                      value="org.hibernate.jpa.HibernatePersistenceProvider" />
+            <property name="jakarta.persistence.jdbc.url" value="jdbc:oracle:thin:@//172.17.0.2:1521/XEPDB1" />
+            <property name="jdbcUser" value="dodex"/>
+            <property name="hibernate.agroal.minSize" value="5" />
+            <property name="hibernate.agroal.maxSize" value="10" />
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="mssql.dev" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <mapping-file>/META-INF/dodex.xml</mapping-file>
+        <!-- NONE ENABLE_SELECTIVE DISABLE_SELECTIVE -->
+        <shared-cache-mode>NONE</shared-cache-mode>
+        <validation-mode>CALLBACK</validation-mode>
+        <properties>
+            <property name="dbname" value="dodex"/>
+            <property name="mode" value="dev"/>
+            <property name="hibernate.jdbc.batch_size" value="5"/>
+
+            <property name="javax.persistence.provider"
+                      value="org.hibernate.jpa.HibernatePersistenceProvider" />
+            <property name="jakarta.persistence.jdbc.url"
+                      value="jdbc:sqlserver://localhost:1433;databaseName=dodex;encrypt=false;user=dodex;password=Sqlserver2" />
+            <property name="jakarta.persistence.jdbc.user" value="dodex" />
+
+            <property name="dbname" value="dodex"/>
+            <property name="mode" value="dev"/>
+            <property name="hibernate.jdbc.batch_size" value="5"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="mssql.prod" transaction-type="JTA">
+        <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+        <mapping-file>/META-INF/dodex.xml</mapping-file>
+        <!-- NONE ENABLE_SELECTIVE DISABLE_SELECTIVE -->
+        <shared-cache-mode>NONE</shared-cache-mode>
+        <validation-mode>CALLBACK</validation-mode>
+        <properties>
+            <property name="dbname" value="dodex"/>
+            <property name="mode" value="prod"/>
+            <property name="hibernate.jdbc.batch_size" value="5"/>
+
+            <property name="javax.persistence.provider"
+                      value="org.hibernate.jpa.HibernatePersistenceProvider" />
+            <property name="jakarta.persistence.jdbc.url"
+                      value="jdbc:sqlserver://localhost:1433;databaseName=dodex;encrypt=false;user=dodex;password=Sqlserver2" />
+            <property name="jakarta.persistence.jdbc.user" value="dodex" />
+            <property name="jakarta.persistence.jdbc.password" value="Sqlserver2" />
+        </properties>
+    </persistence-unit>
+
+</persistence>

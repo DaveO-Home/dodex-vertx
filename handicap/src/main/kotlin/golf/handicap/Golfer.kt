@@ -18,7 +18,7 @@ class Golfer : Cloneable {
     var teeDate: Long? = null
     var message: String? = null
 
-    override public fun clone(): Any {
+    public override fun clone(): Any {
         return super.clone()
     }
     override fun toString(): String {

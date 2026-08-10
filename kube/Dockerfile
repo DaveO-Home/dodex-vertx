@@ -10,7 +10,7 @@ RUN set -eux \
     && apt-get update
 
 ENV LANG=C.UTF-8
-ENV JAVA_HOME=/usr/lib/jvm/jdk-25.0.2
+ENV JAVA_HOME=/usr/lib/jvm/jdk-25.0.3
 ENV PATH=$JAVA_HOME/bin:$PATH
 
 USER root
@@ -28,7 +28,7 @@ RUN mkdir /home/dodex/vertx && mkdir /home/dodex/vertx/logs
 
 VOLUME ~
 
-COPY dodex-vertx-4.0.0-prod.jar /home/dodex/vertx/dodex-vertx-4.0.0-prod.jar
+COPY dodex-vertx-5.1.0-prod.jar /home/dodex/vertx/dodex-vertx-5.1.0-prod.jar
 
 WORKDIR /home/dodex/vertx
 
@@ -40,4 +40,4 @@ ENV USE_HANDICAP=true
 
 USER dodex
 
-CMD ["/usr/lib/jvm/jdk-25.0.2/bin/java", "-jar", "/home/dodex/vertx/dodex-vertx-4.0.0-prod.jar"]
+CMD ["/usr/lib/jvm/jdk-25.0.3/bin/java", "-jar", "/home/dodex/vertx/dodex-vertx-5.1.0-prod.jar"]

@@ -1,6 +1,5 @@
-package handicap
+package golf.handicap
 
-import golf.handicap.Course
 import java.sql.Connection
 
 
@@ -14,9 +13,9 @@ class Courses {
         coursesByState!!.clear()
     }
 
-    fun getCourses(connection: Connection?, course_state: String?): List<Course>? {
+    fun getCourses(connection: Connection?, courseState: String?): List<Course>? {
         if(connection == null) {
-            println(connection + " : " + course_state)
+            println("$connection : $courseState")
         }
         return null
     }

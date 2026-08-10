@@ -1,53 +1,46 @@
 
 buildscript {
-  ext.kotlin_version = "2.3.20"
+  ext.kotlin_version = '2.3.20'
 
   dependencies {
-    classpath "com.google.protobuf:protobuf-gradle-plugin:0.9.5"
+    classpath 'com.google.protobuf:protobuf-gradle-plugin:0.9.5'
   }
 }
 
 plugins {
     // Apply the org.jetbrains.kotlin.jvm Plugin to add support for Kotlin.
-    id "org.jetbrains.kotlin.jvm" version "2.3.20"
-    id "org.jetbrains.kotlin.plugin.allopen" version "2.3.20"
+    id 'org.jetbrains.kotlin.jvm' version '2.3.20'
+    id 'org.jetbrains.kotlin.plugin.allopen' version '2.3.20'
 
+    id 'application'
 
-    id "application"
-
-    id "java"
+    id 'java'
 
     id 'com.google.protobuf' version '0.9.5'
+//    id 'org.jetbrains.kotlin.kapt'
 }
 
 repositories {
     maven {
-        url = "https://plugins.gradle.org/m2/"
+        url = 'https://plugins.gradle.org/m2/'
     }
 
     mavenCentral()
     mavenLocal()
 }
 
-version = "4.0.0"
+version = '5.1.0'
 
 ext {
-  vertxVersion = "5.0.11"
-  protoVersion = "3.25.5"
-  grpcVersion = "1.72.0"
-  hibernateVersion = "7.2.5.Final"
+  vertxVersion = '5.1.6'
+  protoVersion = '3.25.5'
+  grpcVersion = '1.82.2'
+  hibernateVersion = '7.2.5.Final'
 }
+def jooqVersion='3.21.6'
+def junitJupiterVersion= '6.1.2'
 
-def mainVerticleName = "golf.handicap.vertx.MainVerticle"
-//def launcherClassName = "io.vertx.core.Launcher"
-def junitJupiterVersion = "5.7.0"
-def watchForChange = "src/main/**/*"
-def doOnChange = "${projectDir}/gradlew classes"
-def OS = System.getProperty("os.name").toLowerCase();
-def javaTargetVersion = 25
-def jooqVersion="3.21.2"
-
-def mainClassName = "io.vertx.core.Launcher"
+def mainClassName = 'io.vertx.core.Launcher'
 application {
     getMainClass().set(mainClassName)
     applicationDefaultJvmArgs = ['--sun-misc-unsafe-memory-access=allow', '--enable-native-access=ALL-UNNAMED']
@@ -60,12 +53,12 @@ java {
 
 /*
   Using a java class to generate jooq objects - allows for multiple db's - see ./generate directory
-  Composite build - implementation("dmo.fs.utils:generate:0.0.1") - this avoids the circular dependancy error
+  Composite build - implementation('dmo.fs.utils:generate:0.0.1') - this avoids the circular dependancy error
 */
 tasks.register('jooqGenerate', Copy) {
-    dependsOn gradle.includedBuild("generate").task(":jooqGenerate")
-    def generateProject = gradle.includedBuild("generate")
-    def sourcePath = generateProject.projectDir.toString() + "/src/main/kotlin/golf/handicap"
+    dependsOn gradle.includedBuild('generate').task(':jooqGenerate')
+    def generateProject = gradle.includedBuild('generate')
+    def sourcePath = generateProject.projectDir.toString() + '/src/main/kotlin/golf/handicap'
     def destinationPath = "${rootDir}/handicap/src/main/kotlin/golf/handicap"
     copy {
         from sourcePath
@@ -74,43 +67,25 @@ tasks.register('jooqGenerate', Copy) {
     }
 }
 
-run {
-  doFirst {
-     if (System.getProperty("DEBUG", "false") == "true") {
-        debug = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
-    }
-
-    environment "VERTXWEB_ENVIRONMENT", "dev"
-
-    args = ['run', mainVerticleName, "--redeploy=$watchForChange", "--launcher-class=$launcherClassName", 
-      "--on-redeploy=$doOnChange", "--conf=src/main/resources/application-conf.json",
-      "--java-opts=-Dvertx.disableFileCaching=true", "-PcompileOnly", debug]
-// --sun-misc-unsafe-memory-access=allow"
-  }
-  if (project.hasProperty("compileOnly")) {
-    dependsOn jooqGenerate
-  }
-}
-
 kotlin {
   // change if out of memory
-  kotlinDaemonJvmArgs = ["-Xmx512m", "-Xms256m", "-XX:+UseParallelGC"]
+  kotlinDaemonJvmArgs = ['-Xmx512m', '-Xms256m', '-XX:+UseParallelGC']
 }
 
 compileKotlin {
-   if (project.hasProperty("compileOnly")) {
+   if (project.hasProperty('compileOnly')) {
     dependsOn jooqGenerate
    }
 }
 
 distZip {
-    dependsOn("shadowJar")
+    dependsOn('shadowJar')
 }
 
 protobuf {
 
     protoc {
-        artifact = "com.google.protobuf:protoc:3.2.0"
+        artifact = 'com.google.protobuf:protoc:3.2.0'
     }
 
     plugins {
@@ -131,68 +106,66 @@ protobuf {
 }
 
 dependencies {
-    implementation platform("io.vertx:vertx-stack-depchain:$vertxVersion")
-    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:$hibernateVersion"
-    implementation "com.fasterxml.jackson.core:jackson-databind:2.18.3"
-    implementation "io.vertx:vertx-grpcio-server:$vertxVersion"
-    implementation "io.vertx:vertx-grpcio-client:$vertxVersion"
-//    shadow gradleApi()
-    implementation "io.vertx:vertx-core:$vertxVersion"
-    implementation "io.vertx:vertx-rx-java3:$vertxVersion"
-    implementation "io.vertx:vertx-config:$vertxVersion"
-    implementation "io.vertx:vertx-web:$vertxVersion"
+    implementation platform("io.vertx:vertx-stack-depchain:${vertxVersion}")
+    annotationProcessor "org.hibernate.orm:hibernate-jpamodelgen:${hibernateVersion}"
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.3'
+    implementation "io.vertx:vertx-grpcio-server:${vertxVersion}"
+    implementation "io.vertx:vertx-grpcio-client:${vertxVersion}"
+    implementation "io.vertx:vertx-core:${vertxVersion}"
+    implementation "io.vertx:vertx-rx-java3:${vertxVersion}"
+    implementation "io.vertx:vertx-config:${vertxVersion}"
+    implementation "io.vertx:vertx-web:${vertxVersion}"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-    implementation "io.vertx:vertx-jdbc-client:$vertxVersion"
-    implementation "io.vertx:vertx-web-templ-thymeleaf:$vertxVersion"
-    implementation "io.vertx:vertx-grpc:$vertxVersion"
-    implementation "io.vertx:vertx-grpc-client:$vertxVersion"
-    implementation "io.agroal:agroal-pool:2.5"
-    runtimeOnly "com.h2database:h2:2.4.240"
-    implementation "org.xerial:sqlite-jdbc:3.46.0.0"
-    implementation "io.vertx:vertx-mysql-client:$vertxVersion"
-    implementation "io.vertx:vertx-pg-client:$vertxVersion"
-    implementation "org.mariadb.jdbc:mariadb-java-client:3.4.1"
-    implementation "org.jooq:jooq:$jooqVersion"
-    implementation "org.jooq:jooq-codegen:$jooqVersion"
-    implementation "org.jooq:jooq-meta:$jooqVersion"
-    implementation "javax.annotation:javax.annotation-api:1.3.2"
-    runtimeOnly "org.postgresql:postgresql:42.7.10"
+    implementation "io.vertx:vertx-jdbc-client:${vertxVersion}"
+    implementation "io.vertx:vertx-web-templ-thymeleaf:${vertxVersion}"
+    implementation "io.vertx:vertx-grpc:${vertxVersion}"
+    implementation "io.vertx:vertx-grpc-client:${vertxVersion}"
+    implementation 'io.agroal:agroal-pool:2.5'
+    implementation 'com.h2database:h2:2.4.240'
+    implementation 'org.xerial:sqlite-jdbc:3.46.0.0'
+    implementation "io.vertx:vertx-mysql-client:${vertxVersion}"
+    implementation "io.vertx:vertx-pg-client:${vertxVersion}"
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.5.8'
+    implementation "org.jooq:jooq:${jooqVersion}"
+    implementation "org.jooq:jooq-codegen:${jooqVersion}"
+    implementation "org.jooq:jooq-meta:${jooqVersion}"
+    implementation 'javax.annotation:javax.annotation-api:1.3.2'
+    runtimeOnly 'org.postgresql:postgresql:42.7.10'
 
-    implementation "io.vertx:vertx-grpc-server:$vertxVersion"
-    implementation "io.vertx:vertx-grpc-protoc-plugin:$vertxVersion"
-    implementation "io.grpc:grpc-api:$grpcVersion"
-    implementation "io.grpc:grpc-stub:$grpcVersion"
-    compileOnly "org.apache.tomcat:annotations-api:6.0.53"
+    implementation "io.vertx:vertx-grpc-server:${vertxVersion}"
+    implementation "io.vertx:vertx-grpc-protoc-plugin:${vertxVersion}"
+    implementation "io.grpc:grpc-api:${grpcVersion}"
+    implementation "io.grpc:grpc-stub:${grpcVersion}"
+    compileOnly 'org.apache.tomcat:annotations-api:6.0.53'
 
-    implementation "io.github.microutils:kotlin-logging-jvm:2.0.11"
+    implementation 'io.github.microutils:kotlin-logging-jvm:2.0.11'
 
-    compileOnly "org.hibernate:hibernate-core:$hibernateVersion"
-    compileOnly "org.hibernate.orm:hibernate-agroal:$hibernateVersion"
-    compileOnly "com.oracle.database.jdbc:ojdbc11:23.8.0.25.04"
-    compileOnly "jakarta.persistence:jakarta.persistence-api:3.2.0"
-    runtimeOnly "org.glassfish.jersey.media:jersey-media-json-binding:3.1.10"
-    runtimeOnly "org.glassfish.expressly:expressly:6.0.0"
-//    compileOnly "org.hibernate.reactive:hibernate-reactive-core:1.1.9.Final"
-//    implementation "org.hibernate.orm:hibernate-processor:$hibernateVersion"
-//    implementation "org.hibernate.validator:hibernate-validator:9.0.0.Final"
-//    implementation "org.hibernate:hibernate-validator-annotation-processor:9.0.0.Beta3"
+    compileOnly "org.hibernate:hibernate-core:${hibernateVersion}"
+    compileOnly "org.hibernate.orm:hibernate-agroal:${hibernateVersion}"
+    compileOnly 'com.oracle.database.jdbc:ojdbc11:23.8.0.25.04'
+    compileOnly 'jakarta.persistence:jakarta.persistence-api:3.2.0'
+    runtimeOnly 'org.glassfish.jersey.media:jersey-media-json-binding:3.1.10'
+    runtimeOnly 'org.glassfish.expressly:expressly:6.0.0'
+    implementation 'io.netty:netty-codec-http3:4.2.14.Final'
+    implementation 'io.netty:netty-codec-native-quic:4.2.14.Final'
+    implementation 'dmo.fs.utils:generate'
 
-    testImplementation "io.vertx:vertx-lang-kotlin:$kotlin_version"
-    testImplementation "io.vertx:vertx-lang-kotlin-coroutines:$kotlin_version"
-    testImplementation "io.vertx:vertx-junit5:$vertxVersion"
-    testImplementation "org.junit.jupiter:junit-jupiter:$junitJupiterVersion"
-    testImplementation "junit:junit:4.13.2"
-
-    implementation "dmo.fs.utils:generate"
+    testImplementation "io.vertx:vertx-lang-kotlin:${kotlin_version}"
+    testImplementation "io.vertx:vertx-lang-kotlin-coroutines:${kotlin_version}"
+    testImplementation "io.vertx:vertx-junit5:${vertxVersion}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${junitJupiterVersion}"
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.jetbrains.kotlin:kotlin-test'
+    testImplementation 'org.junit.platform:junit-platform-launcher'
 }
 
 test {
     // Use junit platform for unit tests
-    environment "VERTXWEB_ENVIRONMENT", "test"
-    environment "GRPC_SERVER", "false"
+    environment 'VERTXWEB_ENVIRONMENT', 'test'
+    environment 'GRPC_SERVER', 'false'
     useJUnitPlatform()
     testLogging {
-        events "PASSED", "FAILED", "SKIPPED"
+        events 'PASSED', 'FAILED', 'SKIPPED'
     }
 }
 

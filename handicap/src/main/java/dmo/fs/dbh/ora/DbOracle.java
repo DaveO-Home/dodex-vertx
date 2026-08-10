@@ -68,8 +68,6 @@ public class DbOracle implements Serializable, DatabaseBuild {
             "CONSTRAINT fk_course_ratings " +
             "FOREIGN KEY (COURSE_SEQ) " +
             "REFERENCES course (COURSE_SEQ))"),
-        CREATERATINGSIDX(
-          "CREATE UNIQUE INDEX COURSE_RATING_IDX ON DODEX.RATINGS (COURSE_SEQ, TEE ASC)"),
         CREATESCORES(
           "CREATE TABLE scores (" +
             "PIN VARCHAR(8) NOT NULL," +
@@ -86,7 +84,9 @@ public class DbOracle implements Serializable, DatabaseBuild {
             "REFERENCES course (COURSE_SEQ), " +
             "CONSTRAINT fk_golfer_scores " +
             "FOREIGN KEY (PIN) " +
-            "REFERENCES golfer (PIN))");
+            "REFERENCES golfer (PIN))"),
+        CREATERATINGSIDX(
+            "CREATE UNIQUE INDEX COURSE_RATING_IDX ON DODEX.RATINGS (TEE, COURSE_SEQ ASC)");
 
         String sql;
 

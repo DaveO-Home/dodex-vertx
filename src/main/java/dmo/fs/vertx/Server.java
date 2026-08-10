@@ -3,6 +3,9 @@ package dmo.fs.vertx;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import dmo.fs.dbh.DbConfiguration;
+import dmo.fs.dbh.mssql.DodexDatabaseMssql;
+import dmo.fs.dbh.ora.DodexDatabaseOracle;
 import dmo.fs.mqtt.DodexMqttServer;
 import dmo.fs.router.CassandraRouter;
 import dmo.fs.router.Routes;
@@ -10,12 +13,14 @@ import dmo.fs.spa.SpaApplication;
 import dmo.fs.spa.router.SpaRoutes;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
+import golf.handicap.routes.GrpcHandicapService;
+import golf.handicap.routes.GrpcHibernateService;
+import golf.handicap.routes.GrpcRoutes;
+import golf.handicap.routes.HandicapRoutes;
 import golf.handicap.vertx.HandicapGrpcServer;
-import golf.handicap.vertx.MainVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Promise;
 import io.vertx.core.ThreadingModel;
-import io.vertx.core.Verticle;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.json.JsonObject;
@@ -23,6 +28,10 @@ import io.vertx.core.net.JksOptions;
 import io.vertx.ext.bridge.BridgeOptions;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
+import io.vertx.grpc.common.ServiceMethod;
+import io.vertx.grpc.server.GrpcServer;
+import io.vertx.grpc.server.Service;
 import io.vertx.rxjava3.core.AbstractVerticle;
 import io.vertx.rxjava3.core.Vertx;
 import io.vertx.rxjava3.core.file.FileSystem;
@@ -98,6 +107,7 @@ public class Server extends AbstractVerticle {
     rxVertx = vertx;
     DodexUtil.setVertx(vertx);
     defaultDb = new DodexUtil().getDefaultDb();
+
     HttpServerOptions options = new HttpServerOptions();
     options.setLogActivity(true);
     config = Vertx.currentContext().config();
@@ -130,8 +140,8 @@ public class Server extends AbstractVerticle {
     }
 
   /* Using virtual threads - java 21
-    DeploymentOptions options = new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER);
-    vertx.deployVerticle("dmo.fs.vertx.Server", options);
+    DeploymentOptions deployOptions = new DeploymentOptions().setThreadingModel(ThreadingModel.WORKER);
+    vertx.deployVerticle("dmo.fs.vertx.Server", deployOptions);
   */
     if (isUnix()) {
       server = configureLinuxOptions(rxVertx);
@@ -207,7 +217,99 @@ public class Server extends AbstractVerticle {
       }
 
       try {
-        server.getDelegate().requestHandler(router);
+        if (Boolean.TRUE.equals(HandicapGrpcServer.getEnableHandicap())) {
+
+          /*
+            A complete GrpcIo verticle can also be started, not recommended.
+           */
+//          if("Iwanttostartit") {
+//            DeploymentOptions options2 = new DeploymentOptions();
+//            if ("oracle".equals(defaultDb) || "mssql".equals(defaultDb)) {
+//              options2.setThreadingModel(ThreadingModel.VIRTUAL_THREAD);
+//            }
+//            HandicapGrpcServer handicapVerticle = new HandicapGrpcServer();
+//            rxVertx.deployVerticle(handicapVerticle, options2).subscribe();
+//          }
+
+          dmo.fs.utils.DodexUtil.setVertx(vertx);
+          dmo.fs.utils.DodexUtils.setVertx(vertx);
+
+          boolean useGrpcIoServer = "true".equals(alternateConfig.getString("grpc.server"));
+          useGrpcIoServer = System.getenv("USE_GRPCIO") != null ? "true".equals(System.getenv("USE_GRPCIO")) : useGrpcIoServer;
+
+          useGrpcIoServer = System.getProperty("USE_GRPCIO") != null ? "true".equals(System.getProperty("USE_GRPCIO")) : useGrpcIoServer;
+
+          /*
+            Use the gRpcIo server for handicap
+           */
+          if (useGrpcIoServer) {
+            HandicapRoutes routesGrpcIo = new GrpcRoutes(vertx);
+
+            Promise<Void> grpcPromise = Promise.promise();
+            routesGrpcIo.setRoutePromise(grpcPromise);
+
+            server.getDelegate().requestHandler(router);
+
+          } else {
+          /*
+            Vertx 5 gRPC Configuration. The Service implementation allows for gRPC via the default
+            HTTP server and port.
+           */
+            GrpcServer rpcServer = GrpcServer.server(vertx.getDelegate());
+            if ("oracle".equals(defaultDb) || "mssql".equals(defaultDb)) {
+              GrpcHibernateService grpcHibernateService = null;
+              Object db = null;
+              try {
+                db = DbConfiguration.getDefaultDb();
+              } catch (InterruptedException | IOException | SQLException e) {
+                throw new RuntimeException(e);
+              }
+              if (db instanceof DodexDatabaseOracle oracle) {
+                oracle.entityManagerSetup();
+                oracle.configDatabase();
+              } else if (db instanceof DodexDatabaseMssql mssql) {
+                mssql.entityManagerSetup();
+                mssql.configDatabase();
+              }
+              try {
+                grpcHibernateService = new GrpcHibernateService();
+              } catch (Exception ex) {
+                ex.printStackTrace();
+                throw new RuntimeException(ex);
+              }
+              rpcServer.addService(grpcHibernateService);
+            } else {
+              rpcServer.addService(new GrpcHandicapService());
+            }
+            Router grpcRouter = Router.router(vertx.getDelegate());
+
+            grpcRouter.route()
+                .consumes("application/grpc")
+                .consumes("application/grpc-web-text")
+                .handler(rc -> rpcServer.handle(rc.request()));
+            /*
+              All of the dodex related routes.
+             */
+            grpcRouter.route().subRouter(router);
+
+            server.getDelegate().requestHandler(grpcRouter);
+
+            if (!"prod".equalsIgnoreCase(development)) {
+              for (Service service : rpcServer.services()) {
+                for (ServiceMethod<?, ?> method : service.methods()) {
+                  logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT, method.fullMethodName(),
+                      ColorUtilConstants.RESET);
+                }
+              }
+            }
+
+            logger.warn("{}Initialized gRPC Handicap Service on: {}{}", ColorUtilConstants.YELLOW, port,
+                ColorUtilConstants.RESET);
+          }
+        } else {
+          server.getDelegate().requestHandler(router);
+        }
+
         server.rxListen(port).doOnSuccess(result -> {
           logger.info(String.join("", ColorUtilConstants.GREEN_BOLD_BRIGHT,
               "HTTP Started on port: ", Integer.toString(port), ColorUtilConstants.RESET));
@@ -225,31 +327,6 @@ public class Server extends AbstractVerticle {
                 ColorUtilConstants.RESET);
           }
 
-            /*
-              Handicap Verticle
-           */
-          if (Boolean.TRUE.equals(MainVerticle.getEnableHandicap())) {
-            boolean useGrpcServer = alternateConfig.getBoolean("grpc.server") != null ?
-                alternateConfig.getBoolean("grpc.server") : false;
-
-            useGrpcServer = System.getenv("GRPC_SERVER") != null ? "true".equals(System.getenv("GRPC_SERVER")) : useGrpcServer;
-
-            useGrpcServer = System.getProperty("GRPC_SERVER") != null ? "true".equals(System.getProperty("GRPC_SERVER")) : useGrpcServer;
-
-            Verticle handicapVerticle;
-            if (useGrpcServer) {
-              handicapVerticle = new MainVerticle();
-              rxVertx.deployVerticle(handicapVerticle).subscribe();
-            } else {
-              DeploymentOptions options2 = new DeploymentOptions();
-              if ("oracle".equals(defaultDb) || "mssql".equals(defaultDb)) {
-                options2.setThreadingModel(ThreadingModel.VIRTUAL_THREAD);
-              }
-              handicapVerticle = new HandicapGrpcServer();
-              rxVertx.deployVerticle(handicapVerticle, options2).subscribe();
-            }
-
-          }
         }).doOnError(err -> {
           logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, err.getCause(),
               ColorUtilConstants.RESET);
@@ -264,6 +341,7 @@ public class Server extends AbstractVerticle {
           vertx.deployVerticle(vts, options2);
         }
       } catch (Exception e) {
+        e.printStackTrace();
         logger.error("{}{}{}", ColorUtilConstants.RED_BOLD_BRIGHT, e.getMessage(),
             ColorUtilConstants.RESET);
       }
@@ -288,7 +366,7 @@ public class Server extends AbstractVerticle {
     HttpServerOptions httpServerOptions = new HttpServerOptions().setTcpFastOpen(true).setTcpCork(true)
         .setTcpQuickAck(true).setReusePort(true).setLogActivity(true);
 
-    /* Self signed for testing, per;
+    /* Self-signed for testing, per;
        sslshopper.com/article-most-common-java-keytool-keystore-commands.html
     */
     // keytool -genkey -keyalg RSA -alias selfsigned -keystore keystore.jks
@@ -318,12 +396,12 @@ public class Server extends AbstractVerticle {
             "To install the dodex group addon, execute 'npm run group:prod' in 'handicap/src/grpc/client/'"
             , ColorUtilConstants.RESET);
       }
-      fileDir = "./src/main/resources/static/node_modules/";
-      if (!fs.existsBlocking(fileDir)) {
-        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
-            "To install dodex , execute 'npm install' in 'src/main/resources/static/'"
-            , ColorUtilConstants.RESET);
-      }
+//      fileDir = "./src/main/resources/static/node_modules/";
+//      if (!fs.existsBlocking(fileDir)) {
+//        logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,
+//            "To install dodex , execute 'npm install' in 'src/main/resources/static/'"
+//            , ColorUtilConstants.RESET);
+//      }
       fileDir = "./src/firebase/node_modules/";
       if (!fs.existsBlocking(fileDir)) {
         logger.info("{}{}{}", ColorUtilConstants.CYAN_BOLD_BRIGHT,

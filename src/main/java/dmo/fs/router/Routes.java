@@ -7,6 +7,7 @@ import dmo.fs.kafka.KafkaConsumerDodex;
 import dmo.fs.utils.ColorUtilConstants;
 import dmo.fs.utils.DodexUtil;
 import dmo.fs.vertx.Server;
+import golf.handicap.vertx.HandicapGrpcServer;
 import io.vertx.core.Future;
 import io.vertx.core.Promise;
 import io.vertx.core.http.HttpMethod;
@@ -60,9 +61,9 @@ public class Routes {
 
     Future<Router> routesFuture;
     // @todo: implement group/member openapi for Neo4j, Cassandra & Firebase
-    if("oracle".equals(defaultDb) || "mssql".equals(defaultDb)) {
+    if ("oracle".equals(defaultDb) || "mssql".equals(defaultDb)) {
       routesFuture = OpenApiEndpoint.setOpenApiRouter(vertx); // Using blocking Hibernate on Virtual Threads
-    } else if("mongo".equals(defaultDb)) {
+    } else if ("mongo".equals(defaultDb)) {
       routesFuture = OpenApiRouterMongo.setOpenApiRouter(vertx);
     } else {
       routesFuture = OpenApiRouter.setOpenApiRouter(vertx);
@@ -80,10 +81,12 @@ public class Routes {
         throw new RuntimeException("OpenApi Route Failure");
       }
 
-      if ("dev".equals(DodexUtil.getEnv())) {
-        setTestRoute(router);
-      } else {
-        setProdRoute(router);
+      if (!Boolean.TRUE.equals(HandicapGrpcServer.getEnableHandicap())) {
+        if ("dev".equals(DodexUtil.getEnv())) {
+          setTestRoute(router);
+        } else {
+          setProdRoute(router);
+        }
       }
 
       if (Server.getUseKafka()) {
@@ -147,6 +150,7 @@ public class Routes {
   public void setStaticRoute(Router router) {
     Route staticRoute = router.route();
     StaticHandler staticHandler = StaticHandler.create("static");
+
     staticHandler.setCachingEnabled(!"dev".equals(DodexUtil.getEnv()));
 
     router.route("/*").handler(staticHandler)
@@ -154,15 +158,10 @@ public class Routes {
         .produces("text/html")
         .produces("text/markdown")
         .produces("image/*")
-        .handler(staticHandler)
-    ;
-
-    staticRoute.handler(staticHandler);
-    staticRoute.failureHandler(ctx -> {
-      logger.error("{}FAILURE in static route: {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.request().uri(), ctx.pathParams(), ColorUtilConstants.RESET);
-      ctx.next();
-    });
-
+        .failureHandler(ctx -> {
+          logger.error("{}FAILURE in static route: {} -- {} -- {}{}", ColorUtilConstants.RED_BOLD_BRIGHT, ctx.statusCode(), ctx.request().uri(), ctx.pathParams(), ColorUtilConstants.RESET);
+          ctx.next();
+        });
   }
 
   public void setMonitorRoute(Router router) {
@@ -222,7 +221,7 @@ public class Routes {
         mongoRouter.setWebSocket(server);
         break;
       }
-      case "mssql"-> {  // Using blocking Hibernate on Virtual Threads
+      case "mssql" -> {  // Using blocking Hibernate on Virtual Threads
         WebSocketEndpoint webSocketEndpoint = new WebSocketEndpoint();
         webSocketEndpoint.setWebSocket(server);
         break;

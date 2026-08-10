@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<entity-mappings
+    xmlns="http://java.sun.com/xml/ns/persistence/orm"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://java.sun.com/xml/ns/persistence/orm
+        http://java.sun.com/xml/ns/persistence/orm_2_0.xsd"
+    version="2.0">
+  <entity class="dmo.fs.entities.Undelivered"><description>Undelivered</description></entity>
+  <entity class="dmo.fs.entities.Messages"><description>Message</description></entity>
+  <entity class="dmo.fs.entities.Users"><description>User</description></entity>
+  <entity class="dmo.fs.entities.Group"><description>Group</description></entity>
+  <entity class="dmo.fs.entities.Member"><description>Member</description></entity>
+  <entity class="golf.handicap.hibernate.entities.PersistedGolfer"><description>Golfer</description></entity>
+  <entity class="golf.handicap.hibernate.entities.PersistedScores"><description>Scores</description></entity>
+  <entity class="golf.handicap.hibernate.entities.PersistedRatings"><description>Ratings</description></entity>
+  <entity class="golf.handicap.hibernate.entities.PersistedCourse"><description>Course</description></entity>
+</entity-mappings>

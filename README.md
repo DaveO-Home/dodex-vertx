@@ -3,22 +3,30 @@
 
 ## Install Assumptions
 
-1. Using [Vertx5](<https://vertx.io/introduction-to-vertx-and-reactive/>)
+1. Using [Vertx5.1](<https://vertx.io/introduction-to-vertx-and-reactive/>)
 2. Java 25 or higher installed with JAVA_HOME set.
-3. Gradle 9.4+ installed(app will install gradle 9.4.1). If you have sdkman installed, execute `sdk install gradle 9.4.1`
+3. Gradle 9.5+ installed(app will install gradle 9.5.1). If you have SDKMAN installed, execute `sdk install gradle 9.4.1`
 4. Node with npm javascript package manager installed.
 
-**Important Note;** The `kotlin, gRPC` application can now run **without** a proxy(Envoy). After initial configuration(javascript npm installs), the `gRPC` client now connects directly to Vert.x. Simply execute `gradlew run` and enter `localhost:8087/handicap.html` in a browser. 
-The `envoy` proxy can still be used by setting an environment variable, `GRPC_SERVER=true`.  
+**Important Note;** Vertx 5.1 has deprecated the external web server gRpc implementation. Using the Envoy proxy is no longer an option. The vert.x GrpcServer now services gRpc requests using a custom vert.x api.
 
 [//]: # ()
-Also note that the `io.vertx.launcher.application.VertxApplication` is not used since in development only a maven plugin is supported for auto-reload. In addition, the replacement for `AbstractVerticle` which is `VerticleBase` is not used. Too many code changes would be required.
+Also note that the `io.vertx.launcher.application.VertxApplication` is not used since in development, only a maven plugin is supported for auto-reload. In addition, the replacement for `AbstractVerticle` which is `VerticleBase` is not used. Too many code changes would be required.
 
-## New Additions(7/2024)
+## New Additions(8/2026)
 
-1. Added Vert.x gRPC Server, see [Grpc README](<https://github.com/DaveO-Home/dodex-vertx/blob/master/handicap/README.md>)
-2. Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ microservice client to process __dodex-mess__ messages.
-    * see __Mqtt Broker__ section below for the broker and __dodex-akka__ [README](https://github.com/DaveO-Home/dodex-akka/blob/master/README.md) for the client
+1. Implemented the new Vertx gRpc service
+2. Must now return a `Future` containing the gRpc return class.
+3. The `io.grpc.stub.StreamObserver` is not visible using the vertx `GrpcServer` and `Service` interface.
+4. If you want to use the default gRpc api, the GrpcIo server can be used.
+    * export `USE_GRPCIO=true` to startup gRpc on port `8070`.
+    * To make the GrpcIo Sever default, set `grpc.server` to `true` in the `application-conf.json` file.
+    * In a browser use `localhost:8087/handicap.html?grpcio=true`. This will notify the JavaScript client to use port `8070`.
+5. Removed node_modules directory from the `shadowJar` generated `jar` file. See `index.html` in directory `.../WEB/static/test`. Test examples now use a bundle.
+6. No need to install the `dodex` JavaScript modules. That is, `npm install` in `src/main/resources/WEB/static` from `package.json` has been removed.
+7. To rebuild the `dodex` bundle if needed, `cd .../handicap/src/grpc/client` and execute `npm run dodex:build` or `npm run dodex:prod`.
+8. You can execute the production `jar` with the form; `java -jar build/libs/dodex-vertx-5.1.0-prod.jar --worker dmo.fs.vertx.Server`. This is particularly useful with `mssql` and `oracle`.  
+   __Note;__ For `h2`, set `DEFAULT_DB=h2` before executing `gradlew shadowJar`. For all other databases set `DEFAULT_DB`to any database other than `h2`. 
 
 ## New Additions(7/2025)
 
@@ -26,26 +34,32 @@ Also note that the `io.vertx.launcher.application.VertxApplication` is not used 
 2. Support both __`Dodex`__ and __`Handicap`__ applications with backend databases `oracle` and `mssql` using `hibernate`.  
     __Note:__ Blocking `hibernate` with `virtual_threads` is used.
 
+## New Additions(7/2024)
+
+1. Added Vert.x gRPC Server, see [Grpc README](<https://github.com/DaveO-Home/dodex-vertx/blob/master/handicap/README.md>)
+2. Added the Vert.x __Mqtt Broker__ to communicate with the __dodex-akka__ microservice client to process __dodex-mess__ messages.
+    * see __Mqtt Broker__ section below for the broker and __dodex-akka__ [README](https://github.com/DaveO-Home/dodex-akka/blob/master/README.md) for the client
+
+
 ## Getting Started
 
 1. `npm install dodex-vertx` or download from <https://github.com/DaveO-Home/dodex-vertx>. If you use npm install, move node_modules/dodex-vertx to an appropriate directory.
-2. `cd <install directory>/dodex-vertx/src/main/resources/static` and execute `npm install --save` to install the dodex modules.
-3. `cd <install directory>/dodex-vertx` and execute `./gradlew run`. This should install java dependencies and startup the server in development mode against the default sqlite3 database. In this mode, any modifications to java source will be recompiled.
-4. Execute url `http://localhost:8087/test` in a browser.
-5. You can also run `http://localhost:8087/test/bootstrap.html` for a bootstrap example.
-6. Follow instructions for dodex at <https://www.npmjs.com/package/dodex-mess> and <https://www.npmjs.com/package/dodex-input>.
-7. You can turn off colors by setting "color": to false in application-conf.json.
-8. The Cassandra database has been added via an `Akka` microservice. See; <https://www.npmjs.com/package/dodex-akka>.
-9. Added Cassandra database to the `React` demo allowing the `login` component to use Cassandra.
-10. See the `Firebase` section for using Google's `Firestore` backend.
-11. Added a verticle for Java21 Virtual Threads test; "localhost:8881/threads" when  "dodex.virtual.threads" is set to "true" in "application-conf.json"
-12. Made "h2" default database.
+2. `cd <install directory>/dodex-vertx` and execute `./gradlew run`. This should install java dependencies and startup the server in development mode against the default sqlite3 database. In this mode, any modifications to java source will be recompiled.
+3. Execute url `http://localhost:8087/test` in a browser.
+4. You can also run `http://localhost:8087/test/bootstrap.html` for a bootstrap example.
+5. Follow instructions for dodex at <https://www.npmjs.com/package/dodex-mess> and <https://www.npmjs.com/package/dodex-input>.
+6. You can turn off colors by setting "color": to false in application-conf.json.
+7. The Cassandra database has been added via an `Akka` microservice. See; <https://www.npmjs.com/package/dodex-akka>.
+8. Added Cassandra database to the `React` demo allowing the `login` component to use Cassandra.
+9. See the `Firebase` section for using Google's `Firestore` backend.
+10. Added a verticle for Java21 Virtual Threads test; "localhost:8881/threads" when  "dodex.virtual.threads" is set to "true" in "application-conf.json"
+11. Made "h2" default database.
 
 ### Operation
 
 1. Execute `./gradlew tasks` to view all tasks.
 2. Execute `./gradlew shadowJar` to build the production fat jar.
-3. Execute `java -jar build/libs/dodex-vertx-4.0.0-prod.jar` to start up the production server.
+3. Execute `java -jar build/libs/dodex-vertx-5.1.0-prod.jar` to start up the production server.
 4. Execute url `http://localhost:8880/dodex` or `.../dodex/bootstrap.html` in a browser. 
    * **Note:** This is a different port and url than development. 
    * **Note:** The default database on the backend is "h2", no further configuration is necessary. Dodex-vertx also has Postgres/Cubrid/Mariadb/Ibmdb2/Cassandra/Firebase/Oracle/MSsql implementations. See `<install directory>/dodex-vertx/src/main/resources/static/database_config.json` for configuration.
@@ -129,7 +143,7 @@ Also note that the `io.vertx.launcher.application.VertxApplication` is not used 
 * You will need to log in to the `Firebase` console and create the `dodex-firebase` project. See `src/main/java/dmo/fs/router/FirebaseRouter.java` for usage of the project-id and Google Credentials. **Note:** The `Firebase` rules are not used, so they should be set to `allow read, write:  if false;` which may be the default.
 * You only need the `Authentication` and `Firestore` extensions.
 * If you want a different project name, change `.firebaserc`.  
-    **Note;** To use `firebase` uncomment `implementation "com.google.cloud:google-cloud-firestore-admin:3.31.8"` in build.gradle otherwise make sure it is commented.
+    **Note;** To use `firebase` uncomment `implementation "com.google.cloud:google-cloud-firestore-admin:3.44.0"` in build.gradle otherwise make sure it is commented.
 
   #### Testing
 
@@ -271,9 +285,9 @@ __Note:__ By default the entry `"dodex.groups.checkForOwner"` in __application-c
     * optionally install the __spa_react__ application and in **src/spa-react/devl** execute __`npx gulp prod`__ or __`npx gulp prd`__(does not need dodex-vertx started)
     * stop the vertx server - ctrl-c
     * build the production fat jar - execute __`./gradlew clean(optional) shadowJar`__
-    * verify the jar's name - if different from `dodex-vertx-4.0.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
+    * verify the jar's name - if different from `dodex-vertx-5.1.0-prod.jar`, change in **./kube/Dockerfile** and **run_dodex.sh**
 
-4. execute __`cp build/libs/dodex-vertx-4.0.0-prod.jar`__ to **kube/**
+4. execute __`cp build/libs/dodex-vertx-5.1.0-prod.jar`__ to **kube/**
 5. execute __`docker build -t dufferdo2/dodex-vertx:latest -f kube/Dockerfile ./kube`__
 6. execute __`docker create -t -p 8880:8880 -p 8070:8070 --name dodex_vertx dufferdo2/dodex-vertx`__ 
 7. execute __`docker start dodex_vertx`__, make sure **envoy** is not running on the host.
@@ -334,8 +348,8 @@ and database_config.json(also in ../dodex-vertx/generate...resources/database(_s
 3. build the **fat** jar and **image** as described in the **Operation** and **Building an *image* and *container* with docker** sections, e.g.
     * build the production fat jar - __`./gradlew shadowJar`__
         * **Optional** When building the **fat** jar, set **DEFAULT_DB**=h2 or mariadb or postgres and **USE_HANDICAP**=true
-        * verify the jar's name - if different from **dodex-vertx-4.0.0-prod.jar**, change in **./kube/Dockerfile**
-    * copy the build/**dodex-vertx-4.0.0-prod.jar** to **./kube**
+        * verify the jar's name - if different from **dodex-vertx-5.1.0-prod.jar**, change in **./kube/Dockerfile**
+    * copy the build/**dodex-vertx-5.1.0-prod.jar** to **./kube**
     * if the **dodex_vertx** and/or the **dufferdo2/dodex-vertx** exist, remove them `docker rm dodex_vertx` and `docker rmi dufferdo2/dodex-vertx`
     * build the image `docker build -t dufferdo2/dodex-vertx:latest -f ./kube/Dockerfile ./kube`
 4. execute `./deleteapp`
